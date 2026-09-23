@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { PLACEHOLDER_USER_ID } from '@/lib/constants'
+
+async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: userData } = await supabase.auth.getUser()
+  return userData?.user?.id || PLACEHOLDER_USER_ID
+}
 
 /**
  * Task 1 — Create Expense
@@ -15,14 +21,12 @@ export async function createExpense(data: {
   date?: string;
 }) {
   const supabase = await createClient()
-  
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) throw new Error('Not authenticated')
+  const userId = await getUserId(supabase)
 
   const { data: expense, error } = await supabase
     .from('expenses')
     .insert({
-      user_id: userData.user.id,
+      user_id: userId,
       category: data.category,
       amount: data.amount,
       recurring_flag: data.recurring_flag || false,
@@ -44,17 +48,14 @@ export async function createExpense(data: {
  */
 export async function deleteExpense(expenseId: string) {
   const supabase = await createClient()
-
-  // Verify auth strictly before deleting
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) throw new Error('Not authenticated')
+  const userId = await getUserId(supabase)
 
   const { error } = await supabase
     .from('expenses')
     .delete()
     .eq('id', expenseId)
     // RLS also protects this, but explicit equality is good practice
-    .eq('user_id', userData.user.id)
+    .eq('user_id', userId)
 
   if (error) throw error
   

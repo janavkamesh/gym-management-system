@@ -1,6 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { PLACEHOLDER_USER_ID } from '@/lib/constants'
+
+async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: userData } = await supabase.auth.getUser()
+  return userData?.user?.id || PLACEHOLDER_USER_ID
+}
 
 /**
  * 1. getExpiringMembers()
@@ -10,9 +16,7 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function getExpiringMembers() {
   const supabase = await createClient()
-
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) throw new Error('Not authenticated')
+  const userId = await getUserId(supabase)
 
   // Calculate UTC threshold date (Today + 3 days)
   const now = new Date()
@@ -23,7 +27,7 @@ export async function getExpiringMembers() {
   const { data, error } = await supabase
     .from('members')
     .select('*, plans(*)')
-    .eq('user_id', userData.user.id)
+    .eq('user_id', userId)
     .lte('expiry_date', thresholdStr)
     .order('expiry_date', { ascending: true })
 
@@ -38,9 +42,7 @@ export async function getExpiringMembers() {
  */
 export async function getTodaysFollowUps() {
   const supabase = await createClient()
-
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) throw new Error('Not authenticated')
+  const userId = await getUserId(supabase)
 
   // Calculate UTC today date string
   const todayStr = new Date().toISOString().split('T')[0]
@@ -48,7 +50,7 @@ export async function getTodaysFollowUps() {
   const { data, error } = await supabase
     .from('leads')
     .select('*')
-    .eq('user_id', userData.user.id)
+    .eq('user_id', userId)
     .eq('promised_date', todayStr)
     .order('created_at', { ascending: false })
 
@@ -64,9 +66,7 @@ export async function getTodaysFollowUps() {
  */
 export async function getReviewPrompts() {
   const supabase = await createClient()
-
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) throw new Error('Not authenticated')
+  const userId = await getUserId(supabase)
 
   // Calculate exactly 30 days ago UTC
   const now = new Date()
@@ -77,7 +77,7 @@ export async function getReviewPrompts() {
   const { data, error } = await supabase
     .from('members')
     .select('*, plans(*)')
-    .eq('user_id', userData.user.id)
+    .eq('user_id', userId)
     .eq('join_date', minus30Str)
     .order('name', { ascending: true })
 

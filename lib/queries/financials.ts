@@ -61,7 +61,7 @@ export async function getProjectedRevenue(supabase: SupabaseClient) {
     
     // Status thresholds: Yellow (0-3 days) or Red (<0 days)
     if (diffDays <= 3) {
-      projectedRevenue += Number(member.plans?.price || 0)
+      projectedRevenue += Number((Array.isArray(member.plans) ? member.plans[0] : member.plans)?.price || 0)
     }
   })
 
@@ -146,7 +146,7 @@ export async function getMonthlyRevenueTrend(supabase: SupabaseClient) {
   if (error) throw error
 
   // Initialize array for the last 6 months (chronological)
-  const months = []
+  const months: { month: string, year: number, revenue: number, monthIndex: number }[] = []
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
     months.push({

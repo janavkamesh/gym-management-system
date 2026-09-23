@@ -1,8 +1,42 @@
-export default function TrainersPlaceholder() {
+import { createClient } from '@/lib/supabase/server'
+import TrainersClient from '@/components/TrainersClient'
+import { getTrainers } from '@/lib/queries/trainers'
+import { redirect } from 'next/navigation'
+
+export const dynamic = 'force-dynamic';
+
+export default async function TrainersPage() {
+  const supabase = await createClient();
+
+  // 1. Fetch Trainers
+  const trainersData = await getTrainers(supabase);
+  
+  if (trainersData === null) {
+    // If auth fails or query fails, just pass empty array to match other tabs
+    // instead of redirecting to a non-existent /login route
+  }
+
+  // 2. Fetch Members (needed for the Add PT Assignment modal dropdown)
+  // We only need id and name
+  const { data: userData } = await supabase.auth.getUser();
+  let membersData: any[] = [];
+  
+  if (userData.user) {
+    const { data } = await supabase
+      .from('members')
+      .select('id, name')
+      .eq('user_id', userData.user.id)
+      .order('name', { ascending: true });
+      
+    membersData = data || [];
+  }
+
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
-      <h1 className="text-4xl font-semibold text-[#0F172A] tracking-tight mb-4">Trainers</h1>
-      <p className="text-slate-500">Trainers functionality is not yet built.</p>
+    <div className="flex-1 w-full bg-slate-50 min-h-screen">
+      <TrainersClient 
+        initialTrainers={trainersData || []} 
+        members={membersData} 
+      />
     </div>
   );
 }

@@ -65,9 +65,9 @@ export default function FinancialsClient({
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl md:text-4xl font-semibold text-[#0F172A] tracking-tight mb-2">Financials</h1>
+          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Financials</h1>
           <p className="text-sm text-slate-500">Track profitability, expenses, and revenue trends.</p>
         </div>
       </div>
@@ -213,10 +213,10 @@ export default function FinancialsClient({
             <p className="text-slate-500 text-sm">Click 'Add Expense' to start tracking rent, salaries, and bills.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-hidden">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 tracking-wider">
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Date</th>
@@ -227,7 +227,7 @@ export default function FinancialsClient({
               <tbody className="divide-y divide-slate-200">
                 {expenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 md:px-6 py-3.5 md:py-3 text-sm font-medium text-slate-900 whitespace-nowrap max-w-[120px] md:max-w-[200px] overflow-hidden text-ellipsis" title={exp.category}>{exp.category}</td>
+                    <td className="px-4 md:px-6 py-3.5 md:py-3 text-sm font-medium text-slate-900 whitespace-nowrap max-w-30 md:max-w-50 overflow-hidden text-ellipsis" title={exp.category}>{exp.category}</td>
                     <td className="px-4 md:px-6 py-3.5 md:py-3 text-sm text-slate-700">{formatCurrency(exp.amount)}</td>
                     <td className="px-4 md:px-6 py-3.5 md:py-3 text-sm text-slate-500 whitespace-nowrap">{new Date(exp.date).toLocaleDateString('en-IN')}</td>
                     <td className="px-4 md:px-6 py-3.5 md:py-3 text-sm text-slate-500">

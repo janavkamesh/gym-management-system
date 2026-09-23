@@ -35,7 +35,11 @@ export default async function FinancialsPage() {
     // Check if ANY of them failed to trigger the global toast
     const hasError = results.some(r => r.status === 'rejected');
     if (hasError) {
-      initialError = "Failed to load some financials. Check your connection.";
+      const errorMessages = results
+        .map((r, i) => r.status === 'rejected' ? `Query ${i}: ${r.reason?.message || r.reason?.code || JSON.stringify(r.reason, Object.getOwnPropertyNames(r.reason))}` : null)
+        .filter(Boolean)
+        .join(' | ');
+      initialError = "Failed to load financials: " + errorMessages;
       // For debugging in server logs
       results.forEach((r, i) => {
         if (r.status === 'rejected') console.error(`Financials query ${i} failed:`, r.reason);

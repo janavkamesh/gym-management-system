@@ -166,6 +166,7 @@ H1 — Mobile: text-2xl / 24px
 H1 — Tablet: text-3xl / 30px
 H1 — Desktop: text-4xl / 36px
 Body: text-sm / 14px
+Table/List Cell Text: text-sm / 14px
 ```
 
 **Geometry & Elevation**
@@ -267,7 +268,7 @@ Read-only notification hub, no direct data entry.
 
 ### Tab 2 — Members (Core CRM)
 Single horizontal row per member.
-1. **Status & Filters:** top-level filter tabs — All / Active / Pending Payment / Inactive. Green/Yellow/Red dots per thresholds in Section 6.
+1. **Status & Filters:** top-level filter tabs — All / Active / Pending Payment. Green/Yellow/Red dots per thresholds in Section 6.
 2. **New Member Welcome:** on creation, generates a `wa.me` link with the welcome message + Gym Rules PDF link.
 3. **Quick-Edit Payment:** "+" button beside pending amounts to log a payment inline (amount + method).
 4. **Freeze/Pause Engine:** start/end date input; suspends account and pushes `expiry_date` forward by the freeze duration.

@@ -3,12 +3,15 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from './ToastProvider';
 import { computeStatusColor } from '@/lib/utils/status';
-import { Users, UserCheck, AlertTriangle, AlertCircle, Plus, Search } from 'lucide-react';
+import { Users, UserCheck, AlertTriangle, AlertCircle, Plus, Search, Upload } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
+import ImportCSVModal from './ImportCSVModal';
 import MemberRow from './MemberRow';
 
 interface DashboardClientProps {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialMembers: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plans: any[];
   initialError?: string;
 }
@@ -16,11 +19,27 @@ interface DashboardClientProps {
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired';
 
 export default function DashboardClient({ initialMembers, plans, initialError }: DashboardClientProps) {
-  const [members, setMembers] = useState(initialMembers);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [memberToEdit, setMemberToEdit] = useState<any>(null);
   const { showToast } = useToast();
+
+  const handleEdit = (member: any) => {
+    setMemberToEdit(member);
+    setIsAddModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsAddModalOpen(false);
+    setMemberToEdit(null);
+  };
+
+  const members = useMemo(() => {
+    return initialMembers.filter(m => !deletedIds.has(m.id));
+  }, [initialMembers, deletedIds]);
 
   useEffect(() => {
     if (initialError) {
@@ -29,12 +48,16 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
   }, [initialError, showToast]);
 
   const removeMemberFromList = (id: string) => {
-    setMembers(prev => prev.filter(m => m.id !== id));
+    setDeletedIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
   };
 
   // Compute stats
   const stats = useMemo(() => {
-    let total = members.length;
+    const total = members.length;
     let active = 0;
     let expiring = 0;
     let expired = 0;
@@ -49,9 +72,9 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
     return { total, active, expiring, expired };
   }, [members]);
 
-  // Filter members
+  // Filter and sort members
   const filteredMembers = useMemo(() => {
-    return members.filter(m => {
+    const filtered = members.filter(m => {
       const color = computeStatusColor(m.expiry_date);
       if (activeTab === 'Expiring Soon' && color !== 'Yellow') return false;
       if (activeTab === 'Expired' && color !== 'Red') return false;
@@ -64,43 +87,62 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
       }
       return true;
     });
+
+    filtered.sort((a, b) => {
+      const colorA = computeStatusColor(a.expiry_date);
+      const colorB = computeStatusColor(b.expiry_date);
+      
+      const priority: Record<string, number> = { 'Red': 1, 'Yellow': 2, 'Green': 3 };
+      const pA = priority[colorA] || 4;
+      const pB = priority[colorB] || 4;
+      
+      if (pA !== pB) return pA - pB;
+      
+      // Secondary sort: soonest-expiring first
+      const dateA = new Date(a.expiry_date || 0).getTime();
+      const dateB = new Date(b.expiry_date || 0).getTime();
+      return dateA - dateB;
+    });
+
+    return filtered;
   }, [members, activeTab, searchQuery]);
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8 pb-24 md:pb-8">
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
       <div>
-        <h1 className="text-2xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">Dashboard</h1>
+        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Dashboard</h1>
+        <p className="text-slate-500 mt-1 text-sm">Overview of your gym's members, renewals, and activity.</p>
       </div>
 
       {/* Top Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-colors">
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:border-slate-300 transition-colors">
           <div className="flex items-center gap-2 mb-3">
-            <Users size={18} className="text-[#2563EB]" />
+            <Users size={18} className="text-blue-600" />
             <h3 className="text-sm font-medium text-slate-500">Total Members</h3>
           </div>
           <p className="text-3xl font-semibold text-slate-900">{stats.total}</p>
         </div>
 
-        <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-colors">
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:border-slate-300 transition-colors">
           <div className="flex items-center gap-2 mb-3">
-            <UserCheck size={18} className="text-[#16A34A]" />
+            <UserCheck size={18} className="text-green-600" />
             <h3 className="text-sm font-medium text-slate-500">Active</h3>
           </div>
           <p className="text-3xl font-semibold text-slate-900">{stats.active}</p>
         </div>
 
-        <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-colors">
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:border-slate-300 transition-colors">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle size={18} className="text-[#EAB308]" />
+            <AlertTriangle size={18} className="text-yellow-500" />
             <h3 className="text-sm font-medium text-slate-500">Expiring Soon</h3>
           </div>
           <p className="text-3xl font-semibold text-slate-900">{stats.expiring}</p>
         </div>
 
-        <div className="bg-white p-5 rounded-lg border border-[#E2E8F0] shadow-sm hover:border-[#CBD5E1] transition-colors">
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-sm hover:border-slate-300 transition-colors">
           <div className="flex items-center gap-2 mb-3">
-            <AlertCircle size={18} className="text-[#DC2626]" />
+            <AlertCircle size={18} className="text-red-600" />
             <h3 className="text-sm font-medium text-slate-500">Expired</h3>
           </div>
           <p className="text-3xl font-semibold text-slate-900">{stats.expired}</p>
@@ -110,12 +152,12 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
       {/* Search & Filter Row */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="flex w-full md:w-auto">
-          <div className="flex bg-[#F1F5F9] rounded-lg p-1 w-full md:w-auto overflow-x-auto hide-scrollbar touch-manipulation">
+          <div className="flex bg-slate-100 rounded-lg p-1 w-full md:w-auto overflow-x-auto hide-scrollbar touch-manipulation">
             {(['All', 'Expiring Soon', 'Expired'] as FilterTab[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 md:flex-none px-4 py-2 min-h-[48px] md:min-h-0 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center ${
+                className={`flex-1 md:flex-none px-4 py-2 min-h-12 md:min-h-0 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center ${
                   activeTab === tab 
                     ? 'bg-white text-slate-900 shadow-sm' 
                     : 'text-slate-500 hover:text-slate-700'
@@ -128,7 +170,7 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
         </div>
 
         <div className="flex flex-col md:flex-row w-full md:w-auto gap-3">
-          <div className="relative w-full md:w-[280px]">
+          <div className="relative w-full md:w-70">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={18} className="text-slate-400" />
             </div>
@@ -137,12 +179,19 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
               placeholder="Search name or phone..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 min-h-[48px] md:min-h-0 py-2.5 bg-white border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition-all placeholder-slate-400"
+              className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
             />
           </div>
           <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="hidden md:flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-12 md:min-h-0 py-2.5 w-full md:w-auto bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 transition-all duration-120 text-slate-700 text-sm font-medium rounded-lg shadow-sm"
+          >
+            <Upload size={18} />
+            <span className="inline">Import CSV</span>
+          </button>
+          <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex-shrink-0 flex items-center justify-center gap-2 px-4 min-h-[48px] md:min-h-0 py-2.5 w-full md:w-auto bg-[#2563EB] hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
+            className="hidden md:flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-12 md:min-h-0 py-2.5 w-full md:w-auto bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
           >
             <Plus size={18} />
             <span className="inline">Add Member</span>
@@ -151,7 +200,7 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
       </div>
 
       {/* Member List */}
-      <div className="bg-[#FFFFFF] rounded-lg shadow-sm border border-[#E2E8F0] overflow-hidden overflow-x-auto">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         {filteredMembers.length === 0 ? (
           <div className="p-12 text-center">
             <h3 className="text-lg font-medium text-slate-900 mb-2">No members found</h3>
@@ -162,23 +211,26 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
             </p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm text-slate-900 min-w-[700px]">
-            <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-slate-500">
+          <table className="w-full text-left text-sm text-slate-900">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
               <tr>
                 <th className="px-4 md:px-6 py-4 font-medium">Name</th>
                 <th className="px-4 md:px-6 py-4 font-medium">Plan</th>
                 <th className="px-4 md:px-6 py-4 font-medium">Days left</th>
                 <th className="px-4 md:px-6 py-4 font-medium">Status</th>
-                <th className="px-4 md:px-6 py-4 font-medium">Send Reminder</th>
-                <th className="px-4 md:px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-4 md:px-6 py-4 font-medium text-center">Amount Collected</th>
+                <th className="px-4 md:px-6 py-4 font-medium text-center">Send Reminder</th>
+                <th className="px-4 md:px-6 py-4 font-medium text-center">Edit</th>
+                <th className="px-4 md:px-6 py-4 font-medium text-center">Remove</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E2E8F0]">
+            <tbody className="divide-y divide-slate-200">
               {filteredMembers.map((member) => (
                 <MemberRow 
                   key={member.id} 
                   member={member} 
                   onDeleted={() => removeMemberFromList(member.id)} 
+                  onEdit={() => handleEdit(member)}
                 />
               ))}
             </tbody>
@@ -186,15 +238,30 @@ export default function DashboardClient({ initialMembers, plans, initialError }:
         )}
       </div>
 
-      <button
-        onClick={() => setIsAddModalOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 z-40 flex items-center justify-center w-14 h-14 bg-[#2563EB] text-white rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
-      >
-        <Plus size={24} strokeWidth={2.5} />
-      </button>
+      <div className="md:hidden fixed bottom-20 right-4 z-40 flex flex-col gap-3">
+        <button
+          onClick={() => setIsImportModalOpen(true)}
+          className="flex items-center justify-center w-14 h-14 bg-white text-slate-700 border border-slate-200 rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
+        >
+          <Upload size={24} strokeWidth={2.5} />
+        </button>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
+        >
+          <Plus size={24} strokeWidth={2.5} />
+        </button>
+      </div>
 
       {isAddModalOpen && (
-        <AddMemberModal plans={plans} onClose={() => setIsAddModalOpen(false)} />
+        <AddMemberModal plans={plans} onClose={handleCloseModal} memberToEdit={memberToEdit} />
+      )}
+
+      {isImportModalOpen && (
+        <ImportCSVModal 
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => {}} // Will rely on revalidatePath
+        />
       )}
     </div>
   );

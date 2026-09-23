@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`px-4 py-3 rounded-lg shadow-2xl text-sm font-medium flex items-center justify-between min-w-[300px] ${
+            className={`px-4 py-3 rounded-lg shadow-2xl text-sm font-medium flex items-center justify-between min-w-75 ${
               toast.type === 'success'
                 ? 'bg-green-600 text-white'
                 : toast.type === 'warning'

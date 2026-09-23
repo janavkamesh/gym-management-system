@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { createExpense } from '@/lib/actions/expenses';
 import { useToast } from './ToastProvider';
 import { X, Upload, Info } from 'lucide-react';
+import Tooltip from './Tooltip';
+import { DatePicker } from './DatePicker';
 
 export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: (expense: any) => void }) {
   const [category, setCategory] = useState('');
@@ -49,13 +51,13 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
-      <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 md:fade-in duration-200 z-10 max-h-[90vh] flex flex-col">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
+      <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 md:fade-in duration-200 z-10 max-h-90vh flex flex-col">
         
         <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
           <h2 className="text-xl font-semibold text-slate-900">Add Expense</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors active:scale-95">
-            <X size={20} />
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
+            <X size={20} className="transition-transform duration-120" />
           </button>
         </div>
 
@@ -92,12 +94,9 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                required
+                onChange={setDate}
               />
             </div>
 
@@ -119,9 +118,11 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen
                   <Upload size={24} className="text-slate-400 mb-2" />
                   <span className="text-sm text-slate-500 font-medium">Upload feature coming soon</span>
                 </div>
-                <div className="absolute top-2 right-2 text-slate-400" title="Supabase Storage bucket setup pending">
-                  <Info size={16} />
-                </div>
+                <Tooltip content="Supabase Storage bucket setup pending">
+                  <div className="absolute top-2 right-2 text-slate-400">
+                    <Info size={16} />
+                  </div>
+                </Tooltip>
               </div>
             </div>
 
@@ -131,7 +132,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen
             <button
               type="submit"
               disabled={!isValid || isSubmitting}
-              className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed flex justify-center items-center h-[44px] active:scale-[0.98]"
+              className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed flex justify-center items-center h-11 active:scale-98"
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

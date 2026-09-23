@@ -3,29 +3,36 @@
 import { useState } from 'react';
 import { computeStatusColor } from '@/lib/utils/status';
 import { deleteMember } from '@/lib/actions/members';
+import { generateWhatsAppLink } from '@/lib/utils/whatsapp';
 import { useToast } from './ToastProvider';
-import { MessageCircle, Trash2 } from 'lucide-react';
+import { MessageCircle, Trash2, Edit2, X, Plus } from 'lucide-react';
+import Tooltip from './Tooltip';
+import CollectPaymentModal from './CollectPaymentModal';
 
 interface MemberRowProps {
   member: any;
   onDeleted: () => void;
+  onEdit?: () => void;
 }
 
-export default function MemberRow({ member, onDeleted }: MemberRowProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const { showToast } = useToast();
+export const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+  </svg>
+);
 
-  const generateWhatsAppLink = (m: any) => {
-    const message = `Hi ${m.name}, your Gym membership expires on ${new Date(m.expiry_date).toLocaleDateString()}. Renew now to keep your access active without interruption.`;
-    return `https://wa.me/${m.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
-  };
+export default function MemberRow({ member, onDeleted, onEdit }: MemberRowProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showCollectModal, setShowCollectModal] = useState(false);
+  const { showToast } = useToast();
 
   const statusColor = computeStatusColor(member.expiry_date);
   
   const getStatusDisplay = () => {
-    if (statusColor === 'Green') return { text: 'Active', bg: 'bg-[#16A34A]', badge: 'bg-green-100 text-green-700' };
-    if (statusColor === 'Yellow') return { text: 'Expiring Soon', bg: 'bg-[#EAB308]', badge: 'bg-yellow-100 text-yellow-700' };
-    return { text: 'Expired', bg: 'bg-[#DC2626]', badge: 'bg-red-100 text-red-700' };
+    if (statusColor === 'Green') return { text: 'Active', bg: 'bg-green-600', badge: 'bg-green-100 text-green-700' };
+    if (statusColor === 'Yellow') return { text: 'Expiring Soon', bg: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-700' };
+    return { text: 'Expired', bg: 'bg-red-600', badge: 'bg-red-100 text-red-700' };
   };
 
   const status = getStatusDisplay();
@@ -38,7 +45,7 @@ export default function MemberRow({ member, onDeleted }: MemberRowProps) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to remove ${member.name}?`)) return;
+    setShowDeleteModal(false);
     
     setIsDeleting(true);
     try {
@@ -52,8 +59,9 @@ export default function MemberRow({ member, onDeleted }: MemberRowProps) {
   };
 
   return (
+    <>
     <tr className="hover:bg-slate-50 transition-colors">
-      <td className="px-4 md:px-6 py-3.5 md:py-3 font-medium whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">
+      <td className="px-4 md:px-6 py-3.5 md:py-3 font-medium whitespace-nowrap max-w-50 overflow-hidden text-ellipsis">
         {member.name}
       </td>
       <td className="px-4 md:px-6 py-3.5 md:py-3 text-slate-500 whitespace-nowrap text-sm">
@@ -67,27 +75,96 @@ export default function MemberRow({ member, onDeleted }: MemberRowProps) {
           {status.text}
         </span>
       </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3">
-        <a
-          href={generateWhatsAppLink(member)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-fit items-center justify-center min-h-[48px] md:min-h-[36px] gap-2 px-3 text-[#16A34A] bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
-        >
-          <MessageCircle size={16} />
-          <span className="text-xs hidden md:inline">Send Reminder</span>
-        </a>
+      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+        <Tooltip content="Amount Collected">
+          <button
+            onClick={() => setShowCollectModal(true)}
+            className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+          >
+            <Plus size={18} strokeWidth={2.5} />
+          </button>
+        </Tooltip>
       </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 text-right">
-        <button
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="inline-flex items-center justify-center min-h-[48px] min-w-[48px] md:min-h-[36px] md:min-w-[36px] p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors active:scale-95 disabled:opacity-50 touch-manipulation"
-          title="Remove Member"
-        >
-          <Trash2 size={18} />
-        </button>
+      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+        <Tooltip content="Message on WhatsApp">
+          <a
+            href={generateWhatsAppLink(member)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+          >
+            <WhatsAppIcon size={18} />
+          </a>
+        </Tooltip>
+      </td>
+      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+        {onEdit ? (
+          <Tooltip content="Edit Member">
+            <button
+              onClick={onEdit}
+              className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md text-blue-500 hover:text-blue-700 hover:bg-blue-50 bg-blue-50/50 transition-colors active:scale-95 touch-manipulation"
+            >
+              <Edit2 size={18} />
+            </button>
+          </Tooltip>
+        ) : (
+          <div className="w-12 h-12 md:w-9 md:h-9 mx-auto" />
+        )}
+      </td>
+      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+        <Tooltip content="Remove Member">
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            disabled={isDeleting}
+            className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
+          >
+            <Trash2 size={18} strokeWidth={2.5} />
+          </button>
+        </Tooltip>
       </td>
     </tr>
+
+    {showCollectModal && (
+      <tr>
+        <td colSpan={8} className="p-0 border-0 h-0">
+          <CollectPaymentModal 
+            member={member} 
+            onClose={() => setShowCollectModal(false)} 
+          />
+        </td>
+      </tr>
+    )}
+
+    {showDeleteModal && (
+      <tr>
+        <td colSpan={8} className="p-0 border-0 h-0">
+          <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
+            <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+              <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Member</h3>
+              <p className="text-slate-500 mb-6">
+                Are you sure you want to permanently remove <span className="font-semibold text-slate-900">{member.name}</span>? This action cannot be undone.
+              </p>
+              <div className="flex gap-3 pb-safe">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50"
+                >
+                  {isDeleting ? 'Removing...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    )}
+    </>
   );
 }

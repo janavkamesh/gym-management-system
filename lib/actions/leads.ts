@@ -2,6 +2,12 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { PLACEHOLDER_USER_ID } from '@/lib/constants'
+
+async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: userData } = await supabase.auth.getUser()
+  return userData?.user?.id || PLACEHOLDER_USER_ID
+}
 
 /**
  * Task 1 — Create Lead
@@ -9,14 +15,12 @@ import { revalidatePath } from 'next/cache'
  */
 export async function createLead(data: { name: string; phone: string; promised_date: string }) {
   const supabase = await createClient()
-  
-  const { data: userData, error: userError } = await supabase.auth.getUser()
-  if (userError || !userData.user) throw new Error('Not authenticated')
+  const userId = await getUserId(supabase)
 
   const { data: lead, error } = await supabase
     .from('leads')
     .insert({
-      user_id: userData.user.id,
+      user_id: userId,
       name: data.name,
       phone: data.phone,
       promised_date: data.promised_date,

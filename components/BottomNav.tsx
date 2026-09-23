@@ -27,12 +27,12 @@ export default function BottomNav() {
             href={item.href}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors active:scale-95 duration-120 touch-manipulation ${
               isActive
-                ? 'text-[#2563EB]'
+                ? 'text-blue-600'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[10px] font-medium leading-none">{item.name}</span>
+            <span className="text-10px font-medium leading-none">{item.name}</span>
           </Link>
         );
       })}
