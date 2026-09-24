@@ -2,6 +2,7 @@
 
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --color-navy: #1E293B; /* Slate 800 */
 }
 
 @layer base {
@@ -26,6 +27,38 @@
   
   .animate-fade-in {
     animation: fadeIn 200ms ease-out forwards;
+  }
+  
+  .card-gradient-blue {
+    background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
+  }
+  .card-gradient-green {
+    background: linear-gradient(135deg, #14532D 0%, #16A34A 100%);
+  }
+  .card-gradient-yellow {
+    background: linear-gradient(135deg, #854D0E 0%, #A16207 100%);
+  }
+  .card-gradient-red {
+    background: linear-gradient(135deg, #7F1D1D 0%, #DC2626 100%);
+  }
+  
+  .table-header-dark {
+    background: linear-gradient(135deg, var(--color-navy) 0%, #334155 100%);
+    color: #F8FAFC;
+  }
+  .table-header-dark th {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    position: relative;
+  }
+  .table-header-dark th:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 30%;
+    bottom: 30%;
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.15);
   }
 }
 

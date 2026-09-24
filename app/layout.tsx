@@ -10,6 +10,7 @@ const inter = Inter({
 import { ToastProvider } from "@/components/ToastProvider";
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
+import MobileTopBar from "@/components/MobileTopBar";
 
 export const metadata: Metadata = {
   title: "Gym Management Dashboard",
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className="min-h-full flex bg-slate-50 text-slate-900">
         <ToastProvider>
           <Sidebar />
+          <MobileTopBar />
           <main className="flex-1 flex flex-col min-h-screen overflow-auto pb-16 md:pb-0">
             {children}
           </main>

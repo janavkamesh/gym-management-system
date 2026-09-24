@@ -3,7 +3,10 @@ export default function Loading() {
     <div className="flex-1 w-full bg-slate-50 min-h-screen">
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl md:text-4xl font-semibold text-[#0F172A] tracking-tight">Members</h1>
+          <div>
+            <div className="w-32 h-7 md:h-8 bg-slate-200 rounded-lg animate-pulse mb-2" />
+            <div className="w-72 h-5 bg-slate-200 rounded animate-pulse" />
+          </div>
           <div className="hidden md:block w-32 h-10 bg-slate-200 rounded-lg animate-pulse" />
         </div>
 

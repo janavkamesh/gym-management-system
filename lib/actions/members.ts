@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { PLACEHOLDER_USER_ID } from '@/lib/constants'
+import { logActivity } from '@/lib/activity-log'
+import { formatINR, formatDate } from '@/lib/utils/formatters'
 
 /**
  * Helper: get the current user ID.
@@ -26,6 +28,7 @@ export async function createMember(data: {
   expiry_date?: string;
   payment_amount?: number;
   payment_method?: string;
+  pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number };
 }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
@@ -63,6 +66,16 @@ export async function createMember(data: {
 
   if (error) throw error
 
+  const { data: planData } = await supabase.from('plans').select('plan_name').eq('id', data.plan_id).single()
+  await logActivity({
+    category: 'Members',
+    action: 'Added',
+    description: `Added member ${data.name} (${planData?.plan_name || 'Plan'})`,
+    entityType: 'member',
+    entityId: member.id,
+    entityName: data.name
+  })
+
   if (data.payment_amount && data.payment_amount > 0) {
     const { error: paymentError } = await supabase
       .from('payments')
@@ -70,16 +83,45 @@ export async function createMember(data: {
         member_id: member.id,
         amount: data.payment_amount,
         method: data.payment_method || 'Cash',
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        period_start: data.join_date,
+        period_end: finalExpiryDate,
+        payment_type: 'Membership'
       });
     
     if (paymentError) {
       console.error('Payment insertion failed:', paymentError);
+    } else {
+      await logActivity({
+        category: 'Payments',
+        action: 'Collected',
+        description: `Collected ${formatINR(data.payment_amount)} via ${data.payment_method || 'Cash'} from ${data.name}`,
+        entityType: 'member',
+        entityId: member.id,
+        entityName: data.name,
+        amount: data.payment_amount
+      })
     }
+  }
+
+  // Handle PT Assignment
+  if (data.pt?.hasPt && data.pt?.trainerId) {
+    const { error: ptError } = await supabase.from('pt_assignments').insert({
+      member_id: member.id,
+      trainer_id: data.pt.trainerId,
+      commission_percent: 0,
+      fee_amount: data.pt.ptFee,
+      trainer_share: data.pt.trainerShare,
+      duration_days: data.pt.ptDurationDays,
+      is_active: true,
+      assigned_date: new Date().toISOString().split('T')[0]
+    });
+    if (ptError) console.error('PT assignment insert failed:', ptError);
   }
   
   revalidatePath('/members')
   revalidatePath('/financials')
+  revalidatePath('/trainers')
   revalidatePath('/') // Dashboard
   return member
 }
@@ -88,7 +130,7 @@ export async function createMember(data: {
  * Task 2 — Update Member
  * Updates editable fields. Recalculates expiry_date if plan_id or join_date changes.
  */
-export async function updateMember(memberId: string, data: { name?: string; phone?: string; plan_id?: string; join_date?: string; expiry_date?: string }) {
+export async function updateMember(memberId: string, data: { name?: string; phone?: string; plan_id?: string; join_date?: string; expiry_date?: string; pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number }; payment?: { id?: string; amount?: number } }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
   
@@ -125,15 +167,80 @@ export async function updateMember(memberId: string, data: { name?: string; phon
 
   const { data: updated, error } = await supabase
     .from('members')
-    .update(updates)
+    .update({
+      name: data.name,
+      phone: data.phone,
+      plan_id: data.plan_id,
+      join_date: data.join_date,
+      expiry_date: updates.expiry_date
+    })
     .eq('id', memberId)
     .eq('user_id', userId)
     .select()
     .single()
 
   if (error) throw error
+
+  await logActivity({
+    category: 'Members',
+    action: 'Edited',
+    description: `Edited member ${data.name || updated.name}`,
+    entityType: 'member',
+    entityId: updated.id,
+    entityName: data.name || updated.name
+  })
+
+  // Payment updates have been removed from here. They are exclusively handled by editPayment in payments.ts.
+
+  // Handle PT updates
+  if (data.pt) {
+    // get active PT assignment
+    const { data: activePt } = await supabase
+      .from('pt_assignments')
+      .select('*')
+      .eq('member_id', memberId)
+      .eq('is_active', true)
+      .single();
+
+    if (!data.pt.hasPt) {
+      if (activePt) {
+        await supabase
+          .from('pt_assignments')
+          .update({ is_active: false })
+          .eq('id', activePt.id);
+      }
+    } else if (data.pt.hasPt && data.pt.trainerId) {
+      if (!activePt || activePt.trainer_id !== data.pt.trainerId) {
+        if (activePt) {
+          await supabase
+            .from('pt_assignments')
+            .update({ is_active: false })
+            .eq('id', activePt.id);
+        }
+        const { error: ptError } = await supabase.from('pt_assignments').insert({
+          member_id: memberId,
+          trainer_id: data.pt.trainerId,
+          commission_percent: 0,
+          fee_amount: data.pt.ptFee,
+          trainer_share: data.pt.trainerShare,
+          duration_days: data.pt.ptDurationDays,
+          is_active: true,
+          assigned_date: new Date().toISOString().split('T')[0]
+        });
+        if (ptError) console.error('PT assignment insert failed:', ptError);
+      } else if (activePt) {
+        // Trainer is the same, update the existing row
+        await supabase.from('pt_assignments').update({
+          fee_amount: data.pt.ptFee,
+          trainer_share: data.pt.trainerShare,
+          duration_days: data.pt.ptDurationDays
+        }).eq('id', activePt.id);
+      }
+    }
+  }
   
   revalidatePath('/members')
+  revalidatePath('/trainers')
   revalidatePath('/')
   return updated
 }
@@ -156,10 +263,10 @@ export async function freezeMember(memberId: string, freezeStart: string, freeze
     throw new Error('Freeze end date must be after freeze start date')
   }
 
-  // Fetch current expiry_date
+  // Fetch current expiry_date and name
   const { data: member, error: fetchError } = await supabase
     .from('members')
-    .select('expiry_date')
+    .select('name, expiry_date')
     .eq('id', memberId)
     .single()
 
@@ -181,6 +288,15 @@ export async function freezeMember(memberId: string, freezeStart: string, freeze
 
   if (error) throw error
   
+  await logActivity({
+    category: 'Members',
+    action: 'Frozen',
+    description: `Froze membership for ${member.name} from ${formatDate(start.toISOString())} to ${formatDate(end.toISOString())}`,
+    entityType: 'member',
+    entityId: memberId,
+    entityName: member.name
+  })
+
   revalidatePath('/members')
   revalidatePath('/')
   return updated
@@ -189,9 +305,37 @@ export async function freezeMember(memberId: string, freezeStart: string, freeze
 export async function deleteMember(memberId: string) {
   const supabase = await createClient()
 
+  const { data: member } = await supabase.from('members').select('name').eq('id', memberId).single()
+
   const { error } = await supabase
     .from('members')
-    .delete()
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', memberId)
+
+  if (error) throw error
+  
+  await logActivity({
+    category: 'Members',
+    action: 'Removed',
+    description: `Removed member ${member?.name || 'Unknown'}`,
+    entityType: 'member',
+    entityId: memberId,
+    entityName: member?.name
+  })
+
+  revalidatePath('/members')
+  revalidatePath('/')
+  return true
+}
+
+export async function restoreMember(memberId: string) {
+  const supabase = await createClient()
+
+  const { data: member } = await supabase.from('members').select('name').eq('id', memberId).single()
+
+  const { error } = await supabase
+    .from('members')
+    .update({ archived_at: null })
     .eq('id', memberId)
 
   if (error) throw error
@@ -199,6 +343,21 @@ export async function deleteMember(memberId: string) {
   revalidatePath('/members')
   revalidatePath('/')
   return true
+}
+
+export async function getArchivedMembers() {
+  const supabase = await createClient()
+  const userId = await getUserId(supabase)
+
+  const { data, error } = await supabase
+    .from('members')
+    .select('*, plans(*)')
+    .eq('user_id', userId)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false })
+
+  if (error) throw error
+  return data
 }
 
 /**

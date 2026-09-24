@@ -1,14 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { createExpense } from '@/lib/actions/expenses';
 import { useToast } from './ToastProvider';
-import { X, Upload, Info } from 'lucide-react';
+import { X, Upload, Info, ChevronDown } from 'lucide-react';
 import Tooltip from './Tooltip';
 import { DatePicker } from './DatePicker';
 
 export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: (expense: any) => void }) {
   const [category, setCategory] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest?.('#category-dropdown-portal')
+      ) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isRecurring, setIsRecurring] = useState(false);
@@ -54,10 +73,10 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
       <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 md:fade-in duration-200 z-10 max-h-90vh flex flex-col">
         
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
-          <h2 className="text-xl font-semibold text-slate-900">Add Expense</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={20} className="transition-transform duration-120" />
+        <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-slate-900">
+          <h2 className="text-xl font-semibold text-white">Add Expense</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
+            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
           </button>
         </div>
 
@@ -66,17 +85,48 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen
             
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow appearance-none"
-                required
-              >
-                <option value="" disabled>Select category</option>
-                {predefinedCategories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full px-4 py-2.5 border border-slate-300 rounded-lg min-h-12 bg-white flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                >
+                  <span className={category ? 'text-slate-900' : 'text-slate-400'}>
+                    {category ? category : 'Select category'}
+                  </span>
+                  <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isDropdownOpen && typeof document !== 'undefined' && createPortal(
+                  <div 
+                    id="category-dropdown-portal"
+                    className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-md max-h-60 overflow-y-auto mt-1"
+                    style={{
+                      top: dropdownRef.current?.getBoundingClientRect().bottom,
+                      left: dropdownRef.current?.getBoundingClientRect().left,
+                      width: dropdownRef.current?.getBoundingClientRect().width,
+                    }}
+                  >
+                    <ul className="py-1">
+                      {predefinedCategories.map(cat => (
+                        <li key={cat}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCategory(cat);
+                              setIsDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-slate-50 transition-colors text-slate-900"
+                          >
+                            {cat}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>,
+                  document.body
+                )}
+              </div>
             </div>
 
             <div>

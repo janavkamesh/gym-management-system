@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { PLACEHOLDER_USER_ID } from '@/lib/constants'
+import { logActivity } from '@/lib/activity-log'
 
 async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: userData } = await supabase.auth.getUser()
@@ -31,6 +32,15 @@ export async function createLead(data: { name: string; phone: string; promised_d
 
   if (error) throw error
   
+  await logActivity({
+    category: 'Leads',
+    action: 'Added',
+    description: `Added lead ${data.name}`,
+    entityType: 'lead',
+    entityId: lead.id,
+    entityName: data.name
+  })
+
   revalidatePath('/leads')
   revalidatePath('/') // Updates Dashboard follow-ups if applicable
   return lead
@@ -51,6 +61,8 @@ export async function updateLeadOutcome(leadId: string, outcome: string) {
     throw new Error('Invalid outcome value. Must be one of: Pending, Joined, Not Interested, No Response')
   }
 
+  const { data: lead } = await supabase.from('leads').select('name, outcome').eq('id', leadId).single()
+
   // Task 4: Do Not Build Conversion Logic
   // We only update the outcome field. No conversion to member logic here.
   const { data: updated, error } = await supabase
@@ -62,6 +74,16 @@ export async function updateLeadOutcome(leadId: string, outcome: string) {
 
   if (error) throw error
   
+  await logActivity({
+    category: 'Leads',
+    action: 'Outcome changed',
+    description: `Changed outcome for lead ${lead?.name || 'Unknown'} from ${lead?.outcome || 'Unknown'} to ${outcome}`,
+    entityType: 'lead',
+    entityId: leadId,
+    entityName: lead?.name,
+    metadata: { old_outcome: lead?.outcome, new_outcome: outcome }
+  })
+
   revalidatePath('/leads')
   revalidatePath('/') // Updates Dashboard follow-ups
   return updated

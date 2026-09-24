@@ -2,23 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { deleteTrainer, fetchPtAssignments, fetchSalaryAdvances, fetchSalarySummary, deletePtAssignment, deleteSalaryAdvance, markAdvanceDeducted } from '@/lib/actions/trainers';
+import { deleteTrainer, fetchPtAssignments, fetchSalaryAdvances, fetchSalarySummary, deletePtAssignment, deleteSalaryAdvance, markAdvanceDeducted, restoreTrainer } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
-import { Trash2, ChevronDown, ChevronUp, Check, X, Plus, AlertCircle, RefreshCw } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Check, X, Plus, AlertCircle, RefreshCw, Undo2 } from 'lucide-react';
 import Tooltip from './Tooltip';
-import AddPtAssignmentModal from './AddPtAssignmentModal';
 import AddSalaryAdvanceModal from './AddSalaryAdvanceModal';
+import CollectPtPaymentModal from './CollectPtPaymentModal';
+import TrainerSalaryHistory from './TrainerSalaryHistory';
+import PaySalaryModal from './PaySalaryModal';
+import { fetchTrainerSalaryPayments } from '@/lib/actions/payments';
 
 interface TrainerRowProps {
   trainer: any;
   members: any[];
   onDeleted: () => void;
+  onRestore?: () => void;
 }
 
-export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowProps) {
+export default function TrainerRow({ trainer, members, onDeleted, onRestore }: TrainerRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { showToast } = useToast();
+  
+  const isArchived = !!trainer.archived_at;
   
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -37,9 +45,12 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
   const [advError, setAdvError] = useState(false);
   const [summaryError, setSummaryError] = useState(false);
 
+  const [salaryPayments, setSalaryPayments] = useState<any[]>([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+
   // Modals
-  const [isPtModalOpen, setIsPtModalOpen] = useState(false);
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
 
   // Default to current month for summary
   const currentMonth = new Date().getMonth() + 1;
@@ -87,11 +98,26 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
     }
   };
 
+  const loadPayments = async () => {
+    setIsLoadingPayments(true);
+    try {
+      const res = await fetchTrainerSalaryPayments(trainer.id);
+      setSalaryPayments(res || []);
+    } catch (err) {
+      // ignore
+    } finally {
+      setIsLoadingPayments(false);
+    }
+  };
+
   const loadDetails = () => {
     loadPt();
     loadAdv();
     loadSummary();
+    loadPayments();
   };
+
+
 
   useEffect(() => {
     if (isExpanded) {
@@ -101,15 +127,28 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
   }, [isExpanded]);
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to remove trainer ${trainer.name}?`)) return;
     setIsDeleting(true);
     try {
       await deleteTrainer(trainer.id);
       showToast('Trainer removed successfully', 'success');
+      setShowDeleteModal(false);
       onDeleted();
     } catch (error) {
       showToast('Failed to remove trainer. Check your connection.', 'error');
       setIsDeleting(false);
+    }
+  };
+
+  const handleRestore = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsRestoring(true);
+    try {
+      await restoreTrainer(trainer.id);
+      showToast('Trainer restored successfully', 'success');
+      if (onRestore) onRestore();
+    } catch (error) {
+      showToast('Failed to restore trainer. Check your connection.', 'error');
+      setIsRestoring(false);
     }
   };
 
@@ -124,14 +163,19 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
     }
   };
 
-  const handleDeletePt = async (ptId: string) => {
-    if (!window.confirm('Remove this PT assignment?')) return;
+  const [ptToDelete, setPtToDelete] = useState<string | null>(null);
+  const [paymentPt, setPaymentPt] = useState<any | null>(null);
+
+  const confirmDeletePt = async () => {
+    if (!ptToDelete) return;
     try {
-      await deletePtAssignment(ptId, trainer.id);
-      setPtAssignments(prev => prev.filter(p => p.id !== ptId));
+      await deletePtAssignment(ptToDelete, trainer.id);
+      setPtAssignments(prev => prev.filter(p => p.id !== ptToDelete));
       loadSummary();
+      setPtToDelete(null);
+      showToast('PT assignment removed successfully', 'success');
     } catch (error) {
-      showToast('Failed to save. Check your connection.', 'error');
+      showToast('Failed to remove PT assignment. Check your connection.', 'error');
     }
   };
 
@@ -157,13 +201,7 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
         {/* Left Column: PT Assignments */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col h-75">
           <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-100 shrink-0">
-            <h3 className="font-semibold text-slate-900 text-sm md:text-base">PT Clients</h3>
-            <button 
-              onClick={() => setIsPtModalOpen(true)}
-              className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 md:px-2.5 py-2 md:py-1.5 rounded-md transition-colors min-h-12 md:min-h-0"
-            >
-              <Plus size={16} className="md:w-3.5 md:h-3.5" /> <span className="hidden md:inline">Add Client</span><span className="md:hidden">Add</span>
-            </button>
+            <h3 className="font-semibold text-slate-900 text-sm md:text-base">PT Clients ({ptAssignments.length})</h3>
           </div>
           <div className="p-0 flex-1 overflow-y-auto">
             {isLoadingPt ? (
@@ -189,16 +227,30 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
             ) : (
               <div className="divide-y divide-slate-100">
                 {ptAssignments.map(pt => (
-                  <div key={pt.id} className="p-3 md:p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div 
+                    key={pt.id} 
+                    className="p-3 md:p-4 flex items-center justify-between hover:bg-slate-50 transition-colors duration-1000"
+                  >
                     <div className="min-w-0 flex-1 mr-4">
                       <div className="font-medium text-slate-900 text-sm truncate">{pt.member?.name || 'Unknown Member'}</div>
-                      <div className="text-xs text-slate-500 mt-0.5 truncate">Assigned: {new Date(pt.assigned_date).toLocaleDateString('en-GB')}</div>
+                      <div className="text-xs text-slate-500 mt-0.5 truncate">
+                        Assigned: {new Date(pt.assigned_date).toLocaleDateString('en-GB')} • Duration: {pt.duration_days === 30 ? '1 Month' : pt.duration_days === 90 ? '3 Months' : pt.duration_days === 180 ? '6 Months' : pt.duration_days === 365 ? '1 Year' : `${pt.duration_days || '-'} Days`}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 md:gap-4 shrink-0">
-                      <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium">{pt.commission_percent}% Comm.</span>
-                      <button onClick={() => handleDeletePt(pt.id)} className="text-slate-400 hover:text-red-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center">
-                        <X size={16} />
-                      </button>
+                    <div className="flex flex-col md:flex-row items-end md:items-center gap-1 md:gap-4 shrink-0">
+                      <div className="text-right flex items-center gap-3">
+                        <span className="font-medium text-slate-900 text-sm">{formatCurrency(Number(pt.fee_amount || 0))}</span>
+                        <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium">{pt.trainer_share || pt.commission_percent}% Share</span>
+                      </div>
+                      <div className="flex items-center gap-1 md:gap-2">
+                        <button onClick={() => setPaymentPt(pt)} className="text-slate-500 hover:text-green-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center bg-slate-100 hover:bg-green-50 rounded-md md:bg-transparent md:hover:bg-transparent transition-colors">
+                          <Plus size={16} className="mr-1 hidden md:block" />
+                          <span className="font-medium text-sm">Collect</span>
+                        </button>
+                        <button onClick={() => setPtToDelete(pt.id)} className="text-slate-400 hover:text-red-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center">
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -292,30 +344,62 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
             </div>
           ) : salarySummary ? (
             <>
-              <div>
-                <div className="text-sm text-slate-400 font-medium">Estimated Salary ({new Date(currentYear, currentMonth - 1).toLocaleString('default', { month: 'short', year: 'numeric' })})</div>
-                <div className="text-2xl font-semibold mt-1 truncate max-w-62.5">{formatCurrency(salarySummary.netPayable)}</div>
-              </div>
-              <div className="flex items-center gap-3 md:gap-6 mt-4 md:mt-0 text-xs md:text-sm">
-                <div>
-                  <div className="text-slate-400 text-10px md:text-xs">Base Salary</div>
-                  <div className="font-medium truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.baseSalary)}</div>
+              <div className="flex flex-col md:flex-row md:items-center justify-between w-full">
+                <div className="flex-1">
+                  <div className="text-sm text-slate-400 font-medium">Estimated Salary ({new Date(currentYear, currentMonth - 1).toLocaleString('default', { month: 'short', year: 'numeric' })})</div>
+                  <div className="text-2xl font-semibold mt-1 truncate max-w-62.5">{formatCurrency(salarySummary.netPayable)}</div>
+                  <div className="flex items-center gap-3 md:gap-6 mt-4 text-xs md:text-sm">
+                    <div>
+                      <div className="text-slate-400 text-10px md:text-xs">Base Salary</div>
+                      <div className="font-medium truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.baseSalary)}</div>
+                    </div>
+                    <div className="text-slate-600">+</div>
+                    <div>
+                      <div className="text-slate-400 text-10px md:text-xs">PT Share</div>
+                      <div className="font-medium text-green-400 truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.totalCommission)}</div>
+                    </div>
+                    <div className="text-slate-600">-</div>
+                    <div>
+                      <div className="text-slate-400 text-10px md:text-xs">Pending Adv.</div>
+                      <div className="font-medium text-red-400 truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.totalAdvances)}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-slate-600">+</div>
-                <div>
-                  <div className="text-slate-400 text-10px md:text-xs">PT Commission</div>
-                  <div className="font-medium text-green-400 truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.totalCommission)}</div>
-                </div>
-                <div className="text-slate-600">-</div>
-                <div>
-                  <div className="text-slate-400 text-10px md:text-xs">Pending Adv.</div>
-                  <div className="font-medium text-red-400 truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.totalAdvances)}</div>
+                <div className="mt-4 md:mt-0 md:pl-6 shrink-0 flex items-center border-t md:border-t-0 md:border-l border-slate-700/50 pt-4 md:pt-0">
+                  {(() => {
+                    const monthStartStr = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+                    const hasPaid = salaryPayments.some(p => p.month_start === monthStartStr && !p.is_voided);
+                    return (
+                      <div className="flex flex-col items-end w-full">
+                        <button 
+                          onClick={() => setShowPayModal(true)}
+                          disabled={hasPaid || salarySummary.netPayable < 0}
+                          className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-400 text-white px-5 py-2.5 rounded-lg font-medium transition-colors active:scale-95 text-sm"
+                        >
+                          {hasPaid ? 'Already Paid' : 'Pay Salary'}
+                        </button>
+                        {hasPaid && (
+                          <div className="text-[10px] text-slate-400 mt-1">Salary already logged for this month</div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </>
           ) : (
             <div className="w-full text-center text-sm text-slate-500">Summary unavailable</div>
           )}
+        </div>
+        
+        {/* Salary History */}
+        <div className="md:col-span-2 mt-0">
+          <TrainerSalaryHistory 
+            trainer={trainer} 
+            payments={salaryPayments} 
+            isLoading={isLoadingPayments} 
+            onRefresh={loadDetails} 
+          />
         </div>
 
       </div>
@@ -325,48 +409,64 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
   return (
     <>
       <tr 
-        className={`transition-colors cursor-pointer md:cursor-default ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+        className={`transition-colors md:cursor-default ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'} ${!isArchived ? 'cursor-pointer' : ''}`}
         onClick={() => {
-          if (window.innerWidth < 768) {
+          if (!isArchived && window.innerWidth < 768) {
             setIsExpanded(true);
           }
         }}
       >
-        <td className="px-4 md:px-6 py-4 md:py-3 text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-37.5 text-slate-900">
+        <td className={`px-4 md:px-6 py-4 md:py-3 text-sm font-medium text-left whitespace-nowrap overflow-hidden text-ellipsis max-w-37.5 text-slate-900 ${isArchived ? 'opacity-50' : ''}`}>
           {trainer.name}
         </td>
-        <td className="px-4 md:px-6 py-4 md:py-3 text-sm text-slate-500 whitespace-nowrap">
+        <td className={`px-4 md:px-6 py-4 md:py-3 text-sm text-left text-slate-500 whitespace-nowrap ${isArchived ? 'opacity-50' : ''}`}>
           {trainer.phone}
         </td>
-        <td className="hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-slate-900 font-medium">
+        <td className={`hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-right text-slate-900 font-medium ${isArchived ? 'opacity-50' : ''}`}>
           {formatCurrency(Number(trainer.base_salary))}
         </td>
-        <td className="hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-slate-500">
+        <td className={`hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-left text-slate-500 ${isArchived ? 'opacity-50' : ''}`}>
           {new Date(trainer.join_date).toLocaleDateString('en-GB')}
         </td>
-        <td className="hidden md:table-cell px-6 py-3 text-center">
-          <button
-            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-            className="inline-flex mx-auto items-center justify-center min-h-9 px-3 gap-2 text-sm text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors font-medium active:scale-95 touch-manipulation"
-          >
-            {isExpanded ? (
-              <><ChevronUp size={16} /> Hide Details</>
-            ) : (
-              <><ChevronDown size={16} /> Manage</>
-            )}
-          </button>
-        </td>
-        <td className="hidden md:table-cell px-6 py-3 text-center">
-          <Tooltip content="Remove Trainer">
+        
+        {!isArchived ? (
+          <>
+            <td className="hidden md:table-cell px-6 py-3 text-center">
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                className="inline-flex mx-auto items-center justify-center min-h-9 px-3 gap-2 text-sm text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors font-medium active:scale-95 touch-manipulation"
+              >
+                {isExpanded ? (
+                  <><ChevronUp size={16} /> Hide Details</>
+                ) : (
+                  <><ChevronDown size={16} /> Manage</>
+                )}
+              </button>
+            </td>
+            <td className="hidden md:table-cell px-6 py-3 text-center">
+              <Tooltip content="Remove Trainer">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
+                  disabled={isDeleting}
+                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
+                >
+                  <Trash2 size={18} strokeWidth={2.5} />
+                </button>
+              </Tooltip>
+            </td>
+          </>
+        ) : (
+          <td colSpan={2} className="px-4 md:px-6 py-4 md:py-3 text-right md:text-center">
             <button
-              onClick={(e) => { e.stopPropagation(); handleDelete(); }}
-              disabled={isDeleting}
-              className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
+              onClick={handleRestore}
+              disabled={isRestoring}
+              className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 rounded-lg transition-all duration-120 active:scale-95 disabled:opacity-50"
             >
-              <Trash2 size={18} strokeWidth={2.5} />
+              <Undo2 size={16} className={isRestoring ? 'animate-spin' : ''} />
+              {isRestoring ? 'Restoring...' : 'Restore'}
             </button>
-          </Tooltip>
-        </td>
+          </td>
+        )}
       </tr>
 
       {/* Desktop Expandable Row */}
@@ -399,7 +499,7 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
             {renderWorkspace()}
             <div className="mt-8 pt-6 border-t border-slate-200/50 flex justify-center">
               <button
-                onClick={handleDelete}
+                onClick={() => setShowDeleteModal(true)}
                 disabled={isDeleting}
                 className="flex items-center gap-2 text-red-600 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-lg font-medium transition-colors active:scale-95 min-h-12"
               >
@@ -415,20 +515,96 @@ export default function TrainerRow({ trainer, members, onDeleted }: TrainerRowPr
       {/* Modals for this row */}
       {mounted && createPortal(
         <>
-          <AddPtAssignmentModal 
-            isOpen={isPtModalOpen}
-            onClose={() => setIsPtModalOpen(false)}
-            trainerId={trainer.id}
-            members={members}
-            onSuccess={() => loadDetails()} // reload everything to update summary
-          />
           <AddSalaryAdvanceModal 
             isOpen={isAdvanceModalOpen}
             onClose={() => setIsAdvanceModalOpen(false)}
             trainerId={trainer.id}
             onSuccess={() => loadDetails()}
           />
+          {showPayModal && salarySummary && (
+            <PaySalaryModal 
+              trainer={trainer}
+              summary={salarySummary}
+              month={currentMonth}
+              year={currentYear}
+              onClose={() => setShowPayModal(false)}
+              onSuccess={() => loadDetails()}
+            />
+          )}
         </>,
+        document.body
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <tr>
+          <td colSpan={6} className="p-0 border-0 h-0">
+            <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
+              <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Trainer</h3>
+                <p className="text-slate-500 mb-6">
+                  Are you sure you want to remove <span className="font-semibold text-slate-900">{trainer.name}</span>?
+                </p>
+                <div className="flex gap-3 pb-safe">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50"
+                  >
+                    {isDeleting ? 'Removing...' : 'Remove'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* Remove PT Confirmation Modal */}
+      {ptToDelete && (
+        <tr>
+          <td colSpan={6} className="p-0 border-0 h-0">
+            <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setPtToDelete(null)}></div>
+              <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove PT Client</h3>
+                <p className="text-slate-500 mb-6">
+                  Are you sure you want to unassign this PT client?
+                </p>
+                <div className="flex gap-3 pb-safe">
+                  <button
+                    onClick={() => setPtToDelete(null)}
+                    className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeletePt}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* Collect PT Payment Modal */}
+      {paymentPt && createPortal(
+        <CollectPtPaymentModal 
+          assignment={paymentPt} 
+          onClose={() => setPaymentPt(null)}
+          onSuccess={() => loadDetails()}
+        />,
         document.body
       )}
     </>

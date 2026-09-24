@@ -4,7 +4,7 @@ export default function Loading() {
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
         <div className="flex justify-between items-center">
           <div>
-            <div className="w-48 h-10 bg-slate-200 rounded-lg animate-pulse mb-2" />
+            <div className="w-48 h-7 md:h-8 bg-slate-200 rounded-lg animate-pulse mb-2" />
             <div className="w-64 h-5 bg-slate-200 rounded animate-pulse" />
           </div>
           <div className="hidden md:block w-32 h-10 bg-slate-200 rounded-lg animate-pulse" />

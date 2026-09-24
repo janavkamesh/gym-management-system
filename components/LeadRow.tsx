@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { updateLeadOutcome } from '@/lib/actions/leads';
+import { logActivity } from '@/lib/activity-log';
 import { useToast } from './ToastProvider';
 import { ChevronDown, Phone } from 'lucide-react';
 import Tooltip from './Tooltip';
@@ -20,6 +21,22 @@ export default function LeadRow({ lead }: { lead: any }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+  const lastWaClick = useRef<number>(0);
+
+  const handleWaClick = () => {
+    const now = Date.now();
+    if (now - lastWaClick.current > 3000) {
+      lastWaClick.current = now;
+      logActivity({
+        category: 'WhatsApp',
+        action: 'WhatsApp opened',
+        description: `Opened WhatsApp chat for ${lead.name}`,
+        entityType: 'lead',
+        entityId: lead.id,
+        entityName: lead.name
+      }).catch(console.error);
+    }
+  };
 
   const outcomes = ['Pending', 'Joined', 'Not Interested', 'No Response'];
 
@@ -114,20 +131,20 @@ export default function LeadRow({ lead }: { lead: any }) {
 
   return (
     <tr className="hover:bg-slate-50 transition-colors group">
-      <td className="px-4 md:px-6 py-4">
+      <td className="px-4 md:px-6 py-4 text-left">
         <Tooltip content={lead.name} position="bottom">
           <div className="font-medium text-slate-900 truncate max-w-37.5 md:max-w-50 cursor-default">
             {lead.name}
           </div>
         </Tooltip>
       </td>
-      <td className="px-4 md:px-6 py-4 text-slate-600">
+      <td className="px-4 md:px-6 py-4 text-left text-slate-600">
         {lead.phone}
       </td>
-      <td className="px-4 md:px-6 py-4 text-slate-600">
+      <td className="px-4 md:px-6 py-4 text-left text-slate-600">
         {new Date(lead.promised_date).toLocaleDateString('en-GB')}
       </td>
-      <td className="px-4 md:px-6 py-4">
+      <td className="px-4 md:px-6 py-4 text-left">
         <div>
           <button
             ref={buttonRef}
@@ -188,6 +205,7 @@ export default function LeadRow({ lead }: { lead: any }) {
             href={`https://wa.me/${cleanPhone(lead.phone)}`}
             target="_blank" 
             rel="noopener noreferrer"
+            onClick={handleWaClick}
             className="inline-flex items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md bg-green-50 hover:bg-green-100 text-green-600 transition-colors touch-manipulation active:scale-95 duration-120"
           >
             <WhatsAppIcon size={18} />

@@ -5,8 +5,9 @@ import {
   getProjectedRevenue, 
   getRevenueSplit, 
   getPaymentMethodSplit, 
-  getMonthlyRevenueTrend 
+  getTrendPayments 
 } from '@/lib/queries/financials';
+import { getDistinctCategories } from '@/lib/queries/transactions';
 import FinancialsClient from '../../components/FinancialsClient';
 
 export const dynamic = 'force-dynamic';
@@ -19,17 +20,23 @@ export default async function FinancialsPage() {
   let projectedRevenueData: number | null = 0;
   let revenueSplitData: { newRevenue: number; renewalRevenue: number } | null = { newRevenue: 0, renewalRevenue: 0 };
   let paymentMethodSplitData: { Cash: number; UPI: number; Card: number } | null = { Cash: 0, UPI: 0, Card: 0 };
-  let monthlyTrendData: any[] | null = [];
+  let initialTrendPaymentsData: any[] | null = [];
+  let distinctCategories: string[] = [];
   let initialError: string | undefined;
+
+  const now = new Date();
+  const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
   try {
     const results = await Promise.allSettled([
-      getExpenses(supabase),
-      getProfitability(supabase),
-      getProjectedRevenue(supabase),
-      getRevenueSplit(supabase),
-      getPaymentMethodSplit(supabase),
-      getMonthlyRevenueTrend(supabase)
+      getExpenses(),
+      getProfitability(),
+      getProjectedRevenue(),
+      getRevenueSplit(),
+      getPaymentMethodSplit(),
+      getTrendPayments(initialStart, initialEnd),
+      getDistinctCategories()
     ]);
 
     // Check if ANY of them failed to trigger the global toast
@@ -51,7 +58,8 @@ export default async function FinancialsPage() {
     projectedRevenueData = results[2].status === 'fulfilled' ? results[2].value : null;
     revenueSplitData = results[3].status === 'fulfilled' ? results[3].value : null;
     paymentMethodSplitData = results[4].status === 'fulfilled' ? results[4].value : null;
-    monthlyTrendData = results[5].status === 'fulfilled' ? results[5].value : null;
+    initialTrendPaymentsData = results[5].status === 'fulfilled' ? results[5].value : null;
+    distinctCategories = results[6].status === 'fulfilled' ? results[6].value : [];
 
   } catch (error) {
     initialError = "Failed to load financials. Check your connection.";
@@ -65,7 +73,8 @@ export default async function FinancialsPage() {
         projectedRevenue={projectedRevenueData}
         revenueSplit={revenueSplitData}
         paymentMethodSplit={paymentMethodSplitData}
-        monthlyTrend={monthlyTrendData}
+        initialTrendPayments={initialTrendPaymentsData}
+        distinctCategories={distinctCategories}
         initialError={initialError}
       />
     </div>

@@ -51,9 +51,9 @@ export default function AddLeadModal({ onClose }: { onClose: () => void }) {
       onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-slate-200 shrink-0">
-          <h2 className="text-xl font-semibold text-slate-900">Add Lead</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
+        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
+          <h2 className="text-xl font-semibold text-white">Add Lead</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
             <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
           </button>
         </div>

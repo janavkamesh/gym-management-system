@@ -27,6 +27,7 @@ export async function getExpiringMembers() {
   const { data, error } = await supabase
     .from('members')
     .select('*, plans(*)')
+    .is('archived_at', null)
     .eq('user_id', userId)
     .lte('expiry_date', thresholdStr)
     .order('expiry_date', { ascending: true })
@@ -77,6 +78,7 @@ export async function getReviewPrompts() {
   const { data, error } = await supabase
     .from('members')
     .select('*, plans(*)')
+    .is('archived_at', null)
     .eq('user_id', userId)
     .eq('join_date', minus30Str)
     .order('name', { ascending: true })

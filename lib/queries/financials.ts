@@ -1,32 +1,44 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+'use server';
 
-export async function getExpenses(supabase: SupabaseClient) {
+import { createClient } from '../supabase/server';
+
+export async function getExpenses() {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
+    .is('is_voided', false)
     .order('date', { ascending: false })
 
   if (error) throw error
   return data || []
 }
 
-export async function getProfitability(supabase: SupabaseClient) {
-  // As assumed in the plan, calculating for Current Calendar Month
-  const now = new Date()
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+export async function getProfitability(fromDate?: string, toDate?: string) {
+  const supabase = await createClient();
+  
+  let expQuery = supabase.from('expenses').select('amount').is('is_voided', false)
+  let payQuery = supabase.from('payments').select('amount').is('is_voided', false)
 
-  const { data: expenses, error: expError } = await supabase
-    .from('expenses')
-    .select('amount')
-    .gte('date', firstDayOfMonth)
+  if (fromDate) {
+    expQuery = expQuery.gte('date', fromDate)
+    payQuery = payQuery.gte('date', fromDate)
+  } else {
+    const now = new Date()
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    expQuery = expQuery.gte('date', firstDayOfMonth)
+    payQuery = payQuery.gte('date', firstDayOfMonth)
+  }
 
+  if (toDate) {
+    expQuery = expQuery.lte('date', toDate)
+    payQuery = payQuery.lte('date', toDate)
+  }
+
+  const { data: expenses, error: expError } = await expQuery
   if (expError) throw expError
 
-  const { data: payments, error: payError } = await supabase
-    .from('payments')
-    .select('amount')
-    .gte('date', firstDayOfMonth)
-
+  const { data: payments, error: payError } = await payQuery
   if (payError) throw payError
 
   const totalExpenses = (expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
@@ -39,9 +51,8 @@ export async function getProfitability(supabase: SupabaseClient) {
   }
 }
 
-export async function getProjectedRevenue(supabase: SupabaseClient) {
-  // Same logic as Dashboard Action List: members expiring soon or already expired
-  // Projected revenue assumes they will renew their current plan
+export async function getProjectedRevenue() {
+  const supabase = await createClient();
   
   const { data: members, error } = await supabase
     .from('members')
@@ -59,7 +70,6 @@ export async function getProjectedRevenue(supabase: SupabaseClient) {
     const diffTime = expiry.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     
-    // Status thresholds: Yellow (0-3 days) or Red (<0 days)
     if (diffDays <= 3) {
       projectedRevenue += Number((Array.isArray(member.plans) ? member.plans[0] : member.plans)?.price || 0)
     }
@@ -68,17 +78,27 @@ export async function getProjectedRevenue(supabase: SupabaseClient) {
   return projectedRevenue
 }
 
-export async function getRevenueSplit(supabase: SupabaseClient) {
-  // Current Month New vs Renewal
-  const now = new Date()
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-
-  // We need payments joined with member join_date
-  // Since payments -> members is a relation, we can fetch it
-  const { data: payments, error } = await supabase
+export async function getRevenueSplit(fromDate?: string, toDate?: string) {
+  const supabase = await createClient();
+  
+  let query = supabase
     .from('payments')
     .select('amount, date, member_id, members!inner(join_date)')
-    .gte('date', firstDayOfMonth)
+    .is('is_voided', false)
+
+  if (fromDate) {
+    query = query.gte('date', fromDate)
+  } else {
+    const now = new Date()
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    query = query.gte('date', firstDayOfMonth)
+  }
+
+  if (toDate) {
+    query = query.lte('date', toDate)
+  }
+
+  const { data: payments, error } = await query
 
   if (error) throw error
 
@@ -92,7 +112,6 @@ export async function getRevenueSplit(supabase: SupabaseClient) {
     const diffTime = paymentDate.getTime() - joinDate.getTime()
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
-    // Assumption: If payment is made within 3 days of joining, it's "New Revenue"
     if (diffDays <= 3 && diffDays >= -1) {
       newRevenue += Number(payment.amount)
     } else {
@@ -103,15 +122,27 @@ export async function getRevenueSplit(supabase: SupabaseClient) {
   return { newRevenue, renewalRevenue }
 }
 
-export async function getPaymentMethodSplit(supabase: SupabaseClient) {
-  // Current Month Pie Chart
-  const now = new Date()
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-
-  const { data: payments, error } = await supabase
+export async function getPaymentMethodSplit(fromDate?: string, toDate?: string) {
+  const supabase = await createClient();
+  
+  let query = supabase
     .from('payments')
     .select('amount, method')
-    .gte('date', firstDayOfMonth)
+    .is('is_voided', false)
+
+  if (fromDate) {
+    query = query.gte('date', fromDate)
+  } else {
+    const now = new Date()
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    query = query.gte('date', firstDayOfMonth)
+  }
+
+  if (toDate) {
+    query = query.lte('date', toDate)
+  }
+
+  const { data: payments, error } = await query
 
   if (error) throw error
 
@@ -122,7 +153,6 @@ export async function getPaymentMethodSplit(supabase: SupabaseClient) {
     if (split[method] !== undefined) {
       split[method] += Number(p.amount)
     } else {
-      // Default to cash if invalid
       split.Cash += Number(p.amount)
     }
   })
@@ -130,22 +160,21 @@ export async function getPaymentMethodSplit(supabase: SupabaseClient) {
   return split
 }
 
-export async function getMonthlyRevenueTrend(supabase: SupabaseClient) {
-  // Last 6 months bar chart
+export async function getMonthlyRevenueTrend() {
+  const supabase = await createClient();
   const now = new Date()
   
-  // Calculate date 6 months ago (1st of that month)
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
   const startDateStr = sixMonthsAgo.toISOString().split('T')[0]
 
   const { data: payments, error } = await supabase
     .from('payments')
     .select('amount, date')
+    .is('is_voided', false)
     .gte('date', startDateStr)
 
   if (error) throw error
 
-  // Initialize array for the last 6 months (chronological)
   const months: { month: string, year: number, revenue: number, monthIndex: number }[] = []
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
@@ -169,4 +198,16 @@ export async function getMonthlyRevenueTrend(supabase: SupabaseClient) {
   })
 
   return months.map(m => ({ month: m.month, revenue: m.revenue }))
+}
+
+export async function getTrendPayments(fromDate?: string, toDate?: string) {
+  const supabase = await createClient();
+  let query = supabase.from('payments').select('amount, date').is('is_voided', false);
+  
+  if (fromDate) query = query.gte('date', fromDate);
+  if (toDate) query = query.lte('date', toDate);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 }

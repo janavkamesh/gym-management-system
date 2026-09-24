@@ -1,18 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { computeStatusColor } from '@/lib/utils/status';
 import { deleteMember } from '@/lib/actions/members';
 import { generateWhatsAppLink } from '@/lib/utils/whatsapp';
+import { logActivity } from '@/lib/activity-log';
 import { useToast } from './ToastProvider';
-import { MessageCircle, Trash2, Edit2, X, Plus } from 'lucide-react';
+import { MessageCircle, Trash2, Edit2, X, Plus, History } from 'lucide-react';
 import Tooltip from './Tooltip';
 import CollectPaymentModal from './CollectPaymentModal';
+import PaymentHistoryModal from './PaymentHistoryModal';
+import Badge from './ui/Badge';
 
 interface MemberRowProps {
   member: any;
-  onDeleted: () => void;
+  onDeleted?: () => void;
   onEdit?: () => void;
+  isArchived?: boolean;
+  onRestore?: (id: string) => Promise<void>;
+  isHighlighted?: boolean;
+  trainers?: any[];
 }
 
 export const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
@@ -21,11 +28,29 @@ export const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function MemberRow({ member, onDeleted, onEdit }: MemberRowProps) {
+export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRestore, isHighlighted, trainers }: MemberRowProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCollectModal, setShowCollectModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const { showToast } = useToast();
+  const lastWaClick = useRef<number>(0);
+
+  const handleWaClick = () => {
+    const now = Date.now();
+    if (now - lastWaClick.current > 3000) {
+      lastWaClick.current = now;
+      logActivity({
+        category: 'WhatsApp',
+        action: 'WhatsApp opened',
+        description: `Opened WhatsApp chat for ${member.name}`,
+        entityType: 'member',
+        entityId: member.id,
+        entityName: member.name
+      }).catch(console.error);
+    }
+  };
 
   const statusColor = computeStatusColor(member.expiry_date);
   
@@ -36,6 +61,7 @@ export default function MemberRow({ member, onDeleted, onEdit }: MemberRowProps)
   };
 
   const status = getStatusDisplay();
+  const hasActivePt = member.pt_assignments?.some((pt: any) => pt.is_active);
 
   const getDaysLeft = () => {
     const diffTime = new Date(member.expiry_date).getTime() - new Date().getTime();
@@ -51,82 +77,125 @@ export default function MemberRow({ member, onDeleted, onEdit }: MemberRowProps)
     try {
       await deleteMember(member.id);
       showToast('Member removed successfully', 'success');
-      onDeleted();
+      if (onDeleted) onDeleted();
     } catch (error) {
       showToast('Failed to remove member. Check your connection.', 'error');
       setIsDeleting(false);
     }
   };
 
+  const handleRestore = async () => {
+    if (!onRestore) return;
+    setIsRestoring(true);
+    try {
+      await onRestore(member.id);
+      showToast('Member restored successfully', 'success');
+    } catch (error) {
+      showToast('Failed to restore member. Check your connection.', 'error');
+      setIsRestoring(false);
+    }
+  };
+
   return (
     <>
-    <tr className="hover:bg-slate-50 transition-colors">
-      <td className="px-4 md:px-6 py-3.5 md:py-3 font-medium whitespace-nowrap max-w-50 overflow-hidden text-ellipsis">
+    <tr className={`hover:bg-slate-50 transition-all duration-300 ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}>
+      <td className={`relative px-4 md:px-6 py-3.5 md:py-3 font-medium text-left whitespace-nowrap max-w-50 overflow-hidden text-ellipsis ${isArchived ? 'opacity-50' : ''}`}>
+        {hasActivePt && (
+          <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-blue-600" />
+        )}
         {member.name}
       </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 text-slate-500 whitespace-nowrap text-sm">
+      <td className={`px-4 md:px-6 py-3.5 md:py-3 text-left text-slate-500 whitespace-nowrap text-sm ${isArchived ? 'opacity-50' : ''}`}>
         {member.plans?.plan_name || '-'}
       </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-sm text-slate-500">
+      <td className={`px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left text-sm text-slate-500 ${isArchived ? 'opacity-50' : ''}`}>
         {getDaysLeft()}
       </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap">
-        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${status.badge}`}>
+      <td className={`px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left ${isArchived ? 'opacity-50' : ''}`}>
+        <Badge className={status.badge}>
           {status.text}
-        </span>
+        </Badge>
       </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-        <Tooltip content="Amount Collected">
+      {isArchived ? (
+        <td className="px-4 md:px-6 py-3.5 md:py-3 text-right" colSpan={5}>
           <button
-            onClick={() => setShowCollectModal(true)}
-            className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+            onClick={handleRestore}
+            disabled={isRestoring}
+            className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
           >
-            <Plus size={18} strokeWidth={2.5} />
+            {isRestoring ? (
+              <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
+            ) : null}
+            Restore
           </button>
-        </Tooltip>
-      </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-        <Tooltip content="Message on WhatsApp">
-          <a
-            href={generateWhatsAppLink(member)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
-          >
-            <WhatsAppIcon size={18} />
-          </a>
-        </Tooltip>
-      </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-        {onEdit ? (
-          <Tooltip content="Edit Member">
-            <button
-              onClick={onEdit}
-              className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md text-blue-500 hover:text-blue-700 hover:bg-blue-50 bg-blue-50/50 transition-colors active:scale-95 touch-manipulation"
-            >
-              <Edit2 size={18} />
-            </button>
-          </Tooltip>
-        ) : (
-          <div className="w-12 h-12 md:w-9 md:h-9 mx-auto" />
-        )}
-      </td>
-      <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-        <Tooltip content="Remove Member">
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            disabled={isDeleting}
-            className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
-          >
-            <Trash2 size={18} strokeWidth={2.5} />
-          </button>
-        </Tooltip>
-      </td>
+        </td>
+      ) : (
+        <>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+            <Tooltip content="Amount Collected">
+              <button
+                onClick={() => setShowCollectModal(true)}
+                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+              >
+                <Plus size={18} strokeWidth={2.5} />
+              </button>
+            </Tooltip>
+          </td>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+            <Tooltip content="Payment History">
+              <button
+                onClick={() => setShowHistoryModal(true)}
+                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+              >
+                <History size={18} strokeWidth={2.5} />
+              </button>
+            </Tooltip>
+          </td>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+            <Tooltip content="Message on WhatsApp">
+              <a
+                href={generateWhatsAppLink(member)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleWaClick}
+                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+              >
+                <WhatsAppIcon size={18} />
+              </a>
+            </Tooltip>
+          </td>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+            {onEdit ? (
+              <Tooltip content="Edit Member">
+                <button
+                  onClick={onEdit}
+                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md text-blue-500 hover:text-blue-700 hover:bg-blue-50 bg-blue-50/50 transition-colors active:scale-95 touch-manipulation"
+                >
+                  <Edit2 size={18} />
+                </button>
+              </Tooltip>
+            ) : (
+              <div className="w-12 h-12 md:w-9 md:h-9 mx-auto" />
+            )}
+          </td>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+            <Tooltip content="Remove Member">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                disabled={isDeleting}
+                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
+              >
+                <Trash2 size={18} strokeWidth={2.5} />
+              </button>
+            </Tooltip>
+          </td>
+        </>
+      )}
     </tr>
 
     {showCollectModal && (
       <tr>
-        <td colSpan={8} className="p-0 border-0 h-0">
+        <td colSpan={9} className="p-0 border-0 h-0">
           <CollectPaymentModal 
             member={member} 
             onClose={() => setShowCollectModal(false)} 
@@ -135,15 +204,26 @@ export default function MemberRow({ member, onDeleted, onEdit }: MemberRowProps)
       </tr>
     )}
 
+    {showHistoryModal && (
+      <tr>
+        <td colSpan={9} className="p-0 border-0 h-0">
+          <PaymentHistoryModal 
+            member={member} 
+            onClose={() => setShowHistoryModal(false)} 
+          />
+        </td>
+      </tr>
+    )}
+
     {showDeleteModal && (
       <tr>
-        <td colSpan={8} className="p-0 border-0 h-0">
+        <td colSpan={9} className="p-0 border-0 h-0">
           <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
             <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Member</h3>
               <p className="text-slate-500 mb-6">
-                Are you sure you want to permanently remove <span className="font-semibold text-slate-900">{member.name}</span>? This action cannot be undone.
+                Are you sure you want to remove <span className="font-semibold text-slate-900">{member.name}</span>?
               </p>
               <div className="flex gap-3 pb-safe">
                 <button
@@ -157,7 +237,7 @@ export default function MemberRow({ member, onDeleted, onEdit }: MemberRowProps)
                   disabled={isDeleting}
                   className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50"
                 >
-                  {isDeleting ? 'Removing...' : 'Delete'}
+                  {isDeleting ? 'Removing...' : 'Remove'}
                 </button>
               </div>
             </div>

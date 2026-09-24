@@ -6,26 +6,42 @@ import { createMember, updateMember } from '@/lib/actions/members';
 import { useToast } from './ToastProvider';
 import { X, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
+import { Dropdown } from './ui/Dropdown';
 
-export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans: any[]; onClose: (updatedMember?: any) => void; memberToEdit?: any }) {
+export default function AddMemberModal({ plans, trainers = [], onClose, memberToEdit }: { plans: any[]; trainers?: any[]; onClose: (updatedMember?: any) => void; memberToEdit?: any }) {
   const [name, setName] = useState(memberToEdit?.name || '');
   const [phone, setPhone] = useState(memberToEdit?.phone || '');
+  
+  const activePtAssignment = memberToEdit?.pt_assignments?.find((pt: any) => pt.is_active);
+  const [hasPt, setHasPt] = useState(!!activePtAssignment);
+  const [trainerId, setTrainerId] = useState(activePtAssignment?.trainer_id || '');
   
   // Custom Dropdown state
   const [planId, setPlanId] = useState(memberToEdit?.plan_id || '');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [ptFee, setPtFee] = useState(activePtAssignment?.fee_amount ? activePtAssignment.fee_amount.toString() : '');
+  const [trainerShare, setTrainerShare] = useState(activePtAssignment?.trainer_share ? activePtAssignment.trainer_share.toString() : '');
+  const [ptDurationDays, setPtDurationDays] = useState(activePtAssignment?.duration_days ? activePtAssignment.duration_days.toString() : '');
+  const ptDurationDropdownRef = useRef<HTMLDivElement>(null);
+  const [isPtDurationDropdownOpen, setIsPtDurationDropdownOpen] = useState(false);
+
   const [joinDate, setJoinDate] = useState(memberToEdit?.join_date || new Date().toISOString().split('T')[0]);
   const [expiryDate, setExpiryDate] = useState(memberToEdit?.expiry_date || '');
   const [isExpiryManuallyEdited, setIsExpiryManuallyEdited] = useState(!!memberToEdit);
   
-  const [amount, setAmount] = useState('');
+  const firstPayment = memberToEdit?.payments?.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  const [amount, setAmount] = useState(firstPayment ? firstPayment.amount.toString() : '');
+  const [paymentId] = useState(firstPayment?.id || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { showToast } = useToast();
 
-  // Close dropdown on outside click
+  const trainerDropdownRef = useRef<HTMLDivElement>(null);
+  const [isTrainerDropdownOpen, setIsTrainerDropdownOpen] = useState(false);
+
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -34,6 +50,20 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
         !(event.target as Element).closest?.('#plan-dropdown-portal')
       ) {
         setIsDropdownOpen(false);
+      }
+      if (
+        trainerDropdownRef.current && 
+        !trainerDropdownRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest?.('#trainer-dropdown-portal')
+      ) {
+        setIsTrainerDropdownOpen(false);
+      }
+      if (
+        ptDurationDropdownRef.current && 
+        !ptDurationDropdownRef.current.contains(event.target as Node) &&
+        !(event.target as Element).closest?.('#pt-duration-dropdown-portal')
+      ) {
+        setIsPtDurationDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -58,7 +88,9 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
 
   // Validation
   const isValidPhone = /^\d{10}$/.test(phone);
-  const isValid = name.trim() !== '' && isValidPhone && planId !== '' && joinDate !== '';
+  const isPtValid = !hasPt || (hasPt && trainerId !== '' && ptFee.trim() !== '' && trainerShare.trim() !== '' && ptDurationDays !== '');
+  const isAmountValid = amount.trim() !== '';
+  const isValid = name.trim() !== '' && isValidPhone && planId !== '' && joinDate !== '' && isPtValid && isAmountValid;
 
   const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setExpiryDate(e.target.value);
@@ -86,11 +118,19 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
           plan_id: planId,
           join_date: joinDate,
           expiry_date: expiryDate || undefined,
+          pt: { 
+            hasPt, 
+            trainerId, 
+            ptFee: ptFee ? Number(ptFee) : undefined, 
+            trainerShare: trainerShare ? Number(trainerShare) : undefined, 
+            ptDurationDays: ptDurationDays ? Number(ptDurationDays) : undefined 
+          },
+          payment: { id: paymentId, amount: amount ? Number(amount) : undefined },
         });
         showToast('Member updated successfully', 'success');
         onClose(updated);
       } else {
-        await createMember({
+        const newMember = await createMember({
           name,
           phone,
           plan_id: planId,
@@ -98,6 +138,13 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
           expiry_date: expiryDate || undefined,
           payment_amount: amount ? Number(amount) : undefined,
           payment_method: 'Cash',
+          pt: { 
+            hasPt, 
+            trainerId, 
+            ptFee: ptFee ? Number(ptFee) : undefined, 
+            trainerShare: trainerShare ? Number(trainerShare) : undefined, 
+            ptDurationDays: ptDurationDays ? Number(ptDurationDays) : undefined 
+          },
         });
         showToast('Member added successfully', 'success');
         onClose();
@@ -117,15 +164,15 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
       onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-slate-200 shrink-0">
-          <h2 className="text-xl font-semibold text-slate-900">{memberToEdit ? 'Edit Member' : 'Add Member'}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
+        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
+          <h2 className="text-xl font-semibold text-white">{memberToEdit ? 'Edit Member' : 'Add Member'}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
             <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="p-6 overflow-y-auto flex-1">
+          <div className="px-6 pt-3 pb-3 overflow-y-auto flex-1">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
             {/* Row 1: Name and Phone */}
             <div>
@@ -156,53 +203,18 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
             </div>
 
             {/* Row 2: Plan and Join Date */}
-            <div className="relative" ref={dropdownRef}>
+            <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Plan <span className="text-red-500">*</span></label>
-              <button
-                type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-10.5 bg-white flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-600 transition-shadow"
-              >
-                <span className={selectedPlan ? 'text-slate-900' : 'text-slate-400'}>
-                  {selectedPlan ? selectedPlan.plan_name : 'Select a plan'}
-                </span>
-                <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isDropdownOpen && typeof document !== 'undefined' && createPortal(
-                <div 
-                  id="plan-dropdown-portal"
-                  className="fixed z-9999 bg-white border border-slate-200 rounded-lg shadow-md max-h-60 overflow-y-auto mt-1"
-                  style={{
-                    top: dropdownRef.current?.getBoundingClientRect().bottom,
-                    left: dropdownRef.current?.getBoundingClientRect().left,
-                    width: dropdownRef.current?.getBoundingClientRect().width,
-                  }}
-                >
-                  <ul className="py-1">
-                    {plans.length === 0 ? (
-                      <li className="px-4 py-3 text-sm text-slate-500 text-center">No plans available</li>
-                    ) : (
-                      plans.map((plan) => (
-                        <li key={plan.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPlanId(plan.id);
-                              setIsDropdownOpen(false);
-                              setIsExpiryManuallyEdited(false);
-                            }}
-                            className="w-full text-left px-4 py-3 md:py-2 text-sm hover:bg-slate-50 transition-colors flex flex-col md:flex-row md:items-center md:justify-between"
-                          >
-                            <span className="font-medium text-slate-900">{plan.plan_name}</span>
-                          </button>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>,
-                document.body
-              )}
+              <Dropdown
+                value={planId}
+                onChange={(val) => {
+                  setPlanId(val);
+                  setIsExpiryManuallyEdited(false);
+                }}
+                options={plans.map(p => ({ value: p.id, label: p.plan_name }))}
+                placeholder="Select a plan"
+                className="w-full"
+              />
             </div>
 
             <div>
@@ -231,28 +243,104 @@ export default function AddMemberModal({ plans, onClose, memberToEdit }: { plans
               />
             </div>
 
-            {!memberToEdit && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Amount Paid <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span></label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-slate-500 font-medium">₹</span>
-                  </div>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    placeholder="e.g. 1500"
-                    min="0"
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Amount <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 font-medium">₹</span>
+                </div>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  placeholder="e.g. 1500"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {/* Row 4: Personal Training and Trainer */}
+            <div className={hasPt ? 'md:col-span-2' : ''}>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Personal Training</label>
+              <button
+                type="button"
+                onClick={() => setHasPt(!hasPt)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors mt-2 ${
+                  hasPt ? 'bg-blue-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    hasPt ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {hasPt && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Trainer <span className="text-red-500">*</span></label>
+                  <Dropdown
+                    value={trainerId}
+                    onChange={setTrainerId}
+                    options={trainers.map((t: any) => ({ value: t.id, label: t.name }))}
+                    placeholder="Select a trainer"
+                    className="w-full"
                   />
                 </div>
-              </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">PT Fee <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-slate-500 font-medium">₹</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={ptFee}
+                      onChange={(e) => setPtFee(e.target.value)}
+                      className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      placeholder="e.g. 5000"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Trainer's Share (%) <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    value={trainerShare}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (val >= 0 && val <= 100) setTrainerShare(e.target.value);
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    placeholder="e.g. 50"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Duration <span className="text-red-500">*</span></label>
+                  <Dropdown
+                    value={ptDurationDays}
+                    onChange={setPtDurationDays}
+                    options={plans.map(p => ({ value: p.duration_days.toString(), label: p.plan_name }))}
+                    placeholder="Select duration"
+                    className="w-full"
+                  />
+                </div>
+              </>
             )}
+
           </div>
           </div>
 
-          <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0 flex justify-end gap-3">
+          <div className="px-6 pt-2 pb-4 bg-white shrink-0 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}

@@ -12,6 +12,7 @@ export async function getTrainers(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('trainers')
     .select('*')
+    .is('archived_at', null)
     .eq('user_id', userId)
     .order('name', { ascending: true })
 
@@ -31,6 +32,7 @@ export async function getPtAssignments(supabase: SupabaseClient, trainerId: stri
       member:members(name)
     `)
     .eq('trainer_id', trainerId)
+    .eq('is_active', true)
     .order('assigned_date', { ascending: false })
 
   if (error) {
@@ -79,25 +81,31 @@ export async function calculateMonthlySalary(supabase: SupabaseClient, trainerId
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0]
   const endDate = new Date(year, month, 0).toISOString().split('T')[0] // Last day of month
 
-  const { data: assignments, error: assignmentsError } = await supabase
-    .from('pt_assignments')
-    .select('member_id, commission_percent')
+  const { data: ptPayments, error: ptError } = await supabase
+    .from('payments')
+    .select('amount, member_id')
     .eq('trainer_id', trainerId)
+    .eq('payment_type', 'PT')
+    .is('is_voided', false)
+    .gte('date', startDate)
+    .lte('date', endDate)
 
   let totalCommission = 0
 
-  if (!assignmentsError && assignments && assignments.length > 0) {
-    for (const assignment of assignments) {
-      const { data: payments } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('member_id', assignment.member_id)
-        .gte('date', startDate)
-        .lte('date', endDate)
+  if (!ptError && ptPayments && ptPayments.length > 0) {
+    for (const payment of ptPayments) {
+      const { data: assignment } = await supabase
+        .from('pt_assignments')
+        .select('commission_percent, trainer_share')
+        .eq('trainer_id', trainerId)
+        .eq('member_id', payment.member_id)
+        .order('assigned_date', { ascending: false })
+        .limit(1)
+        .single()
 
-      if (payments) {
-        const memberTotalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0)
-        totalCommission += memberTotalPaid * (Number(assignment.commission_percent) / 100)
+      if (assignment) {
+        const sharePercent = Number(assignment.trainer_share || assignment.commission_percent || 0)
+        totalCommission += Number(payment.amount) * (sharePercent / 100)
       }
     }
   }
@@ -105,21 +113,24 @@ export async function calculateMonthlySalary(supabase: SupabaseClient, trainerId
   // 3. Sum undeducted salary advances for that month
   const { data: advances, error: advancesError } = await supabase
     .from('salary_advances')
-    .select('amount')
+    .select('id, amount')
     .eq('trainer_id', trainerId)
     .eq('deducted_flag', false)
     .gte('date', startDate)
     .lte('date', endDate)
 
   let totalAdvances = 0
+  let advanceIds: string[] = []
   if (!advancesError && advances) {
     totalAdvances = advances.reduce((sum, adv) => sum + Number(adv.amount), 0)
+    advanceIds = advances.map(adv => adv.id)
   }
 
   return {
     baseSalary,
     totalCommission,
     totalAdvances,
-    netPayable: baseSalary + totalCommission - totalAdvances
+    netPayable: baseSalary + totalCommission - totalAdvances,
+    advanceIds
   }
 }

@@ -56,10 +56,15 @@ members: id, user_id (FK), plan_id (FK), name, phone,
 leads: id, user_id (FK), name, phone, promised_date,
        outcome, converted_to_member_id (nullable FK)
 
-payments: id, member_id (FK), amount, method (Cash/UPI/Card), date
+payments: id, member_id (FK), amount, method (Cash/UPI/Card), date,
+          collected_date, payment_type, trainer_id (FK),
+          period_start, period_end, is_voided, voided_at, void_reason,
+          is_edited, edited_at, edit_count
 
 expenses: id, user_id (FK), category, amount,
-          recurring_flag, receipt_url, date
+          recurring_flag, receipt_url, date,
+          is_voided, voided_at, void_reason, is_edited, edited_at,
+          linked_entity_type, linked_entity_id
 
 trainers: id, user_id (FK), name, phone, base_salary, join_date
 
@@ -67,7 +72,17 @@ pt_assignments: id, trainer_id (FK), member_id (FK),
                  commission_percent, assigned_date
 
 salary_advances: id, trainer_id (FK), amount, date,
-                   note, deducted_flag
+                   note, deducted_flag, salary_payment_id (nullable FK)
+
+salary_payments: id, trainer_id (FK), month_start,
+                 base_salary_snapshot, commission_snapshot,
+                 advances_deducted_snapshot, net_paid, paid_date,
+                 method, note, linked_expense_id (FK),
+                 is_voided, voided_at, void_reason, user_id
+
+activity_logs: id, user_id (FK), category, action, description,
+               entity_type, entity_id, entity_name, amount, metadata,
+               created_at
 ```
 
 **Database architecture decision:** Relational SQL (Postgres/Supabase). Data is highly connected — payments belong to members, leads convert into members, plans are referenced by members, PT assignments link trainers to members — this requires foreign keys and joins, which a NoSQL store handles poorly.
@@ -90,6 +105,12 @@ Applied identically on Dashboard and Members tab:
 
 **Lead → Member conversion:** `leads.converted_to_member_id` links a lead to the resulting member record once they sign up.
 
+**Expiry & Due Dates (Derived logic):** `expiry_date` and `next_pt_due_date` are derived values. They are automatically recalculated whenever a payment is collected or voided. They represent the latest `period_end` of all non-voided payments in the system for that member/assignment. If no payments exist, it defaults to the join/assignment date.
+
+**Salary Payments:** Salary payments are snapshotted and immutable. They cannot be edited to preserve the exact breakdown of base pay, commission, and advances at the time of payment. They can only be voided (which also voids the linked expense and un-deducts the linked advances) and re-entered.
+
+**Audit log rules:** All business actions are logged permanently to `activity_logs` and cannot be modified or deleted. Categories are fixed. WhatsApp logs mean the app opened a prefilled chat, not that the message was sent.
+
 ---
 
 ## 7. MVP Scope
@@ -108,11 +129,13 @@ Applied identically on Dashboard and Members tab:
 - Payment Method Pie Chart
 - Month-over-Month Bar Chart
 - Trainers: base salary + PT commission tracker, salary advance/loan ledger
+- Activity Logs
 
 > **Scope revision note:** Phase 1's original MVP cut list excluded Projected Revenue, New vs. Renewal Split, the Payment Method Pie Chart, and the MoM Bar Chart. This was overridden in later discussion — **all four are in scope for v1.**
 
 **Cut (not building in v1):**
 - Freeze/Pause audit history (only current freeze state is tracked, not a historical log)
+- "Change Plan" and "Change Commission Rate" (these are planned future actions, not yet built)
 
 ---
 
@@ -213,7 +236,7 @@ Toast Notifications:
 
 ## 11. Layout Rules
 
-- **Navigation:** Bottom nav bar (mobile, 5 icons: Dashboard, Members, Leads, Trainers, Financials) / persistent left sidebar (desktop)
+- **Navigation:** Bottom nav bar (mobile, 5 icons: Dashboard, Members, Leads, Trainers, Financials) / persistent left sidebar (desktop). Activity Logs is a desktop sidebar item (last, above admin) and lives in the top-right admin/profile menu on mobile (bottom bar stays at 5 icons).
 - **Add actions:** Floating Action Button (FAB), bottom-right, positioned just above the bottom nav bar on mobile — not a top-of-page button
 - **Data entry (Add Member/Lead/etc.):** full-screen modal sliding up from bottom (mobile) / centered floating modal (desktop) — Form Inputs → Validation Helpers → Sticky Save/Cancel Footer
 - **Members/Leads lists:** single, clean horizontal row per record — flush edge-to-edge, not boxed cards, to maximize density
@@ -237,6 +260,7 @@ Leads:      "No leads yet" / "Click 'Add Lead' when a walk-in visitor shows inte
 Trainers:   "No trainers added yet" / "Click 'Add Trainer' to start tracking salaries and PT commissions."
 Financials: "No expenses logged yet" / "Click 'Add Expense' to start tracking rent, salaries, and bills."
 Dashboard:  "You're all caught up" / "No members expiring, no pending follow-ups today."
+Activity Logs: "No activity yet" / "Actions like adding members and logging payments will appear here." (Also: "No matching activity" / "Try changing or clearing your filters.")
 ```
 
 **Toast Copy:**
@@ -261,7 +285,7 @@ Error:   "Failed to save. Check your connection."
 ## 14. Per-Tab Feature Specs
 
 ### Tab 1 — Dashboard (Command Center)
-Read-only notification hub, no direct data entry.
+Notification hub that supports full member data entry identical to the Members tab.
 1. **Action List:** members expiring in <3 days, with a "Send Alert" WhatsApp button beside each name.
 2. **Today's Lead Follow-ups:** leads whose promised join date is today.
 3. **Google Review Prompts:** members hitting their 30-day anniversary (from `join_date`) today, with a pre-written WhatsApp review request.
@@ -271,8 +295,9 @@ Single horizontal row per member.
 1. **Status & Filters:** top-level filter tabs — All / Active / Pending Payment. Green/Yellow/Red dots per thresholds in Section 6.
 2. **New Member Welcome:** on creation, generates a `wa.me` link with the welcome message + Gym Rules PDF link.
 3. **Quick-Edit Payment:** "+" button beside pending amounts to log a payment inline (amount + method).
-4. **Freeze/Pause Engine:** start/end date input; suspends account and pushes `expiry_date` forward by the freeze duration.
-5. **One-Click WhatsApp:** global button beside every member's name.
+4. **Member Payment History:** a detailed history view showing all payments (including voided/edited states). Allows editing amounts/dates, voiding mistakes, and sending WhatsApp receipts.
+5. **Freeze/Pause Engine:** start/end date input; suspends account and pushes `expiry_date` forward by the freeze duration.
+6. **One-Click WhatsApp:** global button beside every member's name.
 
 ### Tab 3 — Leads & Enquiries (Walk-in CRM)
 1. **Enquiry & Lead Management:** logs name, phone, promised join date, outcome. Feeds the Dashboard's Today's Follow-ups widget directly.
@@ -280,6 +305,7 @@ Single horizontal row per member.
 ### Tab 4 — Trainers (Staff Management)
 1. **Base Salary vs. PT Commission Tracker:** base pay + commission percentage per assigned PT client (`pt_assignments`).
 2. **Salary Advance/Loans Tracker:** ledger of mid-month advances (`salary_advances`), auto-deducted from end-of-month salary calculation.
+3. **Trainer Salary History:** a history list of finalized salary payments with their snapshotted base/commission/advance breakdowns. Allows paying the salary or voiding past mistakes.
 
 ### Tab 5 — Financials & Analytics (Wealth Tracker)
 1. **Profitability Widget:** Total Revenue − Total Expenses = Net Profit.
@@ -288,6 +314,12 @@ Single horizontal row per member.
 4. **New vs. Renewal Revenue Split:** new walk-in revenue vs. renewal revenue, to show business health.
 5. **Payment Method Pie Chart:** Cash / UPI / Card breakdown, for cash register reconciliation.
 6. **Month-over-Month Bar Chart:** revenue trend across previous months.
+7. **Transactions Table:** A combined, filterable, read-only ledger of all payments (money in) and all expenses (money out), including trainer salary payments (via their linked row). Features infinite scroll and a summary strip reflecting current filters.
+
+### Tab 6 — Activity Logs (read-only)
+1. **Activity Logs:** a permanent record of everything done in your gym.
+2. **Filter card:** search, category, from date, to date, Clear.
+3. **Single table:** single read-only table with infinite scrolling and sticky header.
 
 ---
 
@@ -316,3 +348,5 @@ Within each tab: **Schema → Backend logic (no UI) → Desktop UI wired to real
 - [ ] Leads — full slice
 - [ ] Financials — full slice
 - [ ] Trainers — full slice
+- [x] Activity Logs: backend (table, immutability, helper, wiring)
+- [x] Activity Logs: tab UI
