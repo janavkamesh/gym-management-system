@@ -20,9 +20,11 @@ export async function getProfitability(fromDate?: string, toDate?: string) {
   let expQuery = supabase.from('expenses').select('amount').is('is_voided', false)
   let payQuery = supabase.from('payments').select('amount').is('is_voided', false)
 
-  if (fromDate) {
-    expQuery = expQuery.gte('date', fromDate)
-    payQuery = payQuery.gte('date', fromDate)
+  if (fromDate !== undefined) {
+    if (fromDate !== '') {
+      expQuery = expQuery.gte('date', fromDate)
+      payQuery = payQuery.gte('date', fromDate)
+    }
   } else {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -86,8 +88,10 @@ export async function getRevenueSplit(fromDate?: string, toDate?: string) {
     .select('amount, date, member_id, members!inner(join_date)')
     .is('is_voided', false)
 
-  if (fromDate) {
-    query = query.gte('date', fromDate)
+  if (fromDate !== undefined) {
+    if (fromDate !== '') {
+      query = query.gte('date', fromDate)
+    }
   } else {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -130,8 +134,10 @@ export async function getPaymentMethodSplit(fromDate?: string, toDate?: string) 
     .select('amount, method')
     .is('is_voided', false)
 
-  if (fromDate) {
-    query = query.gte('date', fromDate)
+  if (fromDate !== undefined) {
+    if (fromDate !== '') {
+      query = query.gte('date', fromDate)
+    }
   } else {
     const now = new Date()
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
@@ -210,4 +216,130 @@ export async function getTrendPayments(fromDate?: string, toDate?: string) {
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
+}
+
+export async function getTrendExpenses(fromDate?: string, toDate?: string) {
+  const supabase = await createClient();
+  let query = supabase.from('expenses').select('amount, date').is('is_voided', false);
+  
+  if (fromDate) query = query.gte('date', fromDate);
+  if (toDate) query = query.lte('date', toDate);
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getSixMonthRevenueAndExpenses() {
+  const supabase = await createClient();
+  const now = new Date()
+  
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+  const startDateStr = sixMonthsAgo.toISOString().split('T')[0]
+
+  const { data: payments, error: payError } = await supabase
+    .from('payments')
+    .select('amount, date')
+    .is('is_voided', false)
+    .gte('date', startDateStr)
+
+  if (payError) throw payError
+
+  const { data: expenses, error: expError } = await supabase
+    .from('expenses')
+    .select('amount, date')
+    .is('is_voided', false)
+    .gte('date', startDateStr)
+
+  if (expError) throw expError
+
+  const months: { name: string, year: number, revenue: number, expenses: number, monthIndex: number }[] = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    months.push({
+      name: d.toLocaleString('default', { month: 'short' }),
+      year: d.getFullYear(),
+      revenue: 0,
+      expenses: 0,
+      monthIndex: d.getMonth()
+    })
+  }
+
+  ;(payments || []).forEach(p => {
+    const pDate = new Date(p.date)
+    const pMonth = pDate.getMonth()
+    const pYear = pDate.getFullYear()
+    
+    const bucket = months.find(m => m.monthIndex === pMonth && m.year === pYear)
+    if (bucket) {
+      bucket.revenue += Number(p.amount)
+    }
+  })
+
+  ;(expenses || []).forEach(e => {
+    const eDate = new Date(e.date)
+    const eMonth = eDate.getMonth()
+    const eYear = eDate.getFullYear()
+    
+    const bucket = months.find(m => m.monthIndex === eMonth && m.year === eYear)
+    if (bucket) {
+      bucket.expenses += Number(e.amount)
+    }
+  })
+
+  return months.map(m => ({ name: m.name, revenue: m.revenue, expenses: m.expenses }))
+}
+
+export async function getPlanBreakdown(toDate?: string) {
+  const supabase = await createClient();
+  
+  const targetDateStr = toDate ? toDate : new Date().toISOString().split('T')[0];
+
+  const { data: members, error } = await supabase
+    .from('members')
+    .select('join_date, expiry_date, plans!inner(plan_name)')
+
+  if (error) throw error;
+
+  const breakdown: Record<string, number> = {};
+
+  ;(members || []).forEach((m: any) => {
+    const joinDate = m.join_date;
+    const expiryDate = m.expiry_date;
+    const planName = m.plans?.plan_name || 'Unknown';
+
+    if (joinDate <= targetDateStr && expiryDate >= targetDateStr) {
+      breakdown[planName] = (breakdown[planName] || 0) + 1;
+    }
+  });
+
+  return Object.entries(breakdown).map(([name, count]) => ({ name, value: count }));
+}
+
+export async function getNewVsLostMembers(fromDate?: string, toDate?: string) {
+  const supabase = await createClient();
+  
+  const { data: members, error } = await supabase.from('members').select('join_date, expiry_date');
+  if (error) throw error;
+  
+  const effectiveFrom = fromDate !== undefined ? (fromDate === '' ? '1970-01-01' : fromDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  const effectiveTo = toDate ? toDate : new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const results: { date: string, type: 'New' | 'Lost' }[] = [];
+
+  ;(members || []).forEach((m: any) => {
+    const joinDate = m.join_date;
+    const expiryDate = m.expiry_date;
+
+    if (joinDate >= effectiveFrom && joinDate <= effectiveTo) {
+      results.push({ date: joinDate, type: 'New' });
+    }
+
+    if (expiryDate >= effectiveFrom && expiryDate <= effectiveTo && expiryDate < todayStr) {
+      results.push({ date: expiryDate, type: 'Lost' });
+    }
+  });
+
+  return results;
 }

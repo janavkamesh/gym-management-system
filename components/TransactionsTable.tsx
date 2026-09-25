@@ -17,11 +17,16 @@ export default function TransactionsTable({ categories }: { categories: string[]
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
 
+  const now = new Date();
+  const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+  const [period, setPeriod] = useState('This Month');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [direction, setDirection] = useState<'all' | 'in' | 'out'>('all');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [from, setFrom] = useState(initialStart);
+  const [to, setTo] = useState(initialEnd);
   
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -32,7 +37,7 @@ export default function TransactionsTable({ categories }: { categories: string[]
   const requestCounter = useRef(0);
   
   const dateError = !!(from && to && from > to);
-  const hasActiveFilters = !!(search || category !== 'All' || direction !== 'all' || from || to);
+  const hasActiveFilters = !!(search || category !== 'All' || direction !== 'all' || period !== 'This Month' || from !== initialStart || to !== initialEnd);
 
   const fetchTransactions = useCallback(async (isLoadMore = false) => {
     if (dateError) return;
@@ -102,17 +107,13 @@ export default function TransactionsTable({ categories }: { categories: string[]
     setSearch('');
     setCategory('All');
     setDirection('all');
-    setFrom('');
-    setTo('');
+    setPeriod('This Month');
+    setFrom(initialStart);
+    setTo(initialEnd);
   };
 
   return (
-    <div className="mt-8 space-y-6">
-      <div>
-        <h2 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Transactions</h2>
-        <p className="text-sm text-slate-500">A complete ledger of all money in and money out.</p>
-      </div>
-
+    <div className="space-y-6">
       {/* Summary Strip */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total In" value={isInitialLoading ? '-' : formatINR(summary.total_in)} icon={TrendingUp} variant="green" />
@@ -120,65 +121,102 @@ export default function TransactionsTable({ categories }: { categories: string[]
         <StatCard title="Net" value={isInitialLoading ? '-' : formatINR(summary.net)} icon={Wallet} variant="blue" />
       </div>
 
-      {/* Filter card */}
+      {/* Filter Card */}
       <FilterCard
+        variant="card"
         showSearch={true}
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search..."
-        
-        showDirection={true}
-        direction={direction}
-        onDirectionChange={(val) => setDirection(val as any)}
-        directionOptions={[
-          { value: 'all', label: 'All Directions' },
-          { value: 'in', label: 'Money In' },
-          { value: 'out', label: 'Money Out' }
-        ]}
+            searchPlaceholder="Search..."
+            
+            showDirection={true}
+            direction={direction}
+            onDirectionChange={(val) => setDirection(val as any)}
+            directionOptions={[
+              { value: 'all', label: 'All Directions' },
+              { value: 'in', label: 'Money In' },
+              { value: 'out', label: 'Money Out' }
+            ]}
 
-        showCategory={true}
-        category={category}
-        onCategoryChange={setCategory}
-        categoryOptions={[
-          { value: 'All', label: 'All Categories' },
-          ...categories.map(cat => ({ value: cat, label: cat }))
-        ]}
+            showCategory={true}
+            category={category}
+            onCategoryChange={setCategory}
+            categoryOptions={[
+              { value: 'All', label: 'All Categories' },
+              ...categories.map(cat => ({ value: cat, label: cat }))
+            ]}
 
-        showDatePickers={true}
-        fromDate={from}
-        onFromDateChange={setFrom}
-        toDate={to}
-        onToDateChange={setTo}
-        dateError={dateError}
+            showPeriod={true}
+            period={period}
+            onPeriodChange={(newPeriod) => {
+              setPeriod(newPeriod);
+              const today = new Date();
+              let start: Date;
+              let end: Date = new Date();
+              if (newPeriod === 'Overall') {
+                setFrom('');
+                setTo('');
+                return;
+              } else if (newPeriod === 'This Month') {
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              } else if (newPeriod === 'Last 3 Months') {
+                start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              } else if (newPeriod === 'Last 6 Months') {
+                start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              } else if (newPeriod === 'This Year') {
+                start = new Date(today.getFullYear(), 0, 1);
+                end = new Date(today.getFullYear(), 11, 31);
+              } else {
+                return;
+              }
+              setFrom(start.toISOString().split('T')[0]);
+              setTo(end.toISOString().split('T')[0]);
+            }}
+            periodOptions={[
+              { value: 'Overall', label: 'Overall' },
+              { value: 'This Month', label: 'This Month' },
+              { value: 'Last 3 Months', label: 'Last 3 Months' },
+              { value: 'Last 6 Months', label: 'Last 6 Months' },
+              { value: 'This Year', label: 'This Year' }
+            ]}
 
-        hasActiveFilters={hasActiveFilters}
-        onClear={handleClear}
-      />
+            showDatePickers={true}
+            fromDate={from}
+            onFromDateChange={setFrom}
+            toDate={to}
+            onToDateChange={setTo}
+            dateError={dateError}
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
-        <div className="overflow-x-auto flex-1 hide-scrollbar">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="sticky top-0 table-header-dark border-b border-slate-200 text-slate-100 z-10">
-              <tr>
+            hasActiveFilters={hasActiveFilters}
+            onClear={handleClear}
+          />
+
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+        <div className="overflow-x-auto overflow-y-hidden flex-1 flex flex-col min-h-0">
+          <table className="w-full text-left min-w-[800px] flex flex-col flex-1 min-h-0">
+            <thead className="table-header-dark border-b border-slate-200 text-slate-100 z-10 shrink-0">
+              <tr className="grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr]">
                 <th className="px-4 md:px-6 font-medium text-sm">Date</th>
                 <th className="px-4 md:px-6 font-medium text-sm">Direction</th>
                 <th className="px-4 md:px-6 font-medium text-sm">Category</th>
-                <th className="px-4 md:px-6 font-medium text-sm w-1/3">Details</th>
+                <th className="px-4 md:px-6 font-medium text-sm">Details</th>
                 <th className="px-4 md:px-6 font-medium text-sm">Method</th>
                 <th className="px-4 md:px-6 font-medium text-sm text-right">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto block min-h-0">
               {isInitialLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td className="px-4 md:px-6.5 md:py-3"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
-                    <td className="px-4 md:px-6.5 md:py-3"><div className="h-6 bg-slate-200 rounded-full w-12"></div></td>
-                    <td className="px-4 md:px-6.5 md:py-3"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
-                    <td className="px-4 md:px-6.5 md:py-3"><div className="h-4 bg-slate-200 rounded w-full"></div></td>
-                    <td className="px-4 md:px-6.5 md:py-3"><div className="h-4 bg-slate-200 rounded w-16"></div></td>
-                    <td className="px-4 md:px-6.5 md:py-3 flex justify-end"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
+                  <tr key={i} className="animate-pulse grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center">
+                    <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
+                    <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-6 bg-slate-200 rounded-full w-12"></div></td>
+                    <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
+                    <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-4 bg-slate-200 rounded w-full"></div></td>
+                    <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-4 bg-slate-200 rounded w-16"></div></td>
+                    <td className="px-4 md:px-6 md:py-3 py-3.5 flex justify-end"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
                   </tr>
                 ))
               ) : data.length === 0 ? (
@@ -197,7 +235,7 @@ export default function TransactionsTable({ categories }: { categories: string[]
                 data.map((row: any) => {
                   const dt = new Date(row.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
                   return (
-                    <tr key={`${row.source_table}-${row.id}`} className={`hover:bg-slate-50/50 transition-colors ${row.is_voided ? 'opacity-50' : ''}`}>
+                    <tr key={`${row.source_table}-${row.id}`} className={`hover:bg-slate-50/50 transition-colors grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center ${row.is_voided ? 'opacity-50' : ''}`}>
                       <td className="px-4 md:px-6 py-[14px] text-sm text-slate-700 whitespace-nowrap">
                         {dt}
                       </td>

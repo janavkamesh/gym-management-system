@@ -17,6 +17,12 @@ interface FilterCardProps {
   onCategoryChange?: (val: string) => void;
   categoryOptions?: { value: string; label: string }[];
 
+  // Period
+  showPeriod?: boolean;
+  period?: string;
+  onPeriodChange?: (val: string) => void;
+  periodOptions?: { value: string; label: string }[];
+
   // Direction (Transactions only)
   showDirection?: boolean;
   direction?: string;
@@ -38,6 +44,7 @@ interface FilterCardProps {
 
   hasActiveFilters: boolean;
   onClear: () => void;
+  variant?: 'card' | 'inline';
 }
 
 export function FilterCard({
@@ -50,6 +57,11 @@ export function FilterCard({
   category = 'All',
   onCategoryChange,
   categoryOptions = [],
+
+  showPeriod = false,
+  period = 'This Month',
+  onPeriodChange,
+  periodOptions = [],
 
   showDirection = false,
   direction = 'all',
@@ -68,7 +80,8 @@ export function FilterCard({
   onDateChipChange,
 
   hasActiveFilters,
-  onClear
+  onClear,
+  variant = 'card'
 }: FilterCardProps) {
   
   // Calculate grid columns dynamically based on visible elements
@@ -80,16 +93,18 @@ export function FilterCard({
   if (showSearch) cols += 1;
   if (showDirection) cols += 1;
   if (showCategory) cols += 1;
+  if (showPeriod) cols += 1;
   if (showDates) cols += 2;
 
-  const gridColsClass = cols === 5 ? 'md:grid-cols-5' : 
+  const gridColsClass = cols >= 6 ? 'md:grid-cols-6' :
+                        cols === 5 ? 'md:grid-cols-5' : 
                         cols === 4 ? 'md:grid-cols-4' : 
                         cols === 3 ? 'md:grid-cols-3' : 
                         cols === 2 ? 'md:grid-cols-2' : 
                         'md:grid-cols-1';
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4">
+    <div className={variant === 'card' ? "bg-white p-4 rounded-lg shadow-sm border border-slate-200 space-y-4" : "p-4 space-y-4"}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-slate-700">
           <Filter size={18} />
@@ -124,9 +139,9 @@ export function FilterCard({
       )}
 
       {cols > 0 && (
-        <div className={`grid grid-cols-1 ${gridColsClass} gap-4`}>
+        <div className={variant === 'inline' ? "flex flex-wrap items-center gap-3" : `grid grid-cols-1 ${gridColsClass} gap-4`}>
           {showSearch && (
-            <div className="relative md:col-span-1">
+            <div className={`relative ${variant === 'inline' ? 'flex-1 min-w-[200px]' : 'md:col-span-1'}`}>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={16} className="text-slate-400" />
               </div>
@@ -141,7 +156,7 @@ export function FilterCard({
           )}
 
           {showDirection && (
-            <div>
+            <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
               <Dropdown
                 value={direction}
                 onChange={(val) => onDirectionChange?.(val)}
@@ -151,7 +166,7 @@ export function FilterCard({
           )}
           
           {showCategory && (
-            <div>
+            <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
               <Dropdown
                 value={category}
                 onChange={(val) => onCategoryChange?.(val)}
@@ -159,10 +174,20 @@ export function FilterCard({
               />
             </div>
           )}
+
+          {showPeriod && (
+            <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+              <Dropdown
+                value={period}
+                onChange={(val) => onPeriodChange?.(val)}
+                options={periodOptions}
+              />
+            </div>
+          )}
           
           {showDates && (
             <>
-              <div>
+              <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
                 <DatePicker
                   value={fromDate}
                   onChange={(val) => onFromDateChange?.(val)}
@@ -170,7 +195,7 @@ export function FilterCard({
                 />
               </div>
               
-              <div>
+              <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
                 <DatePicker
                   value={toDate}
                   onChange={(val) => onToDateChange?.(val)}

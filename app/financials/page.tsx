@@ -5,7 +5,10 @@ import {
   getProjectedRevenue, 
   getRevenueSplit, 
   getPaymentMethodSplit, 
-  getTrendPayments 
+  getTrendPayments,
+  getSixMonthRevenueAndExpenses,
+  getPlanBreakdown,
+  getNewVsLostMembers
 } from '@/lib/queries/financials';
 import { getDistinctCategories } from '@/lib/queries/transactions';
 import FinancialsClient from '../../components/FinancialsClient';
@@ -21,6 +24,9 @@ export default async function FinancialsPage() {
   let revenueSplitData: { newRevenue: number; renewalRevenue: number } | null = { newRevenue: 0, renewalRevenue: 0 };
   let paymentMethodSplitData: { Cash: number; UPI: number; Card: number } | null = { Cash: 0, UPI: 0, Card: 0 };
   let initialTrendPaymentsData: any[] | null = [];
+  let initialSixMonthData: any[] | null = [];
+  let initialPlanBreakdownData: any[] | null = [];
+  let initialNewVsLostData: any[] | null = [];
   let distinctCategories: string[] = [];
   let initialError: string | undefined;
 
@@ -36,7 +42,10 @@ export default async function FinancialsPage() {
       getRevenueSplit(),
       getPaymentMethodSplit(),
       getTrendPayments(initialStart, initialEnd),
-      getDistinctCategories()
+      getDistinctCategories(),
+      getSixMonthRevenueAndExpenses(),
+      getPlanBreakdown(initialEnd),
+      getNewVsLostMembers(initialStart, initialEnd)
     ]);
 
     // Check if ANY of them failed to trigger the global toast
@@ -60,6 +69,9 @@ export default async function FinancialsPage() {
     paymentMethodSplitData = results[4].status === 'fulfilled' ? results[4].value : null;
     initialTrendPaymentsData = results[5].status === 'fulfilled' ? results[5].value : null;
     distinctCategories = results[6].status === 'fulfilled' ? results[6].value : [];
+    initialSixMonthData = results[7].status === 'fulfilled' ? results[7].value : null;
+    initialPlanBreakdownData = results[8].status === 'fulfilled' ? results[8].value : null;
+    initialNewVsLostData = results[9].status === 'fulfilled' ? results[9].value : null;
 
   } catch (error) {
     initialError = "Failed to load financials. Check your connection.";
@@ -74,6 +86,9 @@ export default async function FinancialsPage() {
         revenueSplit={revenueSplitData}
         paymentMethodSplit={paymentMethodSplitData}
         initialTrendPayments={initialTrendPaymentsData}
+        initialSixMonthData={initialSixMonthData}
+        initialPlanBreakdownData={initialPlanBreakdownData}
+        initialNewVsLostData={initialNewVsLostData}
         distinctCategories={distinctCategories}
         initialError={initialError}
       />
