@@ -29,7 +29,6 @@ export async function runDatabaseBackup(secret: string, envParams?: any) {
   );
 
   const tables = [
-    'users',
     'plans',
     'members',
     'leads',
@@ -49,6 +48,10 @@ export async function runDatabaseBackup(secret: string, envParams?: any) {
     tables.map(async (table) => {
       const { data, error } = await supabase.from(table).select('*');
       if (error) {
+        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+          console.warn(`Warning: Skipped table '${table}' because it does not exist in the public schema.`);
+          return;
+        }
         throw new Error(`Failed to fetch ${table}: ${error.message}`);
       }
       results[table] = data || [];
