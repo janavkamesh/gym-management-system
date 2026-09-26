@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import LeadsClient from '../../components/LeadsClient';
+import LeadsClient from '@/components/LeadsClient';
 
 export const dynamic = 'force-dynamic';
 

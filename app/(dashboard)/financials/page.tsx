@@ -11,7 +11,7 @@ import {
   getNewVsLostMembers
 } from '@/lib/queries/financials';
 import { getDistinctCategories } from '@/lib/queries/transactions';
-import FinancialsClient from '../../components/FinancialsClient';
+import FinancialsClient from '@/components/FinancialsClient';
 
 export const dynamic = 'force-dynamic';
 

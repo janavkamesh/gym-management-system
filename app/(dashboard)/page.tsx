@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import DashboardClient from '../components/DashboardClient';
+import DashboardClient from '@/components/DashboardClient';
 
 export const dynamic = 'force-dynamic';
 
