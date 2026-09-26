@@ -1,5 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
 
+async function fetchAllRows(supabase: any, tableName: string) {
+  let allRows: any[] = [];
+  let from = 0;
+  const batchSize = 1000;
+  
+  while (true) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .range(from, from + batchSize - 1);
+      
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      allRows = allRows.concat(data);
+    }
+    
+    if (!data || data.length < batchSize) {
+      break;
+    }
+    from += batchSize;
+  }
+  return allRows;
+}
+
 // Reusable backup logic
 export async function runDatabaseBackup(secret: string, envParams?: any) {
   // Use provided env (Cloudflare worker) or process.env (Next.js Node/Edge runtime)
@@ -46,15 +71,16 @@ export async function runDatabaseBackup(secret: string, envParams?: any) {
   // Fetch all tables in parallel
   await Promise.all(
     tables.map(async (table) => {
-      const { data, error } = await supabase.from(table).select('*');
-      if (error) {
+      try {
+        const data = await fetchAllRows(supabase, table);
+        results[table] = data || [];
+      } catch (error: any) {
         if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
           console.warn(`Warning: Skipped table '${table}' because it does not exist in the public schema.`);
           return;
         }
         throw new Error(`Failed to fetch ${table}: ${error.message}`);
       }
-      results[table] = data || [];
     })
   );
 
