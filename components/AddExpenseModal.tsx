@@ -8,8 +8,18 @@ import { X, Upload, Info, ChevronDown } from 'lucide-react';
 import Tooltip from './Tooltip';
 import { DatePicker } from './DatePicker';
 
-export default function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: (expense: any) => void }) {
+export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCategory }: { isOpen: boolean; onClose: () => void; onSuccess: (expense: any) => void; initialCategory?: string }) {
   const [category, setCategory] = useState('');
+  
+  useEffect(() => {
+    if (isOpen && initialCategory) {
+      // Find case-insensitive match for category to match predefined categories
+      const predefinedCategories = ['Rent', 'Electricity', 'Salaries', 'Maintenance', 'Equipment', 'Other'];
+      const matched = predefinedCategories.find(c => c.toLowerCase() === initialCategory.toLowerCase());
+      setCategory(matched || initialCategory);
+    }
+  }, [isOpen, initialCategory]);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

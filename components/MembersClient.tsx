@@ -9,7 +9,12 @@ import { getArchivedMembers, restoreMember } from '@/lib/actions/members';
 
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired' | 'PT';
 
-export default function MembersClient({ initialMembers, plans, trainers, initialArchivedCount }: { initialMembers: any[]; plans: any[]; trainers: any[]; initialArchivedCount: number }) {
+export default function MembersClient({ 
+  initialMembers, plans, trainers, initialArchivedCount, initialFilter, initialMemberId, initialAction 
+}: { 
+  initialMembers: any[]; plans: any[]; trainers: any[]; initialArchivedCount: number;
+  initialFilter?: string; initialMemberId?: string; initialAction?: string;
+}) {
   const [members, setMembers] = useState(initialMembers);
 
   const [archivedCount, setArchivedCount] = useState(initialArchivedCount);
@@ -91,6 +96,9 @@ export default function MembersClient({ initialMembers, plans, trainers, initial
         trainers={trainers}
         highlightedMemberId={highlightedMemberId}
         onMemberRemoved={handleMemberRemoved}
+        initialFilter={initialFilter}
+        initialMemberId={initialMemberId}
+        initialAction={initialAction}
       />
 
       {/* Archived Members Section */}

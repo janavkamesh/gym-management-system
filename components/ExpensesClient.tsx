@@ -11,15 +11,25 @@ import { FilterCard } from './FilterCard';
 interface ExpensesClientProps {
   initialExpenses: any[] | null;
   hideHeader?: boolean;
+  initialAction?: string;
+  initialCategory?: string;
 }
 
 export default function ExpensesClient({
   initialExpenses,
   hideHeader = false,
+  initialAction,
+  initialCategory,
 }: ExpensesClientProps) {
   const [expenses, setExpenses] = useState(initialExpenses || []);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
+
+  useEffect(() => {
+    if (initialAction === 'add') {
+      setIsAddModalOpen(true);
+    }
+  }, [initialAction]);
   
   const now = new Date();
   const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
@@ -200,6 +210,7 @@ export default function ExpensesClient({
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleExpenseAdded}
+        initialCategory={initialCategory}
       />
     </div>
   );

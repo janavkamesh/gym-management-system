@@ -11,6 +11,8 @@ interface MemberListProps {
   highlightedMemberId?: string | null;
   isArchived?: boolean;
   onRestore?: (memberId: string) => Promise<void>;
+  targetMemberId?: string;
+  action?: string;
 }
 
 export default function MemberList({
@@ -23,7 +25,9 @@ export default function MemberList({
   onDeleted,
   highlightedMemberId,
   isArchived = false,
-  onRestore
+  onRestore,
+  targetMemberId,
+  action
 }: MemberListProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -62,7 +66,9 @@ export default function MemberList({
                   onDeleted={() => onDeleted(member.id)} 
                   onEdit={() => onEdit(member)}
                   onRestore={onRestore ? () => onRestore(member.id) : undefined}
-                  isHighlighted={highlightedMemberId === member.id}
+                  isHighlighted={highlightedMemberId === member.id || targetMemberId === member.id}
+                  isTarget={targetMemberId === member.id}
+                  action={action}
                 />
               ))}
             </tbody>

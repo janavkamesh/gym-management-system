@@ -3,7 +3,12 @@ import MembersClient from '@/components/MembersClient'
 
 export const dynamic = 'force-dynamic';
 
-export default async function MembersPage() {
+export default async function MembersPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const filter = searchParams.filter as string | undefined;
+  const memberId = searchParams.memberId as string | undefined;
+  const action = searchParams.action as string | undefined;
+
   const supabase = await createClient();
 
   const { data: plansData } = await supabase.from('plans').select('*');
@@ -32,7 +37,15 @@ export default async function MembersPage() {
 
   return (
     <div className="flex-1 w-full bg-slate-50 min-h-screen">
-      <MembersClient initialMembers={mappedMembers} plans={plansData || []} trainers={trainersData || []} initialArchivedCount={archivedCount || 0} />
+      <MembersClient 
+        initialMembers={mappedMembers} 
+        plans={plansData || []} 
+        trainers={trainersData || []} 
+        initialArchivedCount={archivedCount || 0} 
+        initialFilter={filter}
+        initialMemberId={memberId}
+        initialAction={action}
+      />
     </div>
   );
 }

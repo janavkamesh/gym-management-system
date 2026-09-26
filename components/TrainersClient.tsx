@@ -9,9 +9,11 @@ import { getArchivedTrainers } from '@/lib/actions/trainers';
 interface TrainersClientProps {
   initialTrainers: any[];
   members: any[];
+  initialTrainerId?: string;
+  initialAction?: string;
 }
 
-export default function TrainersClient({ initialTrainers, members }: TrainersClientProps) {
+export default function TrainersClient({ initialTrainers, members, initialTrainerId, initialAction }: TrainersClientProps) {
   const [trainers, setTrainers] = useState(initialTrainers);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -136,6 +138,8 @@ export default function TrainersClient({ initialTrainers, members }: TrainersCli
                     trainer={trainer} 
                     members={members}
                     onDeleted={() => handleTrainerDeleted(trainer.id)} 
+                    isTarget={initialTrainerId === trainer.id}
+                    action={initialTrainerId === trainer.id ? initialAction : undefined}
                   />
                 ))}
               </tbody>

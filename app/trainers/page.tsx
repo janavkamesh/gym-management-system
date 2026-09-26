@@ -5,7 +5,11 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic';
 
-export default async function TrainersPage() {
+export default async function TrainersPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const trainerId = searchParams.trainerId as string | undefined;
+  const action = searchParams.action as string | undefined;
+
   const supabase = await createClient();
 
   // 1. Fetch Trainers

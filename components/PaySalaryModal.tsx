@@ -6,6 +6,7 @@ import { X, Check } from 'lucide-react';
 import { paySalary } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
 import { formatINR } from '@/lib/utils/formatters';
+import { DatePicker } from './DatePicker';
 
 interface PaySalaryModalProps {
   trainer: any;
@@ -19,13 +20,13 @@ interface PaySalaryModalProps {
 export default function PaySalaryModal({ trainer, summary, month, year, onClose, onSuccess }: PaySalaryModalProps) {
   const [method, setMethod] = useState('Cash');
   const [note, setNote] = useState('');
+  const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
   const handlePay = async () => {
     setIsSubmitting(true);
     const monthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-    const paidDate = new Date().toISOString().split('T')[0];
     
     try {
       await paySalary(trainer.id, monthStart, paidDate, method, note);
@@ -50,16 +51,18 @@ export default function PaySalaryModal({ trainer, summary, month, year, onClose,
         </div>
         
         <div className="mb-6 space-y-4">
-          <div>
-            <div className="text-sm font-medium text-slate-700 mb-1">Trainer</div>
-            <div className="text-base text-slate-900">{trainer.name}</div>
-          </div>
-          <div>
-            <div className="text-sm font-medium text-slate-700 mb-1">Period</div>
-            <div className="text-base text-slate-900">{new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm font-medium text-slate-700 mb-1">Trainer</div>
+              <div className="text-base text-slate-900">{trainer.name}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-slate-700 mb-1">Period</div>
+              <div className="text-base text-slate-900">{new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</div>
+            </div>
           </div>
           
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2 text-sm">
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2 text-sm tabular-nums">
             <div className="flex justify-between">
               <span className="text-slate-500">Base Salary</span>
               <span className="font-medium">{formatINR(summary.baseSalary)}</span>
@@ -79,6 +82,10 @@ export default function PaySalaryModal({ trainer, summary, month, year, onClose,
           </div>
 
           <div className="space-y-3 pt-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Payment Date</label>
+              <DatePicker value={paidDate} onChange={setPaidDate} />
+            </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Payment Method</label>
               <select value={method} onChange={e => setMethod(e.target.value)} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">

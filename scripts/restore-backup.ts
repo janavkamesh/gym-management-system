@@ -49,7 +49,8 @@ async function restore() {
     'salary_payments',
     'salary_advances',
     'expenses',
-    'activity_logs'
+    'activity_logs',
+    'push_subscriptions'
   ];
 
   for (const table of orderedTables) {

@@ -3,7 +3,10 @@
 	"main": "custom-worker.ts",
 	"name": "gym-management-system",
 	"triggers": {
-		"crons": ["30 18 * * *"]
+		"crons": [
+			"30 18 * * *",
+			"30 2 * * *"
+		]
 	},
 	"compatibility_date": "2026-09-26",
 	"compatibility_flags": [

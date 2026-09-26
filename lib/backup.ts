@@ -63,7 +63,8 @@ export async function runDatabaseBackup(secret: string, envParams?: any) {
     'pt_assignments',
     'salary_advances',
     'salary_payments',
-    'activity_logs'
+    'activity_logs',
+    'push_subscriptions'
   ];
 
   const results: Record<string, any[]> = {};

@@ -6,7 +6,9 @@ import { Plus } from 'lucide-react';
 import AddLeadModal from './AddLeadModal';
 import LeadRow from './LeadRow';
 
-export default function LeadsClient({ initialLeads, initialError }: { initialLeads: any[], initialError?: string }) {
+import { useMemo } from 'react';
+
+export default function LeadsClient({ initialLeads, initialError, initialFilter }: { initialLeads: any[], initialError?: string, initialFilter?: string }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { showToast } = useToast();
 
@@ -16,7 +18,22 @@ export default function LeadsClient({ initialLeads, initialError }: { initialLea
     }
   }, [initialError, showToast]);
 
-  const leads = initialLeads || [];
+  const sortedLeads = useMemo(() => {
+    const arr = [...(initialLeads || [])];
+    if (initialFilter === 'today') {
+      const today = new Date().toISOString().split('T')[0];
+      arr.sort((a, b) => {
+        const aIsToday = a.promised_date === today && (a.outcome === 'Pending' || a.outcome === 'No Response');
+        const bIsToday = b.promised_date === today && (b.outcome === 'Pending' || b.outcome === 'No Response');
+        if (aIsToday && !bIsToday) return -1;
+        if (!aIsToday && bIsToday) return 1;
+        return 0;
+      });
+    }
+    return arr;
+  }, [initialLeads, initialFilter]);
+
+  const leads = sortedLeads;
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">

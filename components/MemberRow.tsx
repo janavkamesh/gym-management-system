@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { computeStatusColor } from '@/lib/utils/status';
 import { deleteMember } from '@/lib/actions/members';
 import { generateWhatsAppLink } from '@/lib/utils/whatsapp';
@@ -20,6 +20,8 @@ interface MemberRowProps {
   onRestore?: (id: string) => Promise<void>;
   isHighlighted?: boolean;
   trainers?: any[];
+  isTarget?: boolean;
+  action?: string;
 }
 
 export const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
@@ -28,7 +30,8 @@ export const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRestore, isHighlighted, trainers }: MemberRowProps) {
+export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRestore, isHighlighted, trainers, isTarget, action }: MemberRowProps) {
+  const rowRef = useRef<HTMLTableRowElement>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -51,6 +54,14 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
       }).catch(console.error);
     }
   };
+
+  useEffect(() => {
+    if (isTarget && rowRef.current) {
+      setTimeout(() => {
+        rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [isTarget]);
 
   const statusColor = computeStatusColor(member.expiry_date);
   
@@ -98,7 +109,7 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
 
   return (
     <>
-    <tr className={`hover:bg-slate-50 transition-all duration-300 ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}>
+    <tr ref={rowRef} className={`hover:bg-slate-50 transition-all duration-300 ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}>
       <td className={`relative px-4 md:px-6 py-3.5 md:py-3 font-medium text-left whitespace-nowrap max-w-50 overflow-hidden text-ellipsis ${isArchived ? 'opacity-50' : ''}`}>
         {hasActivePt && (
           <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-blue-600" />
@@ -179,11 +190,11 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
             )}
           </td>
           <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-            <Tooltip content="Remove Member">
+            <Tooltip content={isTarget && action === 'cleanup' ? "Expired 7d ago — Click to remove" : "Remove Member"}>
               <button
                 onClick={() => setShowDeleteModal(true)}
                 disabled={isDeleting}
-                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
+                className={`inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md transition-all active:scale-95 touch-manipulation disabled:opacity-50 ${isTarget && action === 'cleanup' ? 'ring-4 ring-red-500/70 shadow-lg shadow-red-500/50 bg-red-100 text-red-600 animate-pulse' : 'text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50'}`}
               >
                 <Trash2 size={18} strokeWidth={2.5} />
               </button>

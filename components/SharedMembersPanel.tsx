@@ -17,6 +17,9 @@ interface SharedMembersPanelProps {
   emptySubtitle?: string;
   highlightedMemberId?: string | null;
   onMemberRemoved?: (id: string) => void;
+  initialFilter?: string;
+  initialMemberId?: string;
+  initialAction?: string;
 }
 
 export default function SharedMembersPanel({
@@ -26,9 +29,15 @@ export default function SharedMembersPanel({
   trainers,
   emptySubtitle = "Click 'Add Member' to start tracking memberships and payments.",
   highlightedMemberId,
-  onMemberRemoved
+  onMemberRemoved,
+  initialFilter,
+  initialMemberId,
+  initialAction
 }: SharedMembersPanelProps) {
-  const [activeTab, setActiveTab] = useState<FilterTab>('All');
+  const [activeTab, setActiveTab] = useState<FilterTab>(
+    initialFilter === 'expiring_today' ? 'Expiring Soon' : 
+    initialFilter === 'overdue' ? 'Expired' : 'All'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -109,6 +118,12 @@ export default function SharedMembersPanel({
       
       if (pA !== pB) return pA - pB;
       
+      if (initialFilter === 'expiring_today') {
+        const today = new Date().toISOString().split('T')[0];
+        if (a.expiry_date === today && b.expiry_date !== today) return -1;
+        if (b.expiry_date === today && a.expiry_date !== today) return 1;
+      }
+      
       const dateA = new Date(a.expiry_date || 0).getTime();
       const dateB = new Date(b.expiry_date || 0).getTime();
       return dateA - dateB;
@@ -186,6 +201,8 @@ export default function SharedMembersPanel({
         onEdit={handleEdit}
         onDeleted={removeMemberFromList}
         highlightedMemberId={highlightedMemberId}
+        targetMemberId={initialMemberId}
+        action={initialAction}
       />
 
       <div className="md:hidden fixed bottom-20 right-4 z-40 flex flex-col gap-3">

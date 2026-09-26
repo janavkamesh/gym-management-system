@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteTrainer, fetchPtAssignments, fetchSalaryAdvances, fetchSalarySummary, deletePtAssignment, deleteSalaryAdvance, markAdvanceDeducted, restoreTrainer } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
@@ -17,9 +17,12 @@ interface TrainerRowProps {
   members: any[];
   onDeleted: () => void;
   onRestore?: () => void;
+  isTarget?: boolean;
+  action?: string;
 }
 
-export default function TrainerRow({ trainer, members, onDeleted, onRestore }: TrainerRowProps) {
+export default function TrainerRow({ trainer, members, onDeleted, onRestore, isTarget, action }: TrainerRowProps) {
+  const rowRef = useRef<HTMLTableRowElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -125,6 +128,24 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore }: T
     }
   // eslint-disable-next-inline react-hooks/exhaustive-deps
   }, [isExpanded]);
+
+  useEffect(() => {
+    if (isTarget) {
+      if (!isExpanded) setIsExpanded(true);
+      setTimeout(() => {
+        rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 500);
+    }
+  // eslint-disable-next-inline react-hooks/exhaustive-deps
+  }, [isTarget]);
+
+  useEffect(() => {
+    if (isTarget && action === 'pay_salary' && salarySummary && salarySummary.netPayable > 0 && salaryPayments) {
+      const monthStartStr = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+      const hasPaid = salaryPayments.some(p => p.month_start === monthStartStr && !p.is_voided);
+      if (!hasPaid) setShowPayModal(true);
+    }
+  }, [isTarget, action, salarySummary, salaryPayments, currentYear, currentMonth]);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -409,7 +430,8 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore }: T
   return (
     <>
       <tr 
-        className={`transition-colors md:cursor-default ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'} ${!isArchived ? 'cursor-pointer' : ''}`}
+        ref={rowRef}
+        className={`transition-colors md:cursor-default ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'} ${!isArchived ? 'cursor-pointer' : ''} ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
         onClick={() => {
           if (!isArchived && window.innerWidth < 768) {
             setIsExpanded(true);
