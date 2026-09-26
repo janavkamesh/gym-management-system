@@ -41,3 +41,11 @@ next-env.d.ts
 
 # Supabase / MCP Configs
 mcp_config.json
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
