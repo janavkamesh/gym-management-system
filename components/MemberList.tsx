@@ -12,6 +12,7 @@ interface MemberListProps {
   isArchived?: boolean;
   onRestore?: (memberId: string) => Promise<void>;
   targetMemberId?: string;
+  openMemberId?: string;
   action?: string;
 }
 
@@ -27,6 +28,7 @@ export default function MemberList({
   isArchived = false,
   onRestore,
   targetMemberId,
+  openMemberId,
   action
 }: MemberListProps) {
   return (
@@ -50,10 +52,9 @@ export default function MemberList({
                 <th className="px-4 md:px-6 font-medium text-left">Days left</th>
                 <th className="px-4 md:px-6 font-medium text-left">Status</th>
                 <th className="px-4 md:px-6 font-medium text-center">Amount Collected</th>
-                <th className="px-4 md:px-6 font-medium text-center">History</th>
                 <th className="px-4 md:px-6 font-medium text-center">Send Reminder</th>
-                <th className="px-4 md:px-6 font-medium text-center">{isArchived ? 'Restore' : 'Edit'}</th>
-                <th className="px-4 md:px-6 font-medium text-center">{isArchived ? 'Delete' : 'Remove'}</th>
+                <th className="px-4 md:px-6 font-medium text-center">View</th>
+                <th className="px-4 md:px-6 font-medium text-center w-14">Menu</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -68,6 +69,7 @@ export default function MemberList({
                   onRestore={onRestore ? () => onRestore(member.id) : undefined}
                   isHighlighted={highlightedMemberId === member.id || targetMemberId === member.id}
                   isTarget={targetMemberId === member.id}
+                  shouldOpenModal={openMemberId === member.id}
                   action={action}
                 />
               ))}

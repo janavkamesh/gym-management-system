@@ -207,10 +207,10 @@ export default function TransactionsTable({ categories }: { categories: string[]
                 <th className="px-4 md:px-6 font-medium text-sm text-right">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto block min-h-0">
+            <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto flex flex-col min-h-0">
               {isInitialLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center">
+                  <tr key={i} className="animate-pulse grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center w-full">
                     <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
                     <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-6 bg-slate-200 rounded-full w-12"></div></td>
                     <td className="px-4 md:px-6 md:py-3 py-3.5"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
@@ -220,8 +220,8 @@ export default function TransactionsTable({ categories }: { categories: string[]
                   </tr>
                 ))
               ) : data.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 md:px-6 py-12 text-center text-slate-500">
+                <tr className="flex-1 flex items-center justify-center w-full">
+                  <td colSpan={6} className="px-4 md:px-6 py-12 text-center text-slate-500 w-full">
                     <p className="font-medium text-slate-900 mb-1">{hasActiveFilters ? "No matching transactions" : "No transactions yet"}</p>
                     <p className="text-sm">{hasActiveFilters ? "Try changing or clearing your filters." : "Payments and expenses will appear here."}</p>
                     {hasActiveFilters && (
@@ -235,7 +235,7 @@ export default function TransactionsTable({ categories }: { categories: string[]
                 data.map((row: any) => {
                   const dt = new Date(row.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
                   return (
-                    <tr key={`${row.source_table}-${row.id}`} className={`hover:bg-slate-50/50 transition-colors grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center ${row.is_voided ? 'opacity-50' : ''}`}>
+                    <tr key={`${row.source_table}-${row.id}`} className={`hover:bg-slate-50/50 transition-colors grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center w-full ${row.is_voided ? 'opacity-50' : ''}`}>
                       <td className="px-4 md:px-6 py-[14px] text-sm text-slate-700 whitespace-nowrap">
                         {dt}
                       </td>

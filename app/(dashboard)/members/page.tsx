@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import MembersClient from '@/components/MembersClient'
+import { mapMemberData } from '@/lib/utils/members'
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,7 @@ export default async function MembersPage(props: { searchParams?: Promise<{ [key
   const searchParams = props.searchParams ? await props.searchParams : {};
   const filter = searchParams.filter as string | undefined;
   const memberId = searchParams.memberId as string | undefined;
+  const openMember = searchParams.openMember as string | undefined;
   const action = searchParams.action as string | undefined;
 
   const supabase = await createClient();
@@ -17,18 +19,7 @@ export default async function MembersPage(props: { searchParams?: Promise<{ [key
 
   // Compute pending payment for each member
   // Pending Payment = plans.price - SUM(payments.amount)
-  const mappedMembers = (membersData || []).map((member: any) => {
-    const planPrice = member.plans?.price || 0;
-    const totalPaid = (member.payments || [])
-      .filter((p: any) => !p.is_voided && p.period_end === member.expiry_date && p.payment_type === 'Membership')
-      .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-    const pendingAmount = Math.max(0, planPrice - totalPaid);
-
-    return {
-      ...member,
-      pendingAmount
-    };
-  });
+  const mappedMembers = (membersData || []).map(mapMemberData);
 
   const { count: archivedCount } = await supabase
     .from('members')
@@ -44,6 +35,7 @@ export default async function MembersPage(props: { searchParams?: Promise<{ [key
         initialArchivedCount={archivedCount || 0} 
         initialFilter={filter}
         initialMemberId={memberId}
+        initialOpenMember={openMember}
         initialAction={action}
       />
     </div>

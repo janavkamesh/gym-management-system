@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { computeStatusColor } from '@/lib/utils/status';
 import { Search, ChevronDown, ChevronUp } from 'lucide-react';
 import SharedMembersPanel from './SharedMembersPanel';
@@ -10,11 +11,14 @@ import { getArchivedMembers, restoreMember } from '@/lib/actions/members';
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired' | 'PT';
 
 export default function MembersClient({ 
-  initialMembers, plans, trainers, initialArchivedCount, initialFilter, initialMemberId, initialAction 
+  initialMembers, plans, trainers, initialArchivedCount, initialFilter, initialMemberId, initialOpenMember, initialAction 
 }: { 
   initialMembers: any[]; plans: any[]; trainers: any[]; initialArchivedCount: number;
-  initialFilter?: string; initialMemberId?: string; initialAction?: string;
+  initialFilter?: string; initialMemberId?: string; initialOpenMember?: string; initialAction?: string;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [members, setMembers] = useState(initialMembers);
 
   const [archivedCount, setArchivedCount] = useState(initialArchivedCount);
@@ -28,6 +32,16 @@ export default function MembersClient({
   useEffect(() => {
     setMembers(initialMembers);
   }, [initialMembers]);
+
+  // Handle auto-opening member profile from push notification
+  useEffect(() => {
+    if (initialOpenMember) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('openMember');
+      // Update URL without refresh
+      router.replace(`${pathname}${params.toString() ? `?${params.toString()}` : ''}`, { scroll: false });
+    }
+  }, [initialOpenMember, pathname, router, searchParams]);
 
   const loadArchivedMembers = async () => {
     setIsLoadingArchived(true);
@@ -98,6 +112,7 @@ export default function MembersClient({
         onMemberRemoved={handleMemberRemoved}
         initialFilter={initialFilter}
         initialMemberId={initialMemberId}
+        initialOpenMember={initialOpenMember}
         initialAction={initialAction}
       />
 

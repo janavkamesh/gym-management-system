@@ -1,20 +1,41 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Users, UserPlus, Users2, IndianRupee, ClipboardList, Receipt, Wallet, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Members', href: '/members', icon: Users },
-  { name: 'Leads', href: '/leads', icon: UserPlus },
-  { name: 'Trainers', href: '/trainers', icon: Users2 },
-  { name: 'Financials', href: '/financials', icon: IndianRupee },
-  { name: 'Transactions', href: '/transactions', icon: Receipt },
-  { name: 'Expenses', href: '/expenses', icon: Wallet },
-  { name: 'Activity Logs', href: '/activity-logs', icon: ClipboardList },
+const navigationGroups = [
+  {
+    label: 'OVERVIEW',
+    items: [
+      { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+    ]
+  },
+  {
+    label: 'PEOPLE',
+    items: [
+      { name: 'Members', href: '/members', icon: Users },
+      { name: 'Trainers', href: '/trainers', icon: Users2 },
+      { name: 'Leads', href: '/leads', icon: UserPlus },
+    ]
+  },
+  {
+    label: 'FINANCE',
+    items: [
+      { name: 'Financials', href: '/financials', icon: IndianRupee },
+      { name: 'Transactions', href: '/transactions', icon: Receipt },
+      { name: 'Expenses', href: '/expenses', icon: Wallet },
+    ]
+  },
+  {
+    label: 'SYSTEM',
+    items: [
+      { name: 'Activity Logs', href: '/activity-logs', icon: ClipboardList },
+    ]
+  }
 ];
 
 export default function Sidebar() {
@@ -55,7 +76,8 @@ export default function Sidebar() {
   useEffect(() => {
     if (!navRef.current) return;
     
-    const activeIndex = navigation.findIndex(item => pathname === item.href);
+    const flatNavigation = navigationGroups.flatMap(g => g.items);
+    const activeIndex = flatNavigation.findIndex(item => pathname === item.href);
     if (activeIndex === -1) {
       setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
       return;
@@ -89,7 +111,7 @@ export default function Sidebar() {
         )}
       </div>
       
-      <div className="flex-1 px-4 py-6 space-y-2 relative" ref={navRef}>
+      <div className="flex-1 px-4 py-6 overflow-y-auto relative hide-scrollbar" ref={navRef}>
         <div 
           className="absolute top-0 left-4 right-4 bg-blue-600 rounded-lg shadow-sm transition-[transform,opacity] duration-[180ms] ease-out pointer-events-none"
           style={{
@@ -98,45 +120,50 @@ export default function Sidebar() {
             opacity: indicatorStyle.opacity
           }}
         />
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`relative z-10 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'text-white'
-                  : 'hover:bg-slate-700 hover:text-white'
-              }`}
-            >
-              <Icon size={18} />
-              {item.name}
-            </Link>
-          );
-        })}
+        <div className="flex flex-col gap-6">
+          {navigationGroups.map((group) => (
+            <div key={group.label} className="flex flex-col gap-1">
+              <div className="px-3 mb-1 text-xs font-semibold tracking-wider text-slate-500 uppercase">
+                {group.label}
+              </div>
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                const Icon = item.icon;
+                
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`relative z-10 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'text-white'
+                        : 'hover:bg-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={18} />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
       
-      <div className="p-4 border-t border-slate-700/50 relative" ref={menuRef}>
-        {showSignOutMenu && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-lg overflow-hidden animate-in slide-in-from-bottom-2 duration-150">
-            <button 
-              onClick={() => { setShowSignOutMenu(false); setShowSignOutModal(true); }}
-              className="w-full text-left px-4 py-3 text-sm font-medium text-white hover:bg-slate-700 transition-colors flex items-center gap-2"
-            >
-              <LogOut size={16} className="text-slate-400" />
-              Sign Out
-            </button>
-          </div>
-        )}
+      <div className="p-4 border-t border-slate-700/50 flex flex-col gap-3">
+        <div className="px-3">
+          <button
+            onClick={() => setShowSignOutModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+          >
+            <LogOut size={16} />
+            Sign Out
+          </button>
+        </div>
         
-        <button 
-          onClick={() => setShowSignOutMenu(!showSignOutMenu)}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors text-left"
-        >
-          {!userData ? (
+        <div className="px-3">
+          <div className="w-full flex items-center gap-3 py-2 rounded-lg bg-slate-800/50">
+            {!userData ? (
             <>
               <div className="w-8 h-8 rounded-full bg-slate-700 animate-pulse shrink-0"></div>
               <div className="flex flex-col gap-1 w-full overflow-hidden">
@@ -155,10 +182,11 @@ export default function Sidebar() {
               </div>
             </>
           )}
-        </button>
+          </div>
+        </div>
       </div>
 
-      {showSignOutModal && (
+      {showSignOutModal && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center p-4 md:p-0">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowSignOutModal(false)}></div>
           <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
@@ -181,7 +209,8 @@ export default function Sidebar() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

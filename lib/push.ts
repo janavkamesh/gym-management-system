@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
 
-export async function sendPushToAllDevices(payload: { title: string; body: string; url: string; tag?: string; requireInteraction?: boolean }) {
+export async function sendPushToAllDevices(targetUserId: string, payload: { title: string; body: string; url: string; tag?: string; requireInteraction?: boolean }) {
   const vapidSubject = process.env.VAPID_SUBJECT;
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -21,7 +21,8 @@ export async function sendPushToAllDevices(payload: { title: string; body: strin
 
   const { data: subscriptions, error } = await supabase
     .from('push_subscriptions')
-    .select('*');
+    .select('*')
+    .eq('user_id', targetUserId);
 
   if (error || !subscriptions) {
     console.error('Failed to fetch subscriptions:', error);

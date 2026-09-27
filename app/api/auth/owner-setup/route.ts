@@ -38,13 +38,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'setup_failed', message: 'Could not update tenant metadata' }, { status: 500 });
     }
 
-    // 2. Insert a default plan for this new gym
-    const { error: planError } = await supabase.from('plans').insert({
-      plan_name: 'Monthly Membership',
-      price: 1000,
-      duration_days: 30,
-      user_id: user.id // Required to pass RLS
-    });
+    // 2. Insert default plans for this new gym
+    const { error: planError } = await supabase.from('plans').insert([
+      { plan_name: '1 Month', price: 1500, duration_days: 30, user_id: user.id },
+      { plan_name: '3 Months', price: 4000, duration_days: 90, user_id: user.id },
+      { plan_name: '6 Months', price: 7500, duration_days: 180, user_id: user.id },
+      { plan_name: '1 Year', price: 14000, duration_days: 365, user_id: user.id }
+    ]);
 
     if (planError) {
       console.error('Failed to create default plan:', planError);

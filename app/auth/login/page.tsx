@@ -112,7 +112,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleAuth = () => {
-    window.location.href = `/api/auth/oauth?redirectTo=${encodeURIComponent(window.location.origin + '/')}`;
+    window.location.href = `/api/auth/oauth?redirectTo=${encodeURIComponent(window.location.origin + '/auth/callback?next=/')}`;
   };
 
   return (

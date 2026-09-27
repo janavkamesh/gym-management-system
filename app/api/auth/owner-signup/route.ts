@@ -3,10 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const { email, password, gymName } = await request.json();
+    const { email, password, gymName, ownerName } = await request.json();
     
-    if (!email || !password || !gymName) {
-      return NextResponse.json({ error: 'missing_fields', message: 'Email, password, and gymName are required' }, { status: 400 });
+    if (!email || !password || !gymName || !ownerName) {
+      return NextResponse.json({ error: 'missing_fields', message: 'Email, password, name, and gym name are required' }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       options: {
         data: {
           gym_name: gymName,
+          full_name: ownerName,
         }
       }
     });

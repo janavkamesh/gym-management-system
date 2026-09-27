@@ -6,6 +6,7 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
 export default function SignUpPage() {
+  const [ownerName, setOwnerName] = useState('');
   const [gymName, setGymName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,7 @@ export default function SignUpPage() {
       const res = await fetch('/api/auth/owner-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, gymName })
+        body: JSON.stringify({ email, password, gymName, ownerName })
       });
       
       const data = await res.json();
@@ -57,7 +58,7 @@ export default function SignUpPage() {
   };
 
   const handleGoogleAuth = () => {
-    window.location.href = `/api/auth/oauth?redirectTo=${encodeURIComponent(window.location.origin + '/')}`;
+    window.location.href = `/api/auth/oauth?redirectTo=${encodeURIComponent(window.location.origin + '/auth/callback?next=/')}`;
   };
 
   if (isSuccess) {
@@ -86,6 +87,18 @@ export default function SignUpPage() {
       <p className="text-slate-600 text-sm mb-6">Start managing your gym in minutes.</p>
 
       <form onSubmit={handleSignUp} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Your Name</label>
+          <input
+            type="text"
+            required
+            value={ownerName}
+            onChange={(e) => setOwnerName(e.target.value)}
+            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-slate-900"
+            placeholder="e.g. Alex Johnson"
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Gym Name</label>
           <input

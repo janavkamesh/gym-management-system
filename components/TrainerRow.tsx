@@ -264,10 +264,6 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
                         <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium">{pt.trainer_share || pt.commission_percent}% Share</span>
                       </div>
                       <div className="flex items-center gap-1 md:gap-2">
-                        <button onClick={() => setPaymentPt(pt)} className="text-slate-500 hover:text-green-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center bg-slate-100 hover:bg-green-50 rounded-md md:bg-transparent md:hover:bg-transparent transition-colors">
-                          <Plus size={16} className="mr-1 hidden md:block" />
-                          <span className="font-medium text-sm">Collect</span>
-                        </button>
                         <button onClick={() => setPtToDelete(pt.id)} className="text-slate-400 hover:text-red-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center">
                           <X size={16} />
                         </button>

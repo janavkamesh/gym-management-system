@@ -98,9 +98,9 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
       onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-4xl overflow-hidden animate-slide-up md:animate-fade-in max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-slate-200 shrink-0">
-          <h2 className="text-xl font-semibold text-slate-900">Import Members (CSV)</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
+        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
+          <h2 className="text-xl font-semibold text-white">Import Members (CSV)</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
             <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
           </button>
         </div>
@@ -112,7 +112,7 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
                 <Upload size={48} className="text-slate-400 mb-4" />
                 <h3 className="text-lg font-medium text-slate-900 mb-2">Upload CSV File</h3>
                 <p className="text-sm text-slate-500 mb-6 text-center max-w-md">
-                  Expected columns: <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">phone</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">plan_name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">join_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">expiry_date</span>
+                  Expected columns: <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">phone</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">plan_name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">join_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">expiry_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">uid (optional)</span>
                 </p>
                 <input 
                   type="file" 
@@ -156,6 +156,7 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
                       <tr>
                         <th className="px-4 py-3 font-medium">Row</th>
                         <th className="px-4 py-3 font-medium">Name</th>
+                        <th className="px-4 py-3 font-medium">UID</th>
                         <th className="px-4 py-3 font-medium">Phone</th>
                         <th className="px-4 py-3 font-medium">Plan</th>
                         <th className="px-4 py-3 font-medium">Status</th>
@@ -167,6 +168,7 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
                         <tr key={idx} className={row.status === 'Failed' ? 'bg-red-50/30' : row.status === 'Skipped' ? 'bg-yellow-50/30' : ''}>
                           <td className="px-4 py-3 text-slate-500">{row.row}</td>
                           <td className="px-4 py-3 font-medium text-slate-900">{row.data.name || '-'}</td>
+                          <td className="px-4 py-3 text-slate-600">{row.data.uid || '-'}</td>
                           <td className="px-4 py-3 text-slate-600">{row.data.phone || '-'}</td>
                           <td className="px-4 py-3 text-slate-600">{row.data.plan_name || '-'}</td>
                           <td className="px-4 py-3">
@@ -184,7 +186,7 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
             )}
           </div>
           
-          <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0 flex justify-end gap-3">
+          <div className="px-6 py-4 bg-white shrink-0 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}

@@ -19,6 +19,7 @@ interface SharedMembersPanelProps {
   onMemberRemoved?: (id: string) => void;
   initialFilter?: string;
   initialMemberId?: string;
+  initialOpenMember?: string;
   initialAction?: string;
 }
 
@@ -32,6 +33,7 @@ export default function SharedMembersPanel({
   onMemberRemoved,
   initialFilter,
   initialMemberId,
+  initialOpenMember,
   initialAction
 }: SharedMembersPanelProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>(
@@ -202,6 +204,7 @@ export default function SharedMembersPanel({
         onDeleted={removeMemberFromList}
         highlightedMemberId={highlightedMemberId}
         targetMemberId={initialMemberId}
+        openMemberId={initialOpenMember}
         action={initialAction}
       />
 

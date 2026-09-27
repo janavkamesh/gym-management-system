@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { PLACEHOLDER_USER_ID } from '@/lib/constants'
 import { logActivity } from '@/lib/activity-log'
 import { formatINR, formatDate } from '@/lib/utils/formatters'
+import { generateNextUid, getMaxUidNumber, getUidPrefix, formatUid } from '@/lib/utils/uid'
 
 /**
  * Helper: get the current user ID.
@@ -14,6 +15,14 @@ import { formatINR, formatDate } from '@/lib/utils/formatters'
 async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: userData } = await supabase.auth.getUser()
   return userData?.user?.id || PLACEHOLDER_USER_ID
+}
+
+export async function getNextMemberUid() {
+  const supabase = await createClient()
+  const userId = await getUserId(supabase)
+  const { data: user } = await supabase.auth.getUser()
+  const gymName = user?.user?.user_metadata?.gym_name
+  return await generateNextUid(supabase, userId, gymName)
 }
 
 /**
@@ -28,7 +37,8 @@ export async function createMember(data: {
   expiry_date?: string;
   payment_amount?: number;
   payment_method?: string;
-  pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number };
+  gender?: string;
+  pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number; ptStartDate?: string };
 }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
@@ -50,74 +60,64 @@ export async function createMember(data: {
     finalExpiryDate = expiryDate.toISOString().split('T')[0]
   }
 
-  const { data: member, error } = await supabase
-    .from('members')
-    .insert({
-      user_id: userId,
-      plan_id: data.plan_id,
-      name: data.name,
-      phone: data.phone,
-      join_date: data.join_date,
-      expiry_date: finalExpiryDate,
-      status: 'Active'
-    })
-    .select()
-    .single()
+    // Prepare PT data
+    let hasPt = false;
+    let trainerId = null;
+    let ptFee = 0;
+    let trainerShare = 0;
+    let ptDurationDays = 0;
+    let ptStartDate = null;
+    let ptEndDate = null;
 
-  if (error) throw error
-
-  const { data: planData } = await supabase.from('plans').select('plan_name').eq('id', data.plan_id).single()
-  await logActivity({
-    category: 'Members',
-    action: 'Added',
-    description: `Added member ${data.name} (${planData?.plan_name || 'Plan'})`,
-    entityType: 'member',
-    entityId: member.id,
-    entityName: data.name
-  })
-
-  if (data.payment_amount && data.payment_amount > 0) {
-    const { error: paymentError } = await supabase
-      .from('payments')
-      .insert({
-        member_id: member.id,
-        amount: data.payment_amount,
-        method: data.payment_method || 'Cash',
-        date: new Date().toISOString().split('T')[0],
-        period_start: data.join_date,
-        period_end: finalExpiryDate,
-        payment_type: 'Membership'
-      });
-    
-    if (paymentError) {
-      console.error('Payment insertion failed:', paymentError);
-    } else {
-      await logActivity({
-        category: 'Payments',
-        action: 'Collected',
-        description: `Collected ${formatINR(data.payment_amount)} via ${data.payment_method || 'Cash'} from ${data.name}`,
-        entityType: 'member',
-        entityId: member.id,
-        entityName: data.name,
-        amount: data.payment_amount
-      })
+    if (data.pt?.hasPt && data.pt?.trainerId) {
+      hasPt = true;
+      trainerId = data.pt.trainerId;
+      ptFee = data.pt.ptFee || 0;
+      trainerShare = data.pt.trainerShare || 0;
+      ptDurationDays = data.pt.ptDurationDays || 30;
+      ptStartDate = data.pt.ptStartDate || new Date().toISOString().split('T')[0];
+      
+      const pStart = new Date(ptStartDate);
+      pStart.setDate(pStart.getDate() + ptDurationDays);
+      ptEndDate = pStart.toISOString().split('T')[0];
     }
-  }
 
-  // Handle PT Assignment
-  if (data.pt?.hasPt && data.pt?.trainerId) {
-    const { error: ptError } = await supabase.from('pt_assignments').insert({
-      member_id: member.id,
-      trainer_id: data.pt.trainerId,
-      commission_percent: 0,
-      fee_amount: data.pt.ptFee,
-      trainer_share: data.pt.trainerShare,
-      duration_days: data.pt.ptDurationDays,
-      is_active: true,
-      assigned_date: new Date().toISOString().split('T')[0]
+    const uid = await generateNextUid(supabase, userId, (await supabase.auth.getUser()).data.user?.user_metadata?.gym_name);
+
+    const { data: memberId, error } = await supabase.rpc('create_member_with_initial_data', {
+      p_user_id: userId,
+      p_plan_id: data.plan_id,
+      p_name: data.name,
+      p_phone: data.phone,
+      p_join_date: data.join_date,
+      p_expiry_date: finalExpiryDate,
+      p_amount: data.payment_amount || 0,
+      p_gender: data.gender || null,
+      p_uid: uid,
+      p_has_pt: hasPt,
+      p_trainer_id: trainerId,
+      p_pt_fee: ptFee,
+      p_trainer_share: trainerShare,
+      p_pt_duration_days: ptDurationDays,
+      p_pt_start_date: ptStartDate,
+      p_pt_end_date: ptEndDate,
+      p_payment_method: data.payment_method || 'Cash'
     });
-    if (ptError) console.error('PT assignment insert failed:', ptError);
-  }
+  
+    if (error) throw error
+  
+    // Fetch member details to return matching the previous expected shape
+    const { data: member } = await supabase.from('members').select('*').eq('id', memberId).single();
+
+    const { data: planData } = await supabase.from('plans').select('plan_name').eq('id', data.plan_id).single()
+    await logActivity({
+      category: 'Members',
+      action: 'Added',
+      description: `Added member ${data.name} (${planData?.plan_name || 'Plan'})`,
+      entityType: 'member',
+      entityId: memberId,
+      entityName: data.name
+    })
   
   revalidatePath('/members')
   revalidatePath('/financials')
@@ -130,7 +130,7 @@ export async function createMember(data: {
  * Task 2 — Update Member
  * Updates editable fields. Recalculates expiry_date if plan_id or join_date changes.
  */
-export async function updateMember(memberId: string, data: { name?: string; phone?: string; plan_id?: string; join_date?: string; expiry_date?: string; pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number }; payment?: { id?: string; amount?: number } }) {
+export async function updateMember(memberId: string, data: { name?: string; phone?: string; plan_id?: string; join_date?: string; expiry_date?: string; gender?: string; pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number }; payment?: { id?: string; amount?: number } }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
   
@@ -172,7 +172,9 @@ export async function updateMember(memberId: string, data: { name?: string; phon
       phone: data.phone,
       plan_id: data.plan_id,
       join_date: data.join_date,
-      expiry_date: updates.expiry_date
+      expiry_date: updates.expiry_date,
+      amount: data.payment?.amount,
+      gender: data.gender !== undefined ? data.gender : undefined
     })
     .eq('id', memberId)
     .eq('user_id', userId)
@@ -371,8 +373,15 @@ export async function previewMembersCSV(rows: any[]) {
   const { data: plans } = await supabase.from('plans').select('id, plan_name').eq('user_id', userId)
   const planMap = new Map((plans || []).map(p => [p.plan_name.trim().toLowerCase(), p.id]))
 
-  const { data: existingMembers } = await supabase.from('members').select('phone').eq('user_id', userId)
+  const { data: existingMembers } = await supabase.from('members').select('phone, uid').eq('user_id', userId)
   const existingPhones = new Set((existingMembers || []).map(m => m.phone.trim()))
+  const existingUids = new Set((existingMembers || []).map(m => m.uid).filter(Boolean))
+
+  const { data: user } = await supabase.auth.getUser()
+  const gymName = user?.user?.user_metadata?.gym_name
+  const prefix = getUidPrefix(gymName)
+  const maxDbUid = await getMaxUidNumber(supabase, userId)
+  let autoUidOffset = 0
 
   const results = []
 
@@ -383,10 +392,21 @@ export async function previewMembersCSV(rows: any[]) {
     const plan_name = row.plan_name?.toString().trim()
     const join_date = row.join_date?.toString().trim()
     const expiry_date = row.expiry_date?.toString().trim()
+    let uid = row.uid?.toString().trim()
     
     if (!name || !phone || !plan_name || !join_date || !expiry_date) {
       results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Missing required fields' })
       continue
+    }
+
+    if (uid) {
+      if (existingUids.has(uid)) {
+        results.push({ row: i + 1, data: row, status: 'Failed', reason: `UID ${uid} already exists` })
+        continue
+      }
+    } else {
+      autoUidOffset++
+      uid = formatUid(prefix, maxDbUid + autoUidOffset)
     }
 
     const planId = planMap.get(plan_name.toLowerCase())
@@ -406,6 +426,7 @@ export async function previewMembersCSV(rows: any[]) {
     }
 
     existingPhones.add(phone) // prevent duplicate phone in same csv batch
+    existingUids.add(uid)
     
     results.push({ 
       row: i + 1, 
@@ -414,6 +435,7 @@ export async function previewMembersCSV(rows: any[]) {
       reason: '',
       validatedData: {
         user_id: userId,
+        uid: uid,
         name: name,
         phone: phone,
         plan_id: planId,
@@ -434,9 +456,37 @@ export async function executeMembersImport(validatedRows: any[]) {
   if (!validatedRows || validatedRows.length === 0) return 0
   
   const supabase = await createClient()
-  const { error } = await supabase.from('members').insert(validatedRows)
+
+  const insertPromises = validatedRows.map(row => 
+    supabase.rpc('create_member_with_initial_data', {
+      p_user_id: row.user_id,
+      p_plan_id: row.plan_id,
+      p_name: row.name,
+      p_phone: row.phone,
+      p_join_date: row.join_date,
+      p_expiry_date: row.expiry_date,
+      p_amount: row.amount || 0,
+      p_gender: row.gender || null,
+      p_uid: row.uid,
+      p_has_pt: false,
+      p_trainer_id: null,
+      p_pt_fee: 0,
+      p_trainer_share: 0,
+      p_pt_duration_days: 0,
+      p_pt_start_date: null,
+      p_pt_end_date: null,
+      p_payment_method: row.payment_method || 'Cash'
+    })
+  );
+
+  const results = await Promise.all(insertPromises);
   
-  if (error) throw error
+  // Check for any errors
+  const failed = results.filter(r => r.error);
+  if (failed.length > 0) {
+    console.error('Some imports failed:', failed);
+    throw failed[0].error;
+  }
   
   revalidatePath('/members')
   revalidatePath('/')

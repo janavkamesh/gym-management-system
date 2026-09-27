@@ -50,7 +50,7 @@ export async function recalculatePtDueDate(assignmentId: string) {
 
   const { data: payments, error: pError } = await supabase
     .from('payments')
-    .select('period_end')
+    .select('period_start, period_end')
     .eq('member_id', assignment.member_id)
     .eq('trainer_id', assignment.trainer_id)
     .eq('payment_type', 'PT')
@@ -61,16 +61,22 @@ export async function recalculatePtDueDate(assignmentId: string) {
   if (pError) throw pError
 
   let newDueDate: string
+  let newStartDate: string | null = null
 
   if (payments && payments.length > 0 && payments[0].period_end) {
     newDueDate = payments[0].period_end
+    newStartDate = payments[0].period_start
   } else {
     newDueDate = assignment.assigned_date
   }
 
   const { error: updateError } = await supabase
     .from('pt_assignments')
-    .update({ next_pt_due_date: newDueDate })
+    .update({ 
+      next_pt_due_date: newDueDate,
+      start_date: newStartDate,
+      end_date: newDueDate
+    })
     .eq('id', assignmentId)
 
   if (updateError) throw updateError
@@ -156,14 +162,15 @@ export async function collectPaymentAmount(memberId: string, amount: number, met
   const oldExpiryStr = oldExpiryDate.toISOString().split('T')[0]
   const newExpiryStr = newExpiryDate.toISOString().split('T')[0]
 
-  // 4. Insert payment with date = old_expiry_date, period_start = oldExpiryStr, period_end = newExpiryStr
+  // 4. Insert payment with date = today, period_start = oldExpiryStr, period_end = newExpiryStr
+  const todayStr = new Date().toISOString().split('T')[0]
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
       member_id: memberId,
       amount: amount,
       method: method,
-      date: oldExpiryStr,
+      date: todayStr,
       collected_date: new Date().toISOString(),
       period_start: oldExpiryStr,
       period_end: newExpiryStr,
@@ -214,7 +221,7 @@ export async function collectPtPayment(assignmentId: string, amount: number, met
   if (assignmentError || !assignment) throw new Error('PT Assignment not found')
 
   // 2. Calculate new_next_pt_due_date = old_next_pt_due_date + duration_days
-  const oldDueStr = assignment.next_pt_due_date || assignment.assigned_date
+  const oldDueStr = assignment.end_date || assignment.next_pt_due_date || assignment.assigned_date
   if (!oldDueStr) throw new Error('No base date found to calculate from')
   
   const oldDueDate = new Date(oldDueStr)
@@ -225,14 +232,15 @@ export async function collectPtPayment(assignmentId: string, amount: number, met
   
   const newDueStr = newDueDate.toISOString().split('T')[0]
 
-  // 3. Insert payment with date = old_due_date, period_start = oldDueStr, period_end = newDueStr
+  // 3. Insert payment with date = today, period_start = oldDueStr, period_end = newDueStr
+  const todayStr = new Date().toISOString().split('T')[0]
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
       member_id: assignment.member_id,
       amount: amount,
       method: method,
-      date: oldDueStr,
+      date: todayStr,
       collected_date: new Date().toISOString(),
       payment_type: 'PT',
       trainer_id: assignment.trainer_id,

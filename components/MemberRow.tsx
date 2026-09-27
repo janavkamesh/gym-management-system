@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { computeStatusColor } from '@/lib/utils/status';
 import { deleteMember } from '@/lib/actions/members';
 import { generateWhatsAppLink } from '@/lib/utils/whatsapp';
 import { logActivity } from '@/lib/activity-log';
 import { useToast } from './ToastProvider';
-import { MessageCircle, Trash2, Edit2, X, Plus, History } from 'lucide-react';
+import { MessageCircle, Trash2, Edit2, X, Plus, History, Check, MoreVertical, Eye } from 'lucide-react';
 import Tooltip from './Tooltip';
 import CollectPaymentModal from './CollectPaymentModal';
 import PaymentHistoryModal from './PaymentHistoryModal';
+import Member360Modal from './Member360Modal';
 import Badge from './ui/Badge';
 
 interface MemberRowProps {
@@ -21,6 +23,7 @@ interface MemberRowProps {
   isHighlighted?: boolean;
   trainers?: any[];
   isTarget?: boolean;
+  shouldOpenModal?: boolean;
   action?: string;
 }
 
@@ -30,15 +33,37 @@ export const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRestore, isHighlighted, trainers, isTarget, action }: MemberRowProps) {
+export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRestore, isHighlighted, trainers, isTarget, shouldOpenModal, action }: MemberRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCollectModal, setShowCollectModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const { showToast } = useToast();
   const lastWaClick = useRef<number>(0);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        menuRef.current && 
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowMenu(false);
+      }
+    }
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMenu]);
 
   const handleWaClick = () => {
     const now = Date.now();
@@ -61,7 +86,10 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
         rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
     }
-  }, [isTarget]);
+    if (shouldOpenModal) {
+      setShowProfileModal(true);
+    }
+  }, [isTarget, shouldOpenModal]);
 
   const statusColor = computeStatusColor(member.expiry_date);
   
@@ -109,12 +137,24 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
 
   return (
     <>
-    <tr ref={rowRef} className={`hover:bg-slate-50 transition-all duration-300 ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}>
+    <tr 
+      ref={rowRef} 
+      onClick={() => { if (!isArchived) setShowProfileModal(true); }}
+      className={`hover:bg-slate-50 transition-all duration-300 ${!isArchived ? 'cursor-pointer' : ''} ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
+    >
       <td className={`relative px-4 md:px-6 py-3.5 md:py-3 font-medium text-left whitespace-nowrap max-w-50 overflow-hidden text-ellipsis ${isArchived ? 'opacity-50' : ''}`}>
         {hasActivePt && (
           <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-blue-600" />
         )}
-        {member.name}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-white shrink-0 uppercase">
+            {member.name.charAt(0)}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-slate-900">{member.name}</span>
+            <span className="text-xs text-slate-400 font-normal">{member.uid || '-'}</span>
+          </div>
+        </div>
       </td>
       <td className={`px-4 md:px-6 py-3.5 md:py-3 text-left text-slate-500 whitespace-nowrap text-sm ${isArchived ? 'opacity-50' : ''}`}>
         {member.plans?.plan_name || '-'}
@@ -123,12 +163,23 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
         {getDaysLeft()}
       </td>
       <td className={`px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left ${isArchived ? 'opacity-50' : ''}`}>
-        <Badge className={status.badge}>
-          {status.text}
-        </Badge>
+        <div className="flex flex-col items-start gap-1.5">
+          <Badge className={status.badge}>
+            {status.text}
+          </Badge>
+          {member.ptStatusColor && (
+            <Badge className={
+              member.ptStatusColor === 'Green' ? 'bg-green-100 text-green-700' :
+              member.ptStatusColor === 'Yellow' ? 'bg-yellow-100 text-yellow-700' :
+              'bg-red-100 text-red-700'
+            }>
+              PT: {member.ptStatusColor === 'Green' ? 'Active' : member.ptStatusColor === 'Yellow' ? 'Expiring' : 'Expired'}
+            </Badge>
+          )}
+        </div>
       </td>
       {isArchived ? (
-        <td className="px-4 md:px-6 py-3.5 md:py-3 text-right" colSpan={5}>
+        <td className="px-4 md:px-6 py-3.5 md:py-3 text-right" colSpan={3}>
           <button
             onClick={handleRestore}
             disabled={isRestoring}
@@ -145,20 +196,10 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
           <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
             <Tooltip content="Amount Collected">
               <button
-                onClick={() => setShowCollectModal(true)}
+                onClick={(e) => { e.stopPropagation(); setShowCollectModal(true); }}
                 className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
               >
-                <Plus size={18} strokeWidth={2.5} />
-              </button>
-            </Tooltip>
-          </td>
-          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-            <Tooltip content="Payment History">
-              <button
-                onClick={() => setShowHistoryModal(true)}
-                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
-              >
-                <History size={18} strokeWidth={2.5} />
+                <Check size={18} strokeWidth={2.5} />
               </button>
             </Tooltip>
           </td>
@@ -168,7 +209,7 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
                 href={generateWhatsAppLink(member)}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={handleWaClick}
+                onClick={(e) => { e.stopPropagation(); handleWaClick(); }}
                 className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
               >
                 <WhatsAppIcon size={18} />
@@ -176,29 +217,62 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
             </Tooltip>
           </td>
           <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-            {onEdit ? (
-              <Tooltip content="Edit Member">
-                <button
-                  onClick={onEdit}
-                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md text-blue-500 hover:text-blue-700 hover:bg-blue-50 bg-blue-50/50 transition-colors active:scale-95 touch-manipulation"
-                >
-                  <Edit2 size={18} />
-                </button>
-              </Tooltip>
-            ) : (
-              <div className="w-12 h-12 md:w-9 md:h-9 mx-auto" />
-            )}
-          </td>
-          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-            <Tooltip content={isTarget && action === 'cleanup' ? "Expired 7d ago — Click to remove" : "Remove Member"}>
+            <Tooltip content="View Profile">
               <button
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isDeleting}
-                className={`inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md transition-all active:scale-95 touch-manipulation disabled:opacity-50 ${isTarget && action === 'cleanup' ? 'ring-4 ring-red-500/70 shadow-lg shadow-red-500/50 bg-red-100 text-red-600 animate-pulse' : 'text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50'}`}
+                onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}
+                className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
               >
-                <Trash2 size={18} strokeWidth={2.5} />
+                <Eye size={18} />
               </button>
             </Tooltip>
+          </td>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center relative">
+            <div className="relative inline-block text-left">
+              <button
+                ref={buttonRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setMenuPos({
+                    top: rect.bottom + window.scrollY + 4,
+                    left: rect.right + window.scrollX - 192
+                  });
+                  setShowMenu(!showMenu);
+                }}
+                className={`inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation ${isTarget && action === 'cleanup' ? 'ring-4 ring-red-500/70 shadow-lg shadow-red-500/50 bg-red-100 text-red-600 animate-pulse' : 'text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'}`}
+              >
+                <MoreVertical size={18} />
+              </button>
+              {showMenu && createPortal(
+                <div 
+                  ref={menuRef}
+                  className="absolute w-48 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
+                  style={{ top: menuPos.top, left: menuPos.left }}
+                >
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowHistoryModal(true); }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <History size={16} /> Payment History
+                  </button>
+                  {onEdit && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setShowMenu(false); onEdit(); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    >
+                      <Edit2 size={16} /> Edit Member
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); setShowDeleteModal(true); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-2 border-t border-slate-100 ${isTarget && action === 'cleanup' ? 'bg-red-50 text-red-600 font-medium' : 'text-red-600 hover:bg-red-50'}`}
+                  >
+                    <Trash2 size={16} /> Remove Member
+                  </button>
+                </div>,
+                document.body
+              )}
+            </div>
           </td>
         </>
       )}
@@ -253,6 +327,18 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
               </div>
             </div>
           </div>
+        </td>
+      </tr>
+    )}
+
+    {showProfileModal && !isArchived && (
+      <tr>
+        <td colSpan={9} className="p-0 border-0 h-0">
+          <Member360Modal 
+            member={member} 
+            trainers={trainers}
+            onClose={() => setShowProfileModal(false)} 
+          />
         </td>
       </tr>
     )}

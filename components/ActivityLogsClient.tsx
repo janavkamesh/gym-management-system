@@ -198,10 +198,10 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
                 <th className="px-4 md:px-6 font-medium text-sm text-center">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto block min-h-0">
+            <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto flex flex-col min-h-0">
               {isInitialLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="animate-pulse grid grid-cols-[1.2fr_1fr_1fr_2.2fr_0.8fr] items-center">
+                  <tr key={i} className="animate-pulse grid grid-cols-[1.2fr_1fr_1fr_2.2fr_0.8fr] items-center w-full">
                     <td className="px-4 md:px-6 py-3.5 md:py-3"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
                     <td className="px-4 md:px-6 py-3.5 md:py-3"><div className="h-6 bg-slate-200 rounded-full w-20"></div></td>
                     <td className="px-4 md:px-6 py-3.5 md:py-3"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
@@ -210,8 +210,8 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
                   </tr>
                 ))
               ) : data.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 md:px-6 py-12 text-center text-slate-500">
+                <tr className="flex-1 flex items-center justify-center w-full">
+                  <td colSpan={5} className="px-4 md:px-6 py-12 text-center text-slate-500 w-full">
                     <p className="font-medium text-slate-900 mb-1">{hasActiveFilters ? "No matching activity" : "No activity yet"}</p>
                     <p className="text-sm">{hasActiveFilters ? "Try changing or clearing your filters." : "Actions like adding members and logging payments will appear here."}</p>
                     {hasActiveFilters && (
@@ -226,7 +226,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
                   const dt = formatDateTime(row.created_at);
                   const pillClass = CATEGORY_COLORS[row.category] || CATEGORY_COLORS['Others'];
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50/50 transition-colors grid grid-cols-[1.2fr_1fr_1fr_2.2fr_0.8fr] items-center">
+                    <tr key={row.id} className="hover:bg-slate-50/50 transition-colors grid grid-cols-[1.2fr_1fr_1fr_2.2fr_0.8fr] items-center w-full">
                       <td className="px-4 md:px-6 py-[14px] text-sm text-slate-700 whitespace-nowrap">
                         <div>{dt.date}</div>
                         <div className="text-xs text-slate-500 mt-0.5">{dt.time}</div>

@@ -42,13 +42,15 @@ export default function PaySalaryModal({ trainer, summary, month, year, onClose,
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
-      <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200 pb-safe">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-slate-900">Pay Salary</h3>
-          <button onClick={onClose} className="text-slate-400 hover:bg-slate-100 p-2 rounded-full transition-colors active:scale-95">
-            <X size={20} />
+      <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200 flex flex-col overflow-hidden">
+        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
+          <h2 className="text-xl font-semibold text-white">Pay Salary</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
+            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
           </button>
         </div>
+        
+        <div className="p-6 pb-safe">
         
         <div className="mb-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -113,6 +115,7 @@ export default function PaySalaryModal({ trainer, summary, month, year, onClose,
             )}
           </button>
         </div>
+      </div>
       </div>
     </div>,
     document.body

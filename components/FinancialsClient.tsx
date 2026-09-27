@@ -32,15 +32,15 @@ interface FinancialsClientProps {
 }
 
 const COLORS = {
-  Cash: '#16A34A', // Green 600
+  Cash: '#1E3A8A', // Blue 900
   UPI: '#2563EB',  // Blue 600
-  Card: '#EAB308', // Yellow 500
-  New: '#2563EB',
-  Renewal: '#0F172A', // Slate 900
-  Lost: '#DC2626', // Red 600
-  Expense: '#DC2626', // Red 600
+  Card: '#60A5FA', // Blue 400
+  New: '#1E3A8A', // Blue 900
+  Renewal: '#3B82F6', // Blue 500
+  Lost: '#93C5FD', // Blue 300
+  Expense: '#60A5FA', // Blue 400
 };
-const PLAN_COLORS = ['#2563EB', '#0F172A', '#16A34A', '#EAB308', '#DC2626'];
+const PLAN_COLORS = ['#1E3A8A', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'];
 
 export default function FinancialsClient({
   initialExpenses,
@@ -544,7 +544,7 @@ export default function FinancialsClient({
               </div>
             ) : (!trendPaymentsData || !trendExpensesData) ? (
               <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load data</div>
-            ) : revenueVsExpensesChartData.length > 0 ? (
+            ) : revenueVsExpensesChartData.length > 0 && revenueVsExpensesChartData.some((m: any) => m.revenue > 0 || m.expenses > 0) ? (
               <PinnedChartWrapper resetDeps={[trendPaymentsData, trendExpensesData]} valueFormatter={formatCompactINR}>
                 <ResponsiveContainer width="100%" height="100%">
                   <TrendChart 
@@ -559,7 +559,10 @@ export default function FinancialsClient({
                 </ResponsiveContainer>
               </PinnedChartWrapper>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm font-medium text-slate-900">Not enough data yet</div>
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
+                <span className="text-xs text-slate-500">Log payments or expenses to compare</span>
+              </div>
             )}
           </div>
         </div>
@@ -591,6 +594,7 @@ export default function FinancialsClient({
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <span className="text-sm font-medium text-slate-900 mb-1">No active members</span>
+                <span className="text-xs text-slate-500">Add members to see plan distribution</span>
               </div>
             )}
           </div>
@@ -623,6 +627,7 @@ export default function FinancialsClient({
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
+                <span className="text-xs text-slate-500">Wait for next month to see trend</span>
               </div>
             )}
           </div>
