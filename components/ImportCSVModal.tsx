@@ -80,12 +80,21 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
 
     setIsProcessing(true);
     try {
-      const count = await executeMembersImport(validRows);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Import timed out after 30 seconds. Please check if members were partially imported.')), 30000);
+      });
+      
+      const count = await Promise.race([
+        executeMembersImport(validRows),
+        timeoutPromise
+      ]);
+      
       showToast(`Successfully imported ${count} members`, 'success');
       onSuccess();
       onClose();
-    } catch (error) {
-      showToast('Failed to import members', 'error');
+    } catch (error: any) {
+      const message = error?.message || 'Failed to import members. The server may have encountered an error.';
+      showToast(message, 'error');
       setIsProcessing(false);
     }
   };

@@ -379,6 +379,8 @@ export async function previewMembersCSV(rows: any[]) {
 
   const { data: user } = await supabase.auth.getUser()
   const gymName = user?.user?.user_metadata?.gym_name
+  const uidPrefix = getUidPrefix(gymName)
+  const currentMaxUidNumber = await getMaxUidNumber(supabase, userId, 'members')
   let autoUidOffset = 0
 
   const results = []
@@ -411,7 +413,7 @@ export async function previewMembersCSV(rows: any[]) {
         continue
       }
     } else {
-      uid = await generateNextUid(supabase, userId, gymName, autoUidOffset)
+      uid = formatUid(uidPrefix, currentMaxUidNumber + 1 + autoUidOffset)
       autoUidOffset++
     }
 
@@ -465,29 +467,35 @@ export async function executeMembersImport(validatedRows: any[]) {
   
   const supabase = await createClient()
 
-  const insertPromises = validatedRows.map(row => 
-    supabase.rpc('create_member_with_initial_data', {
-      p_user_id: row.user_id,
-      p_plan_id: row.plan_id,
-      p_name: row.name,
-      p_phone: row.phone,
-      p_join_date: row.join_date,
-      p_expiry_date: row.expiry_date,
-      p_amount: row.amount || 0,
-      p_gender: row.gender || null,
-      p_uid: row.uid,
-      p_has_pt: false,
-      p_trainer_id: null,
-      p_pt_fee: 0,
-      p_trainer_share: 0,
-      p_pt_duration_days: 0,
-      p_pt_start_date: null,
-      p_pt_end_date: null,
-      p_payment_method: row.payment_method || 'Cash'
-    })
-  );
+  const CHUNK_SIZE = 15;
+  const results = [];
 
-  const results = await Promise.all(insertPromises);
+  for (let i = 0; i < validatedRows.length; i += CHUNK_SIZE) {
+    const chunk = validatedRows.slice(i, i + CHUNK_SIZE);
+    const insertPromises = chunk.map(row => 
+      supabase.rpc('create_member_with_initial_data', {
+        p_user_id: row.user_id,
+        p_plan_id: row.plan_id,
+        p_name: row.name,
+        p_phone: row.phone,
+        p_join_date: row.join_date,
+        p_expiry_date: row.expiry_date,
+        p_amount: row.amount || 0,
+        p_gender: row.gender || null,
+        p_uid: row.uid,
+        p_has_pt: false,
+        p_trainer_id: null,
+        p_pt_fee: 0,
+        p_trainer_share: 0,
+        p_pt_duration_days: 0,
+        p_pt_start_date: null,
+        p_pt_end_date: null,
+        p_payment_method: row.payment_method || 'Cash'
+      })
+    );
+    const chunkResults = await Promise.all(insertPromises);
+    results.push(...chunkResults);
+  }
   
   // Check for any errors
   const failed = results.filter(r => r.error);
