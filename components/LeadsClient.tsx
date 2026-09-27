@@ -5,6 +5,7 @@ import { useToast } from './ToastProvider';
 import { Plus } from 'lucide-react';
 import AddLeadModal from './AddLeadModal';
 import LeadRow from './LeadRow';
+import PageHeader from './PageHeader';
 
 import { useMemo } from 'react';
 
@@ -37,19 +38,19 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Leads</h1>
-          <p className="text-slate-500 text-sm">Follow up on walk-ins and enquiries before they go cold.</p>
-        </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
-        >
-          <Plus size={18} />
-          Add Lead
-        </button>
-      </div>
+      <PageHeader
+        title="Leads"
+        subtitle="Follow up on walk-ins and enquiries before they go cold."
+        action={
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
+          >
+            <Plus size={18} />
+            Add Lead
+          </button>
+        }
+      />
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         {leads.length === 0 ? (

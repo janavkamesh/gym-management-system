@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { deleteTrainer, fetchPtAssignments, fetchSalaryAdvances, fetchSalarySummary, deletePtAssignment, deleteSalaryAdvance, markAdvanceDeducted, restoreTrainer } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
-import { Trash2, ChevronDown, ChevronUp, Check, X, Plus, AlertCircle, RefreshCw, Undo2 } from 'lucide-react';
+import { Trash2, ChevronDown, ChevronUp, Check, X, Plus, AlertCircle, RefreshCw, Undo2, Eye, Banknote } from 'lucide-react';
 import Tooltip from './Tooltip';
 import AddSalaryAdvanceModal from './AddSalaryAdvanceModal';
 import CollectPtPaymentModal from './CollectPtPaymentModal';
 import TrainerSalaryHistory from './TrainerSalaryHistory';
 import PaySalaryModal from './PaySalaryModal';
+import TrainerProfileModal from './TrainerProfileModal';
 import { fetchTrainerSalaryPayments } from '@/lib/actions/payments';
 
 interface TrainerRowProps {
@@ -23,7 +24,6 @@ interface TrainerRowProps {
 
 export default function TrainerRow({ trainer, members, onDeleted, onRestore, isTarget, action }: TrainerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -54,6 +54,7 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
   // Modals
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Default to current month for summary
   const currentMonth = new Date().getMonth() + 1;
@@ -123,15 +124,11 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
 
 
   useEffect(() => {
-    if (isExpanded) {
-      loadDetails();
-    }
-  // eslint-disable-next-inline react-hooks/exhaustive-deps
-  }, [isExpanded]);
+    // Phase 3 will handle data fetching on demand
+  }, []);
 
   useEffect(() => {
     if (isTarget) {
-      if (!isExpanded) setIsExpanded(true);
       setTimeout(() => {
         rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 500);
@@ -215,224 +212,14 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
   };
 
-  const renderWorkspace = () => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        
-        {/* Left Column: PT Assignments */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col h-75">
-          <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-100 shrink-0">
-            <h3 className="font-semibold text-slate-900 text-sm md:text-base">PT Clients ({ptAssignments.length})</h3>
-          </div>
-          <div className="p-0 flex-1 overflow-y-auto">
-            {isLoadingPt ? (
-              <div className="p-4 space-y-4">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="flex justify-between items-center animate-pulse">
-                    <div>
-                      <div className="h-4 bg-slate-200 rounded w-24 mb-2"></div>
-                      <div className="h-3 bg-slate-200 rounded w-16"></div>
-                    </div>
-                    <div className="h-6 bg-slate-200 rounded w-16"></div>
-                  </div>
-                ))}
-              </div>
-            ) : ptError ? (
-              <div className="p-6 text-center text-sm text-slate-500 flex flex-col items-center justify-center h-full">
-                <AlertCircle size={24} className="text-red-400 mb-2" />
-                <p>Failed to load PT clients</p>
-                <button onClick={loadPt} className="mt-2 text-blue-600 font-medium flex items-center gap-1 hover:underline min-h-12 px-2"><RefreshCw size={14}/> Retry</button>
-              </div>
-            ) : ptAssignments.length === 0 ? (
-              <div className="p-6 text-center text-sm text-slate-500 flex flex-col items-center justify-center h-full">No PT clients assigned.</div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {ptAssignments.map(pt => (
-                  <div 
-                    key={pt.id} 
-                    className="p-3 md:p-4 flex items-center justify-between hover:bg-slate-50 transition-colors duration-1000"
-                  >
-                    <div className="min-w-0 flex-1 mr-4">
-                      <div className="font-medium text-slate-900 text-sm truncate">{pt.member?.name || 'Unknown Member'}</div>
-                      <div className="text-xs text-slate-500 mt-0.5 truncate">
-                        Assigned: {new Date(pt.assigned_date).toLocaleDateString('en-GB')} • Duration: {pt.duration_days === 30 ? '1 Month' : pt.duration_days === 90 ? '3 Months' : pt.duration_days === 180 ? '6 Months' : pt.duration_days === 365 ? '1 Year' : `${pt.duration_days || '-'} Days`}
-                      </div>
-                    </div>
-                    <div className="flex flex-col md:flex-row items-end md:items-center gap-1 md:gap-4 shrink-0">
-                      <div className="text-right flex items-center gap-3">
-                        <span className="font-medium text-slate-900 text-sm">{formatCurrency(Number(pt.fee_amount || 0))}</span>
-                        <span className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs font-medium">{pt.trainer_share || pt.commission_percent}% Share</span>
-                      </div>
-                      <div className="flex items-center gap-1 md:gap-2">
-                        <button onClick={() => setPtToDelete(pt.id)} className="text-slate-400 hover:text-red-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center">
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Right Column: Salary Advances */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col h-75">
-          <div className="flex items-center justify-between p-3 md:p-4 border-b border-slate-100 shrink-0">
-            <h3 className="font-semibold text-slate-900 text-sm md:text-base">Salary Advances</h3>
-            <button 
-              onClick={() => setIsAdvanceModalOpen(true)}
-              className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 md:px-2.5 py-2 md:py-1.5 rounded-md transition-colors min-h-12 md:min-h-0"
-            >
-              <Plus size={16} className="md:w-3.5 md:h-3.5" /> <span className="hidden md:inline">Log Advance</span><span className="md:hidden">Log</span>
-            </button>
-          </div>
-          <div className="p-0 flex-1 overflow-y-auto">
-            {isLoadingAdv ? (
-              <div className="p-4 space-y-4">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="flex justify-between items-center animate-pulse">
-                    <div>
-                      <div className="h-4 bg-slate-200 rounded w-20 mb-2"></div>
-                      <div className="h-3 bg-slate-200 rounded w-24"></div>
-                    </div>
-                    <div className="h-6 bg-slate-200 rounded w-20"></div>
-                  </div>
-                ))}
-              </div>
-            ) : advError ? (
-              <div className="p-6 text-center text-sm text-slate-500 flex flex-col items-center justify-center h-full">
-                <AlertCircle size={24} className="text-red-400 mb-2" />
-                <p>Failed to load advances</p>
-                <button onClick={loadAdv} className="mt-2 text-blue-600 font-medium flex items-center gap-1 hover:underline min-h-12 px-2"><RefreshCw size={14}/> Retry</button>
-              </div>
-            ) : salaryAdvances.length === 0 ? (
-              <div className="p-6 text-center text-sm text-slate-500 flex flex-col items-center justify-center h-full">No salary advances logged.</div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {salaryAdvances.map(adv => (
-                  <div key={adv.id} className="p-3 md:p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div className="min-w-0 flex-1 mr-2">
-                      <div className="font-medium text-slate-900 text-sm truncate">{formatCurrency(Number(adv.amount))}</div>
-                      <div className="text-xs text-slate-500 mt-0.5 truncate">
-                        {new Date(adv.date).toLocaleDateString('en-GB')} {adv.note ? `• ${adv.note}` : ''}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 md:gap-3 shrink-0">
-                      <button 
-                        onClick={() => handleToggleDeducted(adv)}
-                        className={`flex items-center gap-1 px-2 md:px-2 py-2 md:py-1 min-h-12 md:min-h-0 rounded text-xs font-medium border transition-colors ${
-                          adv.deducted_flag 
-                          ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
-                          : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
-                        }`}
-                      >
-                        {adv.deducted_flag ? <><Check size={12}/> Deducted</> : 'Pending'}
-                      </button>
-                      <button onClick={() => handleDeleteAdvance(adv.id)} className="text-slate-400 hover:text-red-600 p-2 min-h-12 min-w-12 md:min-h-0 md:min-w-0 md:p-0 flex items-center justify-center">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Full Width Bottom Banner: Salary Summary */}
-        <div className="md:col-span-2 bg-slate-900 text-white rounded-xl p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between shadow-sm min-h-25">
-          {isLoadingSummary ? (
-             <div className="w-full flex items-center justify-between animate-pulse">
-                <div>
-                  <div className="h-4 bg-slate-700 rounded w-24 mb-3"></div>
-                  <div className="h-8 bg-slate-700 rounded w-32"></div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="h-8 bg-slate-700 rounded w-16"></div>
-                  <div className="h-8 bg-slate-700 rounded w-16"></div>
-                </div>
-             </div>
-          ) : summaryError ? (
-            <div className="w-full flex flex-col items-center justify-center text-sm text-slate-400 py-2">
-              <AlertCircle size={20} className="text-red-400 mb-1" />
-              <span>Failed to calculate summary</span>
-              <button onClick={loadSummary} className="mt-2 text-blue-400 font-medium hover:underline flex items-center gap-1 min-h-12"><RefreshCw size={14}/> Retry</button>
-            </div>
-          ) : salarySummary ? (
-            <>
-              <div className="flex flex-col md:flex-row md:items-center justify-between w-full">
-                <div className="flex-1">
-                  <div className="text-sm text-slate-400 font-medium">Estimated Salary ({new Date(currentYear, currentMonth - 1).toLocaleString('default', { month: 'short', year: 'numeric' })})</div>
-                  <div className="text-2xl font-semibold mt-1 truncate max-w-62.5">{formatCurrency(salarySummary.netPayable)}</div>
-                  <div className="flex items-center gap-3 md:gap-6 mt-4 text-xs md:text-sm">
-                    <div>
-                      <div className="text-slate-400 text-10px md:text-xs">Base Salary</div>
-                      <div className="font-medium truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.baseSalary)}</div>
-                    </div>
-                    <div className="text-slate-600">+</div>
-                    <div>
-                      <div className="text-slate-400 text-10px md:text-xs">PT Share</div>
-                      <div className="font-medium text-green-400 truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.totalCommission)}</div>
-                    </div>
-                    <div className="text-slate-600">-</div>
-                    <div>
-                      <div className="text-slate-400 text-10px md:text-xs">Pending Adv.</div>
-                      <div className="font-medium text-red-400 truncate max-w-20 md:max-w-25">{formatCurrency(salarySummary.totalAdvances)}</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 md:mt-0 md:pl-6 shrink-0 flex items-center border-t md:border-t-0 md:border-l border-slate-700/50 pt-4 md:pt-0">
-                  {(() => {
-                    const monthStartStr = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
-                    const hasPaid = salaryPayments.some(p => p.month_start === monthStartStr && !p.is_voided);
-                    return (
-                      <div className="flex flex-col items-end w-full">
-                        <button 
-                          onClick={() => setShowPayModal(true)}
-                          disabled={hasPaid || salarySummary.netPayable < 0}
-                          className="w-full md:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-400 text-white px-5 py-2.5 rounded-lg font-medium transition-colors active:scale-95 text-sm"
-                        >
-                          {hasPaid ? 'Already Paid' : 'Pay Salary'}
-                        </button>
-                        {hasPaid && (
-                          <div className="text-[10px] text-slate-400 mt-1">Salary already logged for this month</div>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="w-full text-center text-sm text-slate-500">Summary unavailable</div>
-          )}
-        </div>
-        
-        {/* Salary History */}
-        <div className="md:col-span-2 mt-0">
-          <TrainerSalaryHistory 
-            trainer={trainer} 
-            payments={salaryPayments} 
-            isLoading={isLoadingPayments} 
-            onRefresh={loadDetails} 
-          />
-        </div>
-
-      </div>
-    );
-  };
 
   return (
     <>
       <tr 
         ref={rowRef}
-        className={`transition-colors md:cursor-default ${isExpanded ? 'bg-slate-50' : 'hover:bg-slate-50'} ${!isArchived ? 'cursor-pointer' : ''} ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
-        onClick={() => {
-          if (!isArchived && window.innerWidth < 768) {
-            setIsExpanded(true);
-          }
-        }}
+        onClick={() => { if (!isArchived) setShowProfileModal(true); }}
+        className={`transition-colors hover:bg-slate-50 ${!isArchived ? 'cursor-pointer' : ''} ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
       >
         <td className={`px-4 md:px-6 py-4 md:py-3 text-sm font-medium text-left whitespace-nowrap overflow-hidden text-ellipsis max-w-37.5 text-slate-900 ${isArchived ? 'opacity-50' : ''}`}>
           {trainer.name}
@@ -449,19 +236,44 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
         
         {!isArchived ? (
           <>
-            <td className="hidden md:table-cell px-6 py-3 text-center">
-              <button
-                onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                className="inline-flex mx-auto items-center justify-center min-h-9 px-3 gap-2 text-sm text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors font-medium active:scale-95 touch-manipulation"
-              >
-                {isExpanded ? (
-                  <><ChevronUp size={16} /> Hide Details</>
-                ) : (
-                  <><ChevronDown size={16} /> Manage</>
-                )}
-              </button>
+            <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+              <Tooltip content="View Profile">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}
+                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+                >
+                  <Eye size={18} />
+                </button>
+              </Tooltip>
             </td>
-            <td className="hidden md:table-cell px-6 py-3 text-center">
+            <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+              <Tooltip content="Pay Salary">
+                <button
+                  onClick={async (e) => { 
+                    e.stopPropagation(); 
+                    if (!salarySummary) {
+                      await loadSummary();
+                    }
+                    setShowPayModal(true); 
+                  }}
+                  disabled={isLoadingSummary}
+                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation disabled:opacity-50"
+                >
+                  {isLoadingSummary ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />}
+                </button>
+              </Tooltip>
+            </td>
+            <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+              <Tooltip content="Log Advance">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsAdvanceModalOpen(true); }}
+                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+                >
+                  <Plus size={18} strokeWidth={2.5} />
+                </button>
+              </Tooltip>
+            </td>
+            <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
               <Tooltip content="Remove Trainer">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
@@ -487,57 +299,22 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
         )}
       </tr>
 
-      {/* Desktop Expandable Row */}
-      {isExpanded && (
-        <tr className="hidden md:table-row bg-slate-50 border-b border-slate-200">
-          <td colSpan={6} className="p-0">
-            <div className="p-6 pt-0 border-t border-slate-200/50">
-              {renderWorkspace()}
-            </div>
-          </td>
-        </tr>
-      )}
 
-      {/* Mobile Drill-Down Sheet */}
-      {mounted && isExpanded && createPortal(
-        <div className="md:hidden fixed inset-0 z-60 bg-slate-50 flex flex-col animate-in slide-in-from-bottom-full duration-200">
-          <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-white shadow-sm shrink-0 mt-safe">
-            <div className="min-w-0 pr-4">
-              <h2 className="font-semibold text-lg text-slate-900 truncate">{trainer.name}</h2>
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{trainer.phone} • Base: {formatCurrency(Number(trainer.base_salary))}</p>
-            </div>
-            <button 
-              onClick={() => setIsExpanded(false)}
-              className="p-2 shrink-0 text-slate-500 hover:bg-slate-100 rounded-full transition-colors active:scale-95"
-            >
-              <X size={24} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 pb-30">
-            {renderWorkspace()}
-            <div className="mt-8 pt-6 border-t border-slate-200/50 flex justify-center">
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                disabled={isDeleting}
-                className="flex items-center gap-2 text-red-600 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-lg font-medium transition-colors active:scale-95 min-h-12"
-              >
-                <Trash2 size={18} />
-                Remove Trainer
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Modals for this row */}
       {mounted && createPortal(
         <>
+          {showProfileModal && (
+            <TrainerProfileModal 
+              trainer={trainer} 
+              onClose={() => setShowProfileModal(false)} 
+            />
+          )}
           <AddSalaryAdvanceModal 
             isOpen={isAdvanceModalOpen}
             onClose={() => setIsAdvanceModalOpen(false)}
             trainerId={trainer.id}
-            onSuccess={() => loadDetails()}
+            onSuccess={() => setSalarySummary(null)}
           />
           {showPayModal && salarySummary && (
             <PaySalaryModal 
@@ -546,7 +323,7 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
               month={currentMonth}
               year={currentYear}
               onClose={() => setShowPayModal(false)}
-              onSuccess={() => loadDetails()}
+              onSuccess={() => setSalarySummary(null)}
             />
           )}
         </>,

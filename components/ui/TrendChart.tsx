@@ -9,17 +9,17 @@ export interface TrendSeriesConfig {
 
 export interface TrendChartProps {
   data: any[];
-  isSingleMonth: boolean;
+  chartType?: 'bar' | 'area';
   series: TrendSeriesConfig[];
   valueFormatter?: (value: number) => string;
   onClick?: (e: any) => void;
 }
 
-export function TrendChart({ data, isSingleMonth, series, valueFormatter, onClick }: TrendChartProps) {
+export function TrendChart({ data, chartType = 'bar', series, valueFormatter, onClick }: TrendChartProps) {
   const formatter = (value: ValueType | undefined) => 
     value !== undefined ? (valueFormatter ? valueFormatter(Number(value)) : value) : '';
 
-  if (isSingleMonth) {
+  if (chartType === 'area') {
     return (
       <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }} onClick={onClick}>
         <defs>

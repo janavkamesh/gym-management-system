@@ -16,6 +16,7 @@ import ExpensesClient from './ExpensesClient';
 import { PinnedChartWrapper } from './ui/usePinnedPoint';
 import { isSingleMonth, toLocalISOString } from '@/lib/utils/date';
 import { formatCompactINR } from '@/lib/utils/formatters';
+import PageHeader from './PageHeader';
 
 interface FinancialsClientProps {
   initialExpenses: any[] | null;
@@ -62,9 +63,9 @@ export default function FinancialsClient({
   const initialStart = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), 1));
   const initialEnd = toLocalISOString(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
-  const [period, setPeriod] = useState('This Month');
-  const [fromDate, setFromDate] = useState(initialStart);
-  const [toDate, setToDate] = useState(initialEnd);
+  const [period, setPeriod] = useState('Overall');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const dateError = !!(fromDate && toDate && fromDate > toDate);
   const hasActiveFilters = period !== 'This Month' || fromDate !== initialStart || toDate !== initialEnd;
 
@@ -192,7 +193,29 @@ export default function FinancialsClient({
   };
   const periodLabel = getPeriodLabel();
 
-  const isSingleMonthRange = isSingleMonth(fromDate, toDate);
+  const getEffectiveDateRange = () => {
+    if (fromDate && toDate) return { start: new Date(fromDate), end: new Date(toDate) };
+    
+    const allDates = [
+      ...(trendPaymentsData || []).map((p: any) => p.date),
+      ...(trendExpensesData || []).map((e: any) => e.date),
+      ...(newVsLostData || []).map((m: any) => m.date)
+    ].filter(Boolean).sort();
+    
+    if (allDates.length > 0) {
+      return { start: new Date(allDates[0]), end: new Date(allDates[allDates.length - 1]) };
+    }
+    
+    const now = new Date();
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 0) };
+  };
+
+  const { start: effectiveStart, end: effectiveEnd } = getEffectiveDateRange();
+
+  const isSingleMonthRange = isSingleMonth(
+    fromDate || effectiveStart.toISOString().split('T')[0], 
+    toDate || effectiveEnd.toISOString().split('T')[0]
+  );
 
   const trendChartData = (() => {
     if (!trendPaymentsData) return [];
@@ -216,17 +239,19 @@ export default function FinancialsClient({
       if (weeks[4].revenue === 0) weeks.pop();
       return weeks;
     } else {
-      const start = new Date(fromDate);
-      const end = new Date(toDate);
+      const start = effectiveStart;
+      const end = effectiveEnd;
+      const spansMultipleYears = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) >= 12;
       const months: { month: string, year: number, revenue: number, name: string }[] = [];
       let curr = new Date(start.getFullYear(), start.getMonth(), 1);
       const endLimit = new Date(end.getFullYear(), end.getMonth(), 1);
       while (curr <= endLimit) {
+        const monthStr = curr.toLocaleString('default', { month: 'short' });
         months.push({
-          month: curr.toLocaleString('default', { month: 'short' }),
+          month: monthStr,
           year: curr.getFullYear(),
           revenue: 0,
-          name: curr.toLocaleString('default', { month: 'short' })
+          name: spansMultipleYears ? `${monthStr} ${curr.getFullYear()}` : monthStr
         });
         curr.setMonth(curr.getMonth() + 1);
       }
@@ -244,36 +269,62 @@ export default function FinancialsClient({
   const revenueVsExpensesChartData = (() => {
     if (!trendPaymentsData || !trendExpensesData) return [];
     
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    const months: { month: string, year: number, revenue: number, expenses: number, name: string }[] = [];
-    let curr = new Date(start.getFullYear(), start.getMonth(), 1);
-    const endLimit = new Date(end.getFullYear(), end.getMonth(), 1);
-    
-    while (curr <= endLimit) {
-      months.push({
-        month: curr.toLocaleString('default', { month: 'short' }),
-        year: curr.getFullYear(),
-        revenue: 0,
-        expenses: 0,
-        name: curr.toLocaleString('default', { month: 'short' })
+    if (isSingleMonthRange) {
+      const weeks = [
+        { name: 'Week 1', revenue: 0, expenses: 0 },
+        { name: 'Week 2', revenue: 0, expenses: 0 },
+        { name: 'Week 3', revenue: 0, expenses: 0 },
+        { name: 'Week 4', revenue: 0, expenses: 0 },
+        { name: 'Week 5', revenue: 0, expenses: 0 },
+      ];
+      trendPaymentsData.forEach((p: any) => {
+        const d = new Date(p.date);
+        const day = d.getDate();
+        const weekIndex = Math.floor((day - 1) / 7);
+        if (weekIndex >= 0 && weekIndex < 5) weeks[weekIndex].revenue += Number(p.amount);
       });
-      curr.setMonth(curr.getMonth() + 1);
+      trendExpensesData.forEach((e: any) => {
+        const d = new Date(e.date);
+        const day = d.getDate();
+        const weekIndex = Math.floor((day - 1) / 7);
+        if (weekIndex >= 0 && weekIndex < 5) weeks[weekIndex].expenses += Number(e.amount);
+      });
+      if (weeks[4].revenue === 0 && weeks[4].expenses === 0) weeks.pop();
+      return weeks;
+    } else {
+      const start = effectiveStart;
+      const end = effectiveEnd;
+      const spansMultipleYears = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) >= 12;
+      const months: { month: string, year: number, revenue: number, expenses: number, name: string }[] = [];
+      let curr = new Date(start.getFullYear(), start.getMonth(), 1);
+      const endLimit = new Date(end.getFullYear(), end.getMonth(), 1);
+      
+      while (curr <= endLimit) {
+        const monthStr = curr.toLocaleString('default', { month: 'short' });
+        months.push({
+          month: monthStr,
+          year: curr.getFullYear(),
+          revenue: 0,
+          expenses: 0,
+          name: spansMultipleYears ? `${monthStr} ${curr.getFullYear()}` : monthStr
+        });
+        curr.setMonth(curr.getMonth() + 1);
+      }
+
+      trendPaymentsData.forEach((p: any) => {
+        const pDate = new Date(p.date);
+        const bucket = months.find(m => m.year === pDate.getFullYear() && pDate.toLocaleString('default', { month: 'short' }) === m.month);
+        if (bucket) bucket.revenue += Number(p.amount);
+      });
+
+      trendExpensesData.forEach((e: any) => {
+        const eDate = new Date(e.date);
+        const bucket = months.find(m => m.year === eDate.getFullYear() && eDate.toLocaleString('default', { month: 'short' }) === m.month);
+        if (bucket) bucket.expenses += Number(e.amount);
+      });
+
+      return months;
     }
-
-    trendPaymentsData.forEach((p: any) => {
-      const pDate = new Date(p.date);
-      const bucket = months.find(m => m.year === pDate.getFullYear() && pDate.toLocaleString('default', { month: 'short' }) === m.month);
-      if (bucket) bucket.revenue += Number(p.amount);
-    });
-
-    trendExpensesData.forEach((e: any) => {
-      const eDate = new Date(e.date);
-      const bucket = months.find(m => m.year === eDate.getFullYear() && eDate.toLocaleString('default', { month: 'short' }) === m.month);
-      if (bucket) bucket.expenses += Number(e.amount);
-    });
-
-    return months;
   })();
 
   const newVsLostChartData = (() => {
@@ -299,18 +350,20 @@ export default function FinancialsClient({
       if (weeks[4].New === 0 && weeks[4]['Lost Members'] === 0) weeks.pop();
       return weeks;
     } else {
-      const start = new Date(fromDate);
-      const end = new Date(toDate);
+      const start = effectiveStart;
+      const end = effectiveEnd;
+      const spansMultipleYears = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) >= 12;
       const months: { month: string, year: number, New: number, 'Lost Members': number, name: string }[] = [];
       let curr = new Date(start.getFullYear(), start.getMonth(), 1);
       const endLimit = new Date(end.getFullYear(), end.getMonth(), 1);
       while (curr <= endLimit) {
+        const monthStr = curr.toLocaleString('default', { month: 'short' });
         months.push({
-          month: curr.toLocaleString('default', { month: 'short' }),
+          month: monthStr,
           year: curr.getFullYear(),
           New: 0,
           'Lost Members': 0,
-          name: curr.toLocaleString('default', { month: 'short' })
+          name: spansMultipleYears ? `${monthStr} ${curr.getFullYear()}` : monthStr
         });
         curr.setMonth(curr.getMonth() + 1);
       }
@@ -363,12 +416,11 @@ export default function FinancialsClient({
       </div>
 
       <div className={activeTab === 'Financials' ? 'animate-tab-slide block' : 'hidden'}>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Financials</h1>
-            <p className="text-sm text-slate-500">Track profitability, expenses, and revenue trends.</p>
-          </div>
-        </div>
+        <PageHeader 
+          title="Financials"
+          subtitle="Track profitability, expenses, and revenue trends."
+          className="mb-6"
+        />
 
       <div className="mb-8">
         <FilterCard
@@ -515,7 +567,7 @@ export default function FinancialsClient({
                 <ResponsiveContainer width="100%" height="100%">
                   <TrendChart 
                     data={trendChartData} 
-                    isSingleMonth={isSingleMonthRange} 
+                    chartType={period === 'Overall' || period === 'This Year' ? 'area' : 'bar'} 
                     series={[{ key: 'revenue', color: '#2563EB' }]} 
                     valueFormatter={formatCompactINR} 
                   />
@@ -545,11 +597,11 @@ export default function FinancialsClient({
             ) : (!trendPaymentsData || !trendExpensesData) ? (
               <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load data</div>
             ) : revenueVsExpensesChartData.length > 0 && revenueVsExpensesChartData.some((m: any) => m.revenue > 0 || m.expenses > 0) ? (
-              <PinnedChartWrapper resetDeps={[trendPaymentsData, trendExpensesData]} valueFormatter={formatCompactINR}>
+              <PinnedChartWrapper resetDeps={[trendPaymentsData, trendExpensesData, isSingleMonthRange]} valueFormatter={formatCompactINR}>
                 <ResponsiveContainer width="100%" height="100%">
                   <TrendChart 
                     data={revenueVsExpensesChartData} 
-                    isSingleMonth={false} 
+                    chartType="bar" 
                     series={[
                       { key: 'revenue', name: 'Revenue', color: COLORS.New },
                       { key: 'expenses', name: 'Expenses', color: COLORS.Expense }
@@ -611,11 +663,11 @@ export default function FinancialsClient({
             ) : newVsLostData === null ? (
               <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load data</div>
             ) : newVsLostChartData.length > 0 && newVsLostChartData.some((m: any) => m.New > 0 || m['Lost Members'] > 0) ? (
-              <PinnedChartWrapper resetDeps={[newVsLostData]}>
+              <PinnedChartWrapper resetDeps={[newVsLostData, isSingleMonthRange]}>
                 <ResponsiveContainer width="100%" height="100%">
                   <TrendChart 
                     data={newVsLostChartData} 
-                    isSingleMonth={false} 
+                    chartType={period === 'Overall' || period === 'This Year' ? 'area' : 'bar'} 
                     series={[
                       { key: 'New', color: COLORS.New },
                       { key: 'Lost Members', color: COLORS.Lost }

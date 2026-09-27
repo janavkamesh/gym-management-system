@@ -6,6 +6,8 @@ import { PLACEHOLDER_USER_ID } from '@/lib/constants'
 import { logActivity } from '@/lib/activity-log'
 import { formatINR } from '@/lib/utils/formatters'
 
+import { generateNextUid } from '@/lib/utils/uid'
+
 async function getUserId(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: userData } = await supabase.auth.getUser()
   return userData?.user?.id || PLACEHOLDER_USER_ID
@@ -21,11 +23,14 @@ export async function createTrainer(data: {
 }) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
+  
+  const uid = await generateNextUid(supabase, userId, null, 0, 'trainers', 'TR')
 
   const { data: trainer, error } = await supabase
     .from('trainers')
     .insert({
       user_id: userId,
+      uid,
       name: data.name,
       phone: data.phone,
       base_salary: data.base_salary,
@@ -416,7 +421,22 @@ export async function voidSalaryPayment(salaryPaymentId: string, voidReason: str
 }
 
 // --- FETCH WRAPPERS FOR CLIENT COMPONENTS ---
-import { getPtAssignments, getSalaryAdvances, calculateMonthlySalary } from '@/lib/queries/trainers'
+import { getPtAssignments, getSalaryAdvances, calculateMonthlySalary, getTrainerStats, getTrainerPtClients, getTrainerLedger } from '@/lib/queries/trainers'
+
+export async function fetchTrainerStats(trainerId: string) {
+  const supabase = await createClient()
+  return getTrainerStats(supabase, trainerId)
+}
+
+export async function fetchTrainerPtClients(trainerId: string) {
+  const supabase = await createClient()
+  return getTrainerPtClients(supabase, trainerId)
+}
+
+export async function fetchTrainerLedger(trainerId: string) {
+  const supabase = await createClient()
+  return getTrainerLedger(supabase, trainerId)
+}
 
 export async function fetchPtAssignments(trainerId: string) {
   const supabase = await createClient()

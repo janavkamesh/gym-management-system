@@ -6,6 +6,7 @@ import { computeStatusColor } from '@/lib/utils/status';
 import { Users, UserCheck, AlertTriangle, AlertCircle, Plus, Search, Upload, Clock, UserX } from 'lucide-react';
 import SharedMembersPanel from './SharedMembersPanel';
 import { StatCard } from './ui/StatCard';
+import PageHeader from './PageHeader';
 
 interface DashboardClientProps {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,10 +58,10 @@ export default function DashboardClient({ initialMembers, plans, trainers, initi
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
-      <div>
-        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Dashboard</h1>
-        <p className="text-slate-500 text-sm">Your daily overview of renewals, follow-ups, and reviews due.</p>
-      </div>
+      <PageHeader 
+        title="Dashboard" 
+        subtitle="Your daily overview of renewals, follow-ups, and reviews due." 
+      />
 
       {/* Top Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">

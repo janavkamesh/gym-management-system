@@ -7,6 +7,7 @@ import { useToast } from './ToastProvider';
 import Badge from './ui/Badge';
 import AddExpenseModal from './AddExpenseModal';
 import { FilterCard } from './FilterCard';
+import PageHeader from './PageHeader';
 
 interface ExpensesClientProps {
   initialExpenses: any[] | null;
@@ -35,9 +36,9 @@ export default function ExpensesClient({
   const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-  const [period, setPeriod] = useState('This Month');
-  const [from, setFrom] = useState(initialStart);
-  const [to, setTo] = useState(initialEnd);
+  const [period, setPeriod] = useState('Overall');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   
   const { showToast } = useToast();
   const dateError = !!(from && to && from > to);
@@ -68,12 +69,12 @@ export default function ExpensesClient({
 
   return (
     <div className={hideHeader ? "w-full" : "p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8"}>
-      {!hideHeader && (
-        <div className="mb-6">
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Expenses</h1>
-          <p className="text-sm text-slate-500">Track and manage your gym's operational expenses.</p>
-        </div>
-      )}
+      <PageHeader
+        title="Expenses"
+        subtitle="Track and manage your gym's operational expenses."
+        hidden={hideHeader}
+        className="mb-6"
+      />
 
       <div className="space-y-6">
         <FilterCard

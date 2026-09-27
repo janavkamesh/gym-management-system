@@ -379,8 +379,6 @@ export async function previewMembersCSV(rows: any[]) {
 
   const { data: user } = await supabase.auth.getUser()
   const gymName = user?.user?.user_metadata?.gym_name
-  const prefix = getUidPrefix(gymName)
-  const maxDbUid = await getMaxUidNumber(supabase, userId)
   let autoUidOffset = 0
 
   const results = []
@@ -392,10 +390,18 @@ export async function previewMembersCSV(rows: any[]) {
     const plan_name = row.plan_name?.toString().trim()
     const join_date = row.join_date?.toString().trim()
     const expiry_date = row.expiry_date?.toString().trim()
+    const amountStr = row.amount?.toString().trim()
+    const gender = row.gender?.toString().trim()
     let uid = row.uid?.toString().trim()
     
-    if (!name || !phone || !plan_name || !join_date || !expiry_date) {
+    if (!name || !phone || !plan_name || !join_date || !expiry_date || !amountStr) {
       results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Missing required fields' })
+      continue
+    }
+
+    const amount = Number(amountStr)
+    if (isNaN(amount) || amount < 0) {
+      results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Invalid amount' })
       continue
     }
 
@@ -405,8 +411,8 @@ export async function previewMembersCSV(rows: any[]) {
         continue
       }
     } else {
+      uid = await generateNextUid(supabase, userId, gymName, autoUidOffset)
       autoUidOffset++
-      uid = formatUid(prefix, maxDbUid + autoUidOffset)
     }
 
     const planId = planMap.get(plan_name.toLowerCase())
@@ -441,6 +447,8 @@ export async function previewMembersCSV(rows: any[]) {
         plan_id: planId,
         join_date: new Date(join_date).toISOString().split('T')[0],
         expiry_date: new Date(expiry_date).toISOString().split('T')[0],
+        amount: amount,
+        gender: gender || null,
         status: 'Active'
       }
     })

@@ -111,9 +111,16 @@ export default function ImportCSVModal({ onClose, onSuccess }: { onClose: () => 
               <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
                 <Upload size={48} className="text-slate-400 mb-4" />
                 <h3 className="text-lg font-medium text-slate-900 mb-2">Upload CSV File</h3>
-                <p className="text-sm text-slate-500 mb-6 text-center max-w-md">
-                  Expected columns: <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">phone</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">plan_name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">join_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">expiry_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">uid (optional)</span>
+                <p className="text-sm text-slate-500 mb-3 text-center max-w-lg">
+                  Expected columns: <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">phone</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">plan_name</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">amount</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">join_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">expiry_date</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">gender (optional)</span>, <span className="font-mono text-slate-700 bg-slate-200 px-1 rounded">uid (optional)</span>
                 </p>
+                <a 
+                  href={`data:text/csv;charset=utf-8,${encodeURIComponent('name,phone,plan_name,amount,join_date,expiry_date,gender,uid\nJane Doe,9876543210,3 Months,13500,2024-01-01,2024-04-01,Female,')}`} 
+                  download="sample_members.csv" 
+                  className="mb-6 text-sm text-blue-600 hover:underline font-medium"
+                >
+                  Download Sample CSV
+                </a>
                 <input 
                   type="file" 
                   accept=".csv" 

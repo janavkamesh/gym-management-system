@@ -23,9 +23,9 @@ export function getUidPrefix(gymName: string | null | undefined): string {
 /**
  * Computes the maximum UID number currently in use for a tenant.
  */
-export async function getMaxUidNumber(supabase: SupabaseClient, userId: string): Promise<number> {
+export async function getMaxUidNumber(supabase: SupabaseClient, userId: string, table: string = 'members'): Promise<number> {
   const { data, error } = await supabase
-    .from('members')
+    .from(table)
     .select('uid')
     .eq('user_id', userId)
     .not('uid', 'is', null)
@@ -61,9 +61,11 @@ export async function generateNextUid(
   supabase: SupabaseClient,
   userId: string,
   gymName: string | null | undefined,
-  offset: number = 0
+  offset: number = 0,
+  table: string = 'members',
+  customPrefix?: string
 ): Promise<string> {
-  const prefix = getUidPrefix(gymName)
-  const maxNum = await getMaxUidNumber(supabase, userId)
+  const prefix = customPrefix || getUidPrefix(gymName)
+  const maxNum = await getMaxUidNumber(supabase, userId, table)
   return formatUid(prefix, maxNum + 1 + offset)
 }

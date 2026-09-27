@@ -173,7 +173,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
       className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/50"
       onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
+      <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-4xl overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
         <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
           <h2 className="text-xl font-semibold text-white">{memberToEdit ? 'Edit Member' : 'Add Member'}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
@@ -192,7 +192,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
                     placeholder="e.g. John Doe"
                   />
                 </div>
@@ -203,7 +203,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                     type="text"
                     value={uidPreview}
                     disabled
-                    className="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed"
+                    className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed"
                   />
                 </div>
 
@@ -216,7 +216,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                     type="tel"
                     value={phone}
                     onChange={handlePhoneChange}
-                    className={`w-full px-3 py-2 border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
                       phone.length > 0 && !isValidPhone ? 'border-red-300 bg-red-50' : 'border-slate-300'
                     }`}
                     placeholder="9876543210"
@@ -237,7 +237,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                       // Do not reset isExpiryManuallyEdited automatically here if we want to show the prompt
                     }}
                     options={plans
-                      .filter(p => p.plan_name !== 'Monthly Membership')
+                      .filter(p => p.is_active !== false)
                       .sort((a, b) => a.duration_days - b.duration_days)
                       .map(p => ({ value: p.id, label: p.plan_name }))}
                     placeholder="Select a plan"
@@ -261,15 +261,6 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                     <label className="block text-sm font-medium text-slate-700">
                       Expiry Date <span className="text-slate-400 font-normal text-xs ml-1">(Editable)</span>
                     </label>
-                    {isExpiryManuallyEdited && planId && joinDate && (
-                      <button
-                        type="button"
-                        onClick={() => setIsExpiryManuallyEdited(false)}
-                        className="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium focus:outline-none"
-                      >
-                        Recalculate expiry from plan?
-                      </button>
-                    )}
                   </div>
                   <DatePicker
                     value={expiryDate}
@@ -294,7 +285,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
                       placeholder="e.g. 1500"
                       min="0"
                     />
@@ -387,7 +378,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                         type="number"
                         value={ptFee}
                         onChange={(e) => setPtFee(e.target.value)}
-                        className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
                         placeholder="e.g. 5000"
                         min="0"
                       />
@@ -403,7 +394,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                         const val = Number(e.target.value);
                         if (val >= 0 && val <= 100) setTrainerShare(e.target.value);
                       }}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
                       placeholder="e.g. 50"
                       min="0"
                       max="100"

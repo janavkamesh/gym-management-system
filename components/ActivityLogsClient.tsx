@@ -10,6 +10,7 @@ import { Dropdown } from './ui/Dropdown';
 import { DatePicker } from './DatePicker';
 import { FilterCard } from './FilterCard';
 import Badge from './ui/Badge';
+import PageHeader from './PageHeader';
 
 const CATEGORY_COLORS: Record<string, string> = {
   Members: 'bg-blue-100 text-blue-700',
@@ -148,10 +149,10 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
       {/* 1. Heading and subtext */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Activity Logs</h1>
-        <p className="text-slate-500 text-sm">A permanent record of everything done in your gym.</p>
-      </div>
+      <PageHeader
+        title="Activity Logs"
+        subtitle="A permanent record of everything done in your gym."
+      />
 
       {/* 2. Filter card */}
       <FilterCard

@@ -5,6 +5,7 @@ import { Plus, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import TrainerRow from './TrainerRow';
 import AddTrainerModal from './AddTrainerModal';
 import { getArchivedTrainers } from '@/lib/actions/trainers';
+import PageHeader from './PageHeader';
 
 interface TrainersClientProps {
   initialTrainers: any[];
@@ -87,19 +88,19 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
       
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Trainers</h1>
-          <p className="text-slate-500 text-sm">Manage salaries, PT commissions, and advances.</p>
-        </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
-        >
-          <Plus size={18} />
-          Add Trainer
-        </button>
-      </div>
+      <PageHeader
+        title="Trainers"
+        subtitle="Manage salaries, PT commissions, and advances."
+        action={
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
+          >
+            <Plus size={18} />
+            Add Trainer
+          </button>
+        }
+      />
 
       {/* Main Content */}
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -127,7 +128,9 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
                   <th className="px-4 md:px-6 font-medium text-left">Phone</th>
                   <th className="px-4 md:px-6 font-medium text-right">Base Salary</th>
                   <th className="px-4 md:px-6 font-medium text-left">Join Date</th>
-                  <th className="px-4 md:px-6 font-medium text-center">Manage</th>
+                  <th className="px-4 md:px-6 font-medium text-center">View</th>
+                  <th className="px-4 md:px-6 font-medium text-center">Pay Salary</th>
+                  <th className="px-4 md:px-6 font-medium text-center">Log Advance</th>
                   <th className="px-4 md:px-6 font-medium text-center rounded-tr-2xl">Remove</th>
                 </tr>
               </thead>

@@ -21,12 +21,12 @@ export default function TransactionsTable({ categories }: { categories: string[]
   const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
   const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-  const [period, setPeriod] = useState('This Month');
+  const [period, setPeriod] = useState('Overall');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [direction, setDirection] = useState<'all' | 'in' | 'out'>('all');
-  const [from, setFrom] = useState(initialStart);
-  const [to, setTo] = useState(initialEnd);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -232,7 +232,7 @@ export default function TransactionsTable({ categories }: { categories: string[]
                   </td>
                 </tr>
               ) : (
-                data.map((row: any) => {
+                [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((row: any) => {
                   const dt = new Date(row.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
                   return (
                     <tr key={`${row.source_table}-${row.id}`} className={`hover:bg-slate-50/50 transition-colors grid grid-cols-[1.2fr_1fr_1.2fr_3fr_1fr_1fr] items-center w-full ${row.is_voided ? 'opacity-50' : ''}`}>

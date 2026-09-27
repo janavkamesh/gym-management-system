@@ -7,6 +7,7 @@ import { Search, ChevronDown, ChevronUp } from 'lucide-react';
 import SharedMembersPanel from './SharedMembersPanel';
 import MemberList from './MemberList';
 import { getArchivedMembers, restoreMember } from '@/lib/actions/members';
+import PageHeader from './PageHeader';
 
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired' | 'PT';
 
@@ -98,10 +99,10 @@ export default function MembersClient({
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
-      <div>
-        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-2">Members</h1>
-        <p className="text-slate-500 text-sm">Track memberships, payments, and renewals in one place.</p>
-      </div>
+      <PageHeader 
+        title="Members" 
+        subtitle="Track memberships, payments, and renewals in one place." 
+      />
 
       <SharedMembersPanel
         members={members}

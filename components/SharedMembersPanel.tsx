@@ -103,7 +103,9 @@ export default function SharedMembersPanel({
       
       if (searchQuery) {
         const lowerQ = searchQuery.toLowerCase();
-        if (!member.name.toLowerCase().includes(lowerQ) && !member.phone.includes(searchQuery)) {
+        const matchesName = member.name?.toLowerCase().includes(lowerQ);
+        const matchesUid = member.uid?.toLowerCase().includes(lowerQ);
+        if (!matchesName && !matchesUid) {
           return false;
         }
       }
@@ -172,7 +174,7 @@ export default function SharedMembersPanel({
             </div>
             <input
               type="text"
-              placeholder="Search name or phone..."
+              placeholder="Search name or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
