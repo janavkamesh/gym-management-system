@@ -3,7 +3,7 @@ import { Dumbbell, CheckCircle2 } from 'lucide-react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row bg-slate-50">
+    <div className="min-h-dvh w-full flex flex-col md:flex-row bg-slate-50">
       {/* Left side / Mobile background */}
       <div className="relative w-full md:w-5/12 lg:w-1/2 h-full min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 md:p-12 overflow-hidden">
         {/* Background Image */}

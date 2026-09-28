@@ -102,7 +102,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-navy text-slate-300 h-screen sticky top-0 flex flex-col hidden md:flex shrink-0">
+    <div className="w-64 bg-navy text-slate-300 h-screen sticky top-0 flex flex-col hidden lg:flex shrink-0">
       <div className="h-16 flex items-center px-6 border-b border-slate-700/50">
         {!userData ? (
           <div className="h-6 w-32 bg-slate-700 animate-pulse rounded-md"></div>

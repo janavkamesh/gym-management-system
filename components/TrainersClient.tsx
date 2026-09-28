@@ -228,7 +228,7 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
       {/* Mobile FAB */}
       <button
         onClick={() => setIsAddModalOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 z-40 flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
+        className="md:hidden fixed bottom-fab right-4 z-40 flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
       >
         <Plus size={24} strokeWidth={2.5} />
       </button>

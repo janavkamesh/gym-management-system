@@ -18,7 +18,7 @@ export default async function ExpensesPage(props: { searchParams?: Promise<{ [ke
   }
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen">
+    <div className="flex-1 w-full bg-slate-50 min-h-dvh">
       <ExpensesClient 
         initialExpenses={expensesData}
         initialAction={action}

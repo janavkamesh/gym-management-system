@@ -210,7 +210,7 @@ export default function SharedMembersPanel({
         action={initialAction}
       />
 
-      <div className="md:hidden fixed bottom-20 right-4 z-40 flex flex-col gap-3">
+      <div className="md:hidden fixed bottom-fab right-4 z-40 flex flex-col gap-3">
         <button
           onClick={() => setIsImportModalOpen(true)}
           className="flex items-center justify-center w-14 h-14 bg-white text-slate-700 border border-slate-200 rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"

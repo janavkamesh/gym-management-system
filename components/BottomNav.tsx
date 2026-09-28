@@ -16,23 +16,24 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 pb-safe">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 box-content h-[var(--nav-h)] bg-white border-t border-slate-200 z-40 flex items-center px-0 pb-safe">
       {navigation.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
         const Icon = item.icon;
         
         return (
           <Link
             key={item.name}
             href={item.href}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors active:scale-95 duration-120 touch-manipulation ${
+            aria-current={isActive ? 'page' : undefined}
+            className={`flex-1 min-w-0 flex flex-col items-center justify-center min-h-[48px] h-full space-y-1 transition-colors active:scale-95 duration-120 touch-manipulation ${
               isActive
                 ? 'text-blue-600'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-10px font-medium leading-none">{item.name}</span>
+            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+            <span className="text-[11px] font-medium leading-none truncate max-w-full px-1">{item.name}</span>
           </Link>
         );
       })}

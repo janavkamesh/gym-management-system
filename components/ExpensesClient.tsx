@@ -202,7 +202,7 @@ export default function ExpensesClient({
       {/* Mobile FAB */}
       <button
         onClick={() => setIsAddModalOpen(true)}
-        className="md:hidden fixed bottom-20 right-4 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 z-40 transition-transform"
+        className="md:hidden fixed bottom-fab right-4 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 z-40 transition-transform"
       >
         <Plus size={24} />
       </button>

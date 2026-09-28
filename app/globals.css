@@ -6,11 +6,35 @@
 }
 
 @layer base {
+  :root {
+    --header-h: 56px;
+    --nav-h: 64px;
+  }
+  
   body {
     background-color: #F8FAFC; /* Slate 50 */
     color: #0F172A; /* Slate 900 */
   }
 }
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@utility pt-header {
+  padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+}
+@utility pb-nav {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+}
+@utility bottom-fab {
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+
+
 
 @layer utilities {
   .hide-scrollbar {

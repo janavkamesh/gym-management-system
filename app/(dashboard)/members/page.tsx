@@ -27,7 +27,7 @@ export default async function MembersPage(props: { searchParams?: Promise<{ [key
     .not('archived_at', 'is', null);
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen">
+    <div className="flex-1 w-full bg-slate-50 min-h-dvh">
       <MembersClient 
         initialMembers={mappedMembers} 
         plans={plansData || []} 

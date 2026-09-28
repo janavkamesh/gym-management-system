@@ -28,7 +28,7 @@ export default async function LeadsPage(props: { searchParams?: Promise<{ [key: 
   }
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen">
+    <div className="flex-1 w-full bg-slate-50 min-h-dvh">
       <LeadsClient initialLeads={leadsData || []} initialError={initialError} initialFilter={filter} />
     </div>
   );

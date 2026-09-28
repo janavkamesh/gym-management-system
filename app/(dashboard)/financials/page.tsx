@@ -78,7 +78,7 @@ export default async function FinancialsPage() {
   }
 
   return (
-    <div className="flex-1 w-full bg-slate-50 min-h-screen">
+    <div className="flex-1 w-full bg-slate-50 min-h-dvh">
       <FinancialsClient 
         initialExpenses={expensesData}
         profitability={profitabilityData}
