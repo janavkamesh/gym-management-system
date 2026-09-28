@@ -12,10 +12,10 @@ export default function PageHeader({ title, subtitle, action, hidden = false, cl
   if (hidden) return null;
 
   return (
-    <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-center -mt-2 md:-mt-4 gap-4 ${className}`}>
+    <div className={`flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 ${className}`}>
       <div>
-        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-1">{title}</h1>
-        <p className="text-sm text-slate-500 hidden md:block">{subtitle}</p>
+        <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight mb-0 lg:mb-1">{title}</h1>
+        <p className="text-sm text-slate-500 hidden lg:block">{subtitle}</p>
       </div>
       {action && (
         <div>

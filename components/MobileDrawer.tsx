@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ClipboardList, LogOut } from 'lucide-react';
@@ -16,10 +16,14 @@ interface MobileDrawerProps {
 
 export default function MobileDrawer({ isOpen, onClose, gymName, ownerName, onSignOut }: MobileDrawerProps) {
   const pathname = usePathname();
+  const prevPathname = useRef(pathname);
   useBodyScrollLock(isOpen);
 
   useEffect(() => {
-    onClose();
+    if (prevPathname.current !== pathname) {
+      prevPathname.current = pathname;
+      onClose();
+    }
   }, [pathname, onClose]);
 
   useEffect(() => {

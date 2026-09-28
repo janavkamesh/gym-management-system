@@ -3,11 +3,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { computeStatusColor } from '@/lib/utils/status';
-import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import SharedMembersPanel from './SharedMembersPanel';
 import MemberList from './MemberList';
 import { getArchivedMembers, restoreMember } from '@/lib/actions/members';
 import PageHeader from './PageHeader';
+import ImportCSVModal from './ImportCSVModal';
 
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired' | 'PT';
 
@@ -21,6 +22,7 @@ export default function MembersClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [members, setMembers] = useState(initialMembers);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const [archivedCount, setArchivedCount] = useState(initialArchivedCount);
   const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
@@ -98,10 +100,19 @@ export default function MembersClient({
   }, [archivedMembers, archivedSearchQuery]);
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
       <PageHeader 
         title="Members" 
-        subtitle="Track memberships, payments, and renewals in one place." 
+        subtitle="Track memberships, payments, and renewals in one place."
+        action={
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            aria-label="Import CSV"
+            className="lg:hidden flex items-center justify-center w-11 h-11 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors active:scale-95 touch-manipulation"
+          >
+            <Upload size={18} />
+          </button>
+        }
       />
 
       <SharedMembersPanel
@@ -115,6 +126,7 @@ export default function MembersClient({
         initialMemberId={initialMemberId}
         initialOpenMember={initialOpenMember}
         initialAction={initialAction}
+        onImportClick={() => setIsImportModalOpen(true)}
       />
 
       {/* Archived Members Section */}
@@ -178,6 +190,12 @@ export default function MembersClient({
         )}
       </div>
 
+      {isImportModalOpen && (
+        <ImportCSVModal 
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => {}}
+        />
+      )}
     </div>
   );
 }

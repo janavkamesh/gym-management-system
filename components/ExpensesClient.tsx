@@ -68,12 +68,12 @@ export default function ExpensesClient({
   };
 
   return (
-    <div className={hideHeader ? "w-full" : "p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8"}>
+    <div className={hideHeader ? "w-full" : "px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto w-full"}>
       <PageHeader
         title="Expenses"
         subtitle="Track and manage your gym's operational expenses."
         hidden={hideHeader}
-        className="mb-6"
+        className="mb-3 lg:mb-6"
       />
 
       <div className="space-y-6">
@@ -137,10 +137,11 @@ export default function ExpensesClient({
             <h2 className="font-medium text-slate-900">Expense Log</h2>
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors active:scale-95 whitespace-nowrap"
+              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 min-h-11 lg:min-h-0 py-2 rounded-lg text-sm font-medium transition-colors active:scale-95 whitespace-nowrap"
             >
               <Plus size={16} />
-              <span>Add Expense</span>
+              <span className="hidden min-[360px]:inline">Add Expense</span>
+              <span className="min-[360px]:hidden">Add</span>
             </button>
           </div>
 
@@ -199,13 +200,7 @@ export default function ExpensesClient({
       </div>
     </div>
 
-      {/* Mobile FAB */}
-      <button
-        onClick={() => setIsAddModalOpen(true)}
-        className="md:hidden fixed bottom-fab right-4 w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg active:scale-95 z-40 transition-transform"
-      >
-        <Plus size={24} />
-      </button>
+
 
       <AddExpenseModal
         isOpen={isAddModalOpen}

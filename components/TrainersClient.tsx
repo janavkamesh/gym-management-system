@@ -85,7 +85,7 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-4 md:space-y-6 pb-24 md:pb-8">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
       
       {/* Header */}
       <PageHeader
@@ -94,10 +94,11 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
         action={
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="hidden md:flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
+            className="flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-11 lg:min-h-0 py-2.5 w-auto bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
           >
             <Plus size={18} />
-            Add Trainer
+            <span className="hidden min-[360px]:inline">Add Trainer</span>
+            <span className="min-[360px]:hidden">Add</span>
           </button>
         }
       />
@@ -224,14 +225,6 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
           </div>
         )}
       </div>
-
-      {/* Mobile FAB */}
-      <button
-        onClick={() => setIsAddModalOpen(true)}
-        className="md:hidden fixed bottom-fab right-4 z-40 flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
-      >
-        <Plus size={24} strokeWidth={2.5} />
-      </button>
 
       {/* Add Modal */}
       <AddTrainerModal

@@ -21,6 +21,7 @@ interface SharedMembersPanelProps {
   initialMemberId?: string;
   initialOpenMember?: string;
   initialAction?: string;
+  onImportClick?: () => void;
 }
 
 export default function SharedMembersPanel({
@@ -34,7 +35,8 @@ export default function SharedMembersPanel({
   initialFilter,
   initialMemberId,
   initialOpenMember,
-  initialAction
+  initialAction,
+  onImportClick
 }: SharedMembersPanelProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>(
     initialFilter === 'expiring_today' ? 'Expiring Soon' : 
@@ -42,7 +44,6 @@ export default function SharedMembersPanel({
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<any>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,11 +139,11 @@ export default function SharedMembersPanel({
 
   return (
     <>
-      <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-        <div className="flex w-full md:w-auto items-center gap-3">
+      <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 justify-between items-start lg:items-center">
+        <div className="flex w-full lg:w-auto items-center gap-3">
           <div 
             ref={containerRef}
-            className="flex relative bg-slate-100 rounded-lg p-1 w-full md:w-auto overflow-x-auto hide-scrollbar touch-manipulation"
+            className="flex relative bg-slate-100 rounded-lg p-1 w-full lg:w-auto overflow-x-auto hide-scrollbar touch-manipulation h-10 lg:h-auto items-center"
           >
             <div 
               className="absolute left-0 top-1 bottom-1 bg-navy rounded-md shadow-sm transition-transform duration-120 ease-out"
@@ -155,7 +156,7 @@ export default function SharedMembersPanel({
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`relative z-10 flex-1 md:flex-none px-4 py-2 min-h-12 md:min-h-0 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center ${
+                className={`relative z-10 flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center after:absolute after:-inset-y-1 after:content-[''] ${
                   activeTab === tab 
                     ? 'text-white' 
                     : 'text-slate-500 hover:text-slate-700'
@@ -167,8 +168,8 @@ export default function SharedMembersPanel({
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row w-full md:w-auto gap-3">
-          <div className="relative w-full md:w-70">
+        <div className="flex flex-row w-full lg:w-auto gap-2 items-center">
+          <div className="relative flex-1 min-w-0 lg:w-70">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search size={18} className="text-slate-400" />
             </div>
@@ -177,22 +178,26 @@ export default function SharedMembersPanel({
               placeholder="Search name or ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
+              className="w-full pl-10 pr-4 min-h-11 lg:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
             />
           </div>
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="hidden md:flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-12 md:min-h-0 py-2.5 w-full md:w-auto bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 transition-all duration-120 text-slate-700 text-sm font-medium rounded-lg shadow-sm"
-          >
-            <Upload size={18} />
-            <span className="inline">Import CSV</span>
-          </button>
+          {onImportClick && (
+            <button
+              onClick={onImportClick}
+              className="hidden lg:flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-11 lg:min-h-0 py-2.5 w-auto bg-white border border-slate-300 hover:bg-slate-50 active:scale-95 transition-all duration-120 text-slate-700 text-sm font-medium rounded-lg shadow-sm"
+            >
+              <Upload size={18} />
+              <span className="inline">Import CSV</span>
+            </button>
+          )}
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="hidden md:flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-12 md:min-h-0 py-2.5 w-full md:w-auto bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
+            aria-label="Add Member"
+            className="flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-11 lg:min-h-0 py-2.5 w-auto bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-120 text-white text-sm font-medium rounded-lg shadow-sm"
           >
             <Plus size={18} />
-            <span className="inline">Add Member</span>
+            <span className="hidden min-[360px]:inline">Add Member</span>
+            <span className="min-[360px]:hidden">Add</span>
           </button>
         </div>
       </div>
@@ -210,34 +215,12 @@ export default function SharedMembersPanel({
         action={initialAction}
       />
 
-      <div className="md:hidden fixed bottom-fab right-4 z-40 flex flex-col gap-3">
-        <button
-          onClick={() => setIsImportModalOpen(true)}
-          className="flex items-center justify-center w-14 h-14 bg-white text-slate-700 border border-slate-200 rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
-        >
-          <Upload size={24} strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-120 touch-manipulation"
-        >
-          <Plus size={24} strokeWidth={2.5} />
-        </button>
-      </div>
-
       {isAddModalOpen && (
         <AddMemberModal 
           plans={plans}
           trainers={trainers}
           onClose={handleCloseModal} 
           memberToEdit={memberToEdit} 
-        />
-      )}
-
-      {isImportModalOpen && (
-        <ImportCSVModal 
-          onClose={() => setIsImportModalOpen(false)}
-          onSuccess={() => {}}
         />
       )}
     </>

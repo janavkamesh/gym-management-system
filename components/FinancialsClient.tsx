@@ -394,7 +394,7 @@ export default function FinancialsClient({
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 overflow-hidden">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto w-full overflow-hidden">
       <style>{`
         @keyframes tabSlideIn { 
           from { opacity: 0; transform: translateX(10px); } 
@@ -419,7 +419,7 @@ export default function FinancialsClient({
         <PageHeader 
           title="Financials"
           subtitle="Track profitability, expenses, and revenue trends."
-          className="mb-6"
+          className="mb-3 lg:mb-6"
         />
 
       <div className="mb-8">

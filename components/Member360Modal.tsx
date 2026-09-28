@@ -16,9 +16,11 @@ interface Member360ModalProps {
   member: any;
   trainers?: any[];
   onClose: () => void;
+  onEdit?: () => void;
+  onRemove?: () => void;
 }
 
-export default function Member360Modal({ member, trainers, onClose }: Member360ModalProps) {
+export default function Member360Modal({ member, trainers, onClose, onEdit, onRemove }: Member360ModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'personal training' | 'payments'>('overview');
   const [payments, setPayments] = useState<any[]>([]);
   const [lifetimePaid, setLifetimePaid] = useState(0);
@@ -435,6 +437,30 @@ export default function Member360Modal({ member, trainers, onClose }: Member360M
             <PaymentHistoryContent member={member} />
           )}
         </div>
+        
+        {/* Mobile Footer Actions */}
+        {onEdit && onRemove && (
+          <div className="shrink-0 border-t border-slate-200 bg-white p-4 pb-safe flex gap-3 lg:hidden">
+            <button
+              onClick={() => {
+                onClose();
+                onEdit();
+              }}
+              className="flex-1 min-h-12 px-4 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+            >
+              Edit Member
+            </button>
+            <button
+              onClick={() => {
+                onClose();
+                onRemove();
+              }}
+              className="flex-1 min-h-12 px-4 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors active:scale-95"
+            >
+              Remove Member
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body
