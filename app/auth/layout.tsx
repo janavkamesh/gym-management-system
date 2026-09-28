@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="bg-blue-600 p-2 rounded-lg">
               <Dumbbell className="w-8 h-8 text-white" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">GymSoftware</span>
+            <span className="text-2xl font-bold tracking-tight">GymDeskManager</span>
           </div>
 
           <h1 className="text-3xl lg:text-4xl font-bold leading-tight mb-8 hidden md:block">

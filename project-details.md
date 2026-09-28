@@ -1,4 +1,4 @@
-# Project Details — Gym Management SaaS (Portfolio Project)
+# Project Details — GymDeskManager (Portfolio Project)
 
 > This file is the single source of truth for AI-assisted development (Antigravity + MCP).
 > Reference the relevant section by name in every build prompt instead of re-explaining context.
