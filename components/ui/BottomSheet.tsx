@@ -13,6 +13,11 @@ interface BottomSheetProps {
 
 export function BottomSheet({ isOpen, onClose, title, children, footer, headerAction }: BottomSheetProps) {
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const [mounted, setMounted] = React.useState(false);
+  const [isVisible, setIsVisible] = React.useState(false);
+  const [isAnimatingOut, setIsAnimatingOut] = React.useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -26,47 +31,62 @@ export function BottomSheet({ isOpen, onClose, title, children, footer, headerAc
 
   useEffect(() => {
     if (isOpen) {
+      setIsVisible(true);
+      setIsAnimatingOut(false);
       previousFocusRef.current = document.activeElement as HTMLElement;
       document.body.style.overflow = 'hidden';
-    } else {
+    } else if (isVisible) {
+      setIsAnimatingOut(true);
       document.body.style.overflow = '';
       if (previousFocusRef.current) {
         previousFocusRef.current.focus();
       }
+      
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setIsAnimatingOut(false);
+      }, 220); // Fallback timeout for exit animation
+      
+      return () => clearTimeout(timer);
     }
+  }, [isOpen, isVisible]);
+
+  useEffect(() => {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, []);
 
-  // Wait for client mount for portal
-  const [mounted, setMounted] = React.useState(false);
-  useEffect(() => setMounted(true), []);
-
-  if (!isOpen || !mounted) return null;
+  if (!mounted || !isVisible) return null;
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-100 flex items-end justify-center bg-slate-900/50 transition-opacity duration-200 motion-reduce:transition-none"
+      className={`fixed inset-0 z-100 flex items-end justify-center transition-opacity duration-180 ease-in motion-reduce:transition-none ${isAnimatingOut ? 'opacity-0' : 'opacity-100'} bg-slate-900/50`}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="bottom-sheet-title"
     >
       <div 
-        className="bg-white rounded-t-2xl shadow-2xl w-full max-w-4xl max-h-[85dvh] flex flex-col translate-y-0 transition-transform duration-200 ease-out motion-reduce:transition-none animate-slide-up"
+        className={`bg-white rounded-t-2xl shadow-2xl w-full max-w-4xl max-h-[85dvh] flex flex-col transition-transform duration-180 ease-in motion-reduce:transition-none ${isAnimatingOut ? 'translate-y-full' : 'translate-y-0 animate-slide-up'}`}
         onClick={(e) => e.stopPropagation()}
+        onTransitionEnd={(e) => {
+          if (isAnimatingOut && e.target === e.currentTarget && e.propertyName === 'transform') {
+            setIsVisible(false);
+            setIsAnimatingOut(false);
+          }
+        }}
       >
         <div className="flex justify-between items-center px-4 py-3 shrink-0 border-b border-slate-200 min-h-15">
           <h2 id="bottom-sheet-title" className="text-lg font-semibold text-slate-900">{title}</h2>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {headerAction}
             <button 
               onClick={onClose} 
-              className="text-slate-400 hover:text-slate-700 transition-colors rounded-full p-2 touch-manipulation flex items-center justify-center min-h-12 min-w-12"
+              className="w-8 h-8 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-center active:scale-95 touch-manipulation"
               aria-label="Close"
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </div>
         </div>

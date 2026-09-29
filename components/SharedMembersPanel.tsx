@@ -6,6 +6,7 @@ import { Plus, Search, Upload } from 'lucide-react';
 import AddMemberModal from './AddMemberModal';
 import ImportCSVModal from './ImportCSVModal';
 import MemberList from './MemberList';
+import { SlidingTabs } from './ui/SlidingTabs';
 
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired' | 'PT';
 
@@ -45,31 +46,6 @@ export default function SharedMembersPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<any>(null);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const updateIndicator = () => {
-      const tabs = ['All', 'Expiring Soon', 'Expired', 'PT'];
-      const activeIndex = tabs.indexOf(activeTab);
-      const buttons = containerRef.current?.querySelectorAll('button');
-      if (!buttons) return;
-      const activeButton = buttons[activeIndex];
-      
-      if (activeButton) {
-        setIndicatorStyle({
-          width: activeButton.offsetWidth,
-          left: activeButton.offsetLeft,
-        });
-      }
-    };
-
-    updateIndicator();
-    window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
-  }, [activeTab]);
 
   const handleEdit = (member: any) => {
     setMemberToEdit(member);
@@ -141,31 +117,13 @@ export default function SharedMembersPanel({
     <>
       <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 justify-between items-start lg:items-center">
         <div className="flex w-full lg:w-auto items-center gap-3">
-          <div 
-            ref={containerRef}
-            className="flex relative bg-slate-100 rounded-lg p-1 w-full lg:w-auto overflow-x-auto hide-scrollbar touch-manipulation h-10 lg:h-auto items-center"
-          >
-            <div 
-              className="absolute left-0 top-1 bottom-1 bg-navy rounded-md shadow-sm transition-transform duration-120 ease-out"
-              style={{
-                width: `${indicatorStyle.width}px`,
-                transform: `translateX(${indicatorStyle.left}px)`,
-              }}
-            />
-            {(['All', 'Expiring Soon', 'Expired', 'PT'] as FilterTab[]).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`relative z-10 flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center after:absolute after:-inset-y-1 after:content-[''] ${
-                  activeTab === tab 
-                    ? 'text-white' 
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          <SlidingTabs
+            options={['All', 'Expiring Soon', 'Expired', 'PT']}
+            value={activeTab}
+            onChange={(val) => setActiveTab(val as FilterTab)}
+            containerClassName="w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation"
+            buttonClassName="flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2"
+          />
         </div>
 
         <div className="flex flex-row w-full lg:w-auto gap-2 items-center">

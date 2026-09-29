@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from './ToastProvider';
-import { IndianRupee, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, PiggyBank, Filter, X } from 'lucide-react';
+import { IndianRupee, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, PiggyBank, Filter, X, RotateCcw } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { StatCard } from './ui/StatCard';
@@ -11,7 +11,7 @@ import { FilterCard, DateChipOption } from './FilterCard';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { getProfitability, getRevenueSplit, getPaymentMethodSplit, getTrendPayments, getTrendExpenses, getPlanBreakdown, getNewVsLostMembers } from '@/lib/queries/financials';
 import { TrendChart } from './ui/TrendChart';
-import { SegmentedControl } from './ui/SegmentedControl';
+import { SlidingTabs } from './ui/SlidingTabs';
 import TransactionsClient from './TransactionsClient';
 import ExpensesClient from './ExpensesClient';
 import { PinnedChartWrapper } from './ui/usePinnedPoint';
@@ -414,7 +414,7 @@ export default function FinancialsClient({
       `}</style>
       
       <div className="md:hidden flex justify-center mb-6">
-        <SegmentedControl 
+        <SlidingTabs 
           options={['Financials', 'Transactions', 'Expenses']} 
           value={activeTab} 
           onChange={setActiveTab} 
@@ -430,16 +430,36 @@ export default function FinancialsClient({
 
         {/* Mobile Header Row */}
         <div className="flex lg:hidden justify-between items-center mb-6">
-          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Financials</h1>
+          <div className="flex flex-col justify-center">
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Financials</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {(() => {
+                const fmt = (d: Date) => {
+                  try {
+                    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(d);
+                  } catch {
+                    return '';
+                  }
+                };
+                const s = fmt(effectiveStart);
+                const e = fmt(effectiveEnd);
+                if (period === 'Custom' || period === 'Overall' || !period) {
+                  return `${s} to ${e}`;
+                }
+                return `${period} - ${s} to ${e}`;
+              })()}
+            </p>
+          </div>
           <button
             type="button"
             aria-label="Filters"
             onClick={() => setIsFilterSheetOpen(true)}
-            className="flex items-center justify-center h-12 w-12 rounded-full bg-white border border-slate-200 shadow-sm active:scale-95 transition-all duration-120 relative touch-manipulation"
+            className="flex items-center gap-2 min-h-12 px-4 rounded-lg bg-white border border-slate-200 shadow-sm text-sm font-medium text-slate-900 active:scale-95 transition-all duration-120 relative touch-manipulation"
           >
             <Filter size={20} className="text-slate-700" />
+            <span>Filters</span>
             {hasActiveFilters && (
-              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white translate-x-0 -translate-y-0.5"></span>
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white"></span>
             )}
           </button>
         </div>
@@ -499,10 +519,10 @@ export default function FinancialsClient({
 
       {/* Row 1: 4 Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard title={`Total Revenue ${periodLabel}`} value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.revenue) : <span className="text-sm text-red-500">Failed</span>)} icon={Wallet} variant="green" />
-        <StatCard title={`Total Expenses ${periodLabel}`} value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.expenses) : <span className="text-sm text-red-500">Failed</span>)} icon={Receipt} variant="red" />
-        <StatCard title={`Net Profit ${periodLabel}`} value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.netProfit) : <span className="text-sm text-red-500">Failed</span>)} icon={PiggyBank} variant="blue" />
-        <StatCard title="Projected Revenue (Current)" value={projectedRevenue !== null ? formatCurrency(projectedRevenue) : <span className="text-sm text-red-500">Failed</span>} icon={TrendingUp} variant="yellow" />
+        <StatCard label="Total Revenue" value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.revenue) : <span className="text-sm text-red-500">Failed</span>)} icon={Wallet} colorClass="card-gradient-green" />
+        <StatCard label="Total Expenses" value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.expenses) : <span className="text-sm text-red-500">Failed</span>)} icon={Receipt} colorClass="card-gradient-red" />
+        <StatCard label="Net Profit" value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.netProfit) : <span className="text-sm text-red-500">Failed</span>)} icon={PiggyBank} colorClass="card-gradient-blue" />
+        <StatCard label="Projected Revenue" value={projectedRevenue !== null ? formatCurrency(projectedRevenue) : <span className="text-sm text-red-500">Failed</span>} icon={TrendingUp} colorClass="card-gradient-yellow" />
       </div>
 
       {/* Row 2: Charts (Grid of 3) */}
@@ -715,6 +735,14 @@ export default function FinancialsClient({
         <TransactionsClient 
           distinctCategories={distinctCategories}
           hideHeader={true}
+          sharedPeriod={period}
+          sharedFrom={fromDate}
+          sharedTo={toDate}
+          onPeriodChange={(p, f, t) => {
+            setPeriod(p);
+            if (f !== undefined) setFromDate(f);
+            if (t !== undefined) setToDate(t);
+          }}
         />
       </div>
 
@@ -722,6 +750,14 @@ export default function FinancialsClient({
         <ExpensesClient 
           initialExpenses={initialExpenses}
           hideHeader={true}
+          sharedPeriod={period}
+          sharedFrom={fromDate}
+          sharedTo={toDate}
+          onPeriodChange={(p, f, t) => {
+            setPeriod(p);
+            if (f !== undefined) setFromDate(f);
+            if (t !== undefined) setToDate(t);
+          }}
         />
       </div>
 
@@ -736,10 +772,10 @@ export default function FinancialsClient({
               setFromDate(DEFAULT_FROM);
               setToDate(DEFAULT_TO);
             }}
-            disabled={!hasActiveFilters}
-            className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-h-12 px-3 rounded-md touch-manipulation ${hasActiveFilters ? 'text-blue-600 active:bg-blue-50' : 'text-slate-300 cursor-not-allowed'}`}
+            className="flex items-center gap-1.5 min-h-8 px-3 text-sm rounded-full bg-white border border-slate-200 shadow-sm font-semibold text-slate-900 active:scale-95 transition-all duration-120 touch-manipulation"
           >
-            Clear
+            <RotateCcw size={14} />
+            Reset
           </button>
         }
         footer={

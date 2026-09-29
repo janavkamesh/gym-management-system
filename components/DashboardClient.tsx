@@ -65,10 +65,10 @@ export default function DashboardClient({ initialMembers, plans, trainers, initi
 
       {/* Top Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        <StatCard title="Total Members" value={stats.total} icon={Users} variant="blue" />
-        <StatCard title="Active" value={stats.active} icon={UserCheck} variant="green" />
-        <StatCard title="Expiring Soon" value={stats.expiring} icon={Clock} variant="yellow" />
-        <StatCard title="Expired" value={stats.expired} icon={UserX} variant="red" />
+        <StatCard label="Total Members" value={stats.total} icon={Users} colorClass="card-gradient-blue" />
+        <StatCard label="Active" value={stats.active} icon={UserCheck} colorClass="card-gradient-green" />
+        <StatCard label="Expiring Soon" value={stats.expiring} icon={Clock} colorClass="card-gradient-yellow" />
+        <StatCard label="Expired" value={stats.expired} icon={UserX} colorClass="card-gradient-red" />
       </div>
 
       <SharedMembersPanel

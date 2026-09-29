@@ -159,19 +159,19 @@ export function FilterCard({
           
           {showDirection && (
             <div className="w-full [&>div>button]:min-h-12">
-              <Dropdown value={direction} onChange={(val) => onDirectionChange?.(val)} options={directionOptions} />
+              <Dropdown value={direction} onChange={(val) => onDirectionChange?.(val)} options={directionOptions} renderInline={variant === 'inline'} />
             </div>
           )}
           
           {showCategory && (
             <div className="w-full [&>div>button]:min-h-12">
-              <Dropdown value={category} onChange={(val) => onCategoryChange?.(val)} options={categoryOptions} />
+              <Dropdown value={category} onChange={(val) => onCategoryChange?.(val)} options={categoryOptions} renderInline={variant === 'inline'} />
             </div>
           )}
 
           {showPeriod && (
             <div className="w-full [&>div>button]:min-h-12">
-              <Dropdown value={period} onChange={(val) => onPeriodChange?.(val)} options={periodOptions} />
+              <Dropdown value={period} onChange={(val) => onPeriodChange?.(val)} options={periodOptions} renderInline={variant === 'inline'} />
             </div>
           )}
           

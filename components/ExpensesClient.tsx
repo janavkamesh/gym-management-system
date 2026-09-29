@@ -2,18 +2,27 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, ChevronDown } from 'lucide-react';
+import { Plus, ChevronDown, Filter, RotateCcw } from 'lucide-react';
+import { BottomSheet } from './ui/BottomSheet';
+import { Dropdown } from './ui/Dropdown';
+import { DatePicker } from './DatePicker';
 import { useToast } from './ToastProvider';
 import Badge from './ui/Badge';
 import AddExpenseModal from './AddExpenseModal';
 import { FilterCard } from './FilterCard';
 import PageHeader from './PageHeader';
 
+import { getPeriodRange, getPeriodSubtitle } from '@/lib/utils/date';
+
 interface ExpensesClientProps {
   initialExpenses: any[] | null;
   hideHeader?: boolean;
   initialAction?: string;
   initialCategory?: string;
+  sharedPeriod?: string;
+  sharedFrom?: string;
+  sharedTo?: string;
+  onPeriodChange?: (period: string, from?: string, to?: string) => void;
 }
 
 export default function ExpensesClient({
@@ -21,28 +30,45 @@ export default function ExpensesClient({
   hideHeader = false,
   initialAction,
   initialCategory,
+  sharedPeriod,
+  sharedFrom,
+  sharedTo,
+  onPeriodChange
 }: ExpensesClientProps) {
   const [expenses, setExpenses] = useState(initialExpenses || []);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'All Categories');
 
   useEffect(() => {
     if (initialAction === 'add') {
       setIsAddModalOpen(true);
     }
   }, [initialAction]);
-  
-  const now = new Date();
-  const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-  const [period, setPeriod] = useState('Overall');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [internalPeriod, setInternalPeriod] = useState('This Month');
+  const [internalFrom, setInternalFrom] = useState('');
+  const [internalTo, setInternalTo] = useState('');
+
+  const period = sharedPeriod !== undefined ? sharedPeriod : internalPeriod;
+  const { from, to } = getPeriodRange(
+    period,
+    sharedPeriod !== undefined ? sharedFrom : internalFrom,
+    sharedPeriod !== undefined ? sharedTo : internalTo
+  );
+
+  const handlePeriodChange = (p: string, f?: string, t?: string) => {
+    if (onPeriodChange) {
+      onPeriodChange(p, f, t);
+    } else {
+      setInternalPeriod(p);
+      setInternalFrom(f || '');
+      setInternalTo(t || '');
+    }
+  };
   
   const { showToast } = useToast();
   const dateError = !!(from && to && from > to);
-  const hasActiveFilters = !!(selectedCategory !== 'All Categories' || period !== 'This Month' || from !== initialStart || to !== initialEnd);
+  const hasActiveFilters = !!(selectedCategory !== 'All Categories' || period !== 'This Month');
 
   const handleExpenseAdded = (newExpense: any) => {
     setExpenses([newExpense, ...expenses]);
@@ -60,11 +86,12 @@ export default function ExpensesClient({
     return true;
   });
 
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const activeFilterCount = (selectedCategory !== 'All Categories' ? 1 : 0) + (period !== 'This Month' ? 1 : 0);
+
   const handleClear = () => {
     setSelectedCategory('All Categories');
-    setPeriod('This Month');
-    setFrom(initialStart);
-    setTo(initialEnd);
+    handlePeriodChange('This Month');
   };
 
   return (
@@ -76,7 +103,34 @@ export default function ExpensesClient({
         className="mb-3 lg:mb-6"
       />
 
+      {hideHeader && (
+        <div className="flex lg:hidden justify-between items-center mb-6 mt-4">
+          <div className="flex flex-col justify-center">
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Expenses</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {getPeriodSubtitle(period, from, to)}
+            </p>
+          </div>
+          
+          <button 
+            onClick={() => setIsSheetOpen(true)}
+            className="flex items-center gap-1.5 min-h-12 px-4 rounded-lg bg-white border border-slate-200 shadow-sm font-medium text-slate-700 active:scale-95 transition-all touch-manipulation"
+          >
+            <div className="relative">
+              <Filter size={18} />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-navy text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </div>
+            Filters
+          </button>
+        </div>
+      )}
+
       <div className="space-y-6">
+        <div className={hideHeader ? "hidden lg:block" : "block"}>
         <FilterCard
           variant="card"
           showCategory={true}
@@ -87,31 +141,8 @@ export default function ExpensesClient({
           showPeriod={true}
           period={period}
           onPeriodChange={(newPeriod) => {
-            setPeriod(newPeriod);
-            const today = new Date();
-            let start: Date;
-            let end: Date = new Date();
-            if (newPeriod === 'Overall') {
-              setFrom('');
-              setTo('');
-              return;
-            } else if (newPeriod === 'This Month') {
-              start = new Date(today.getFullYear(), today.getMonth(), 1);
-              end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            } else if (newPeriod === 'Last 3 Months') {
-              start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-              end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            } else if (newPeriod === 'Last 6 Months') {
-              start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-              end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            } else if (newPeriod === 'This Year') {
-              start = new Date(today.getFullYear(), 0, 1);
-              end = new Date(today.getFullYear(), 11, 31);
-            } else {
-              return;
-            }
-            setFrom(start.toISOString().split('T')[0]);
-            setTo(end.toISOString().split('T')[0]);
+            const { from: newF, to: newT } = getPeriodRange(newPeriod, from, to);
+            handlePeriodChange(newPeriod, newF, newT);
           }}
           periodOptions={[
             { value: 'Overall', label: 'Overall' },
@@ -123,14 +154,84 @@ export default function ExpensesClient({
 
           showDatePickers={true}
           fromDate={from}
-          onFromDateChange={setFrom}
+          onFromDateChange={(val) => handlePeriodChange('Custom', val, to)}
           toDate={to}
-          onToDateChange={setTo}
+          onToDateChange={(val) => handlePeriodChange('Custom', from, val)}
           dateError={dateError}
 
           hasActiveFilters={hasActiveFilters}
           onClear={handleClear}
         />
+      </div>
+
+      <BottomSheet
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        title="Filters"
+        headerAction={
+          hasActiveFilters ? (
+            <button 
+              onClick={handleClear}
+              className="flex items-center gap-1.5 min-h-8 px-3 text-sm rounded-full bg-white border border-slate-200 shadow-sm font-semibold text-slate-900 active:scale-95 transition-all duration-120 touch-manipulation"
+            >
+              <RotateCcw size={14} />
+              Reset
+            </button>
+          ) : null
+        }
+      >
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-slate-700">Time Period</label>
+            <Dropdown
+              value={period}
+              onChange={(newPeriod) => {
+                const { from: newF, to: newT } = getPeriodRange(newPeriod, from, to);
+                handlePeriodChange(newPeriod, newF, newT);
+              }}
+              options={[
+                { value: 'Overall', label: 'Overall' },
+                { value: 'This Month', label: 'This Month' },
+                { value: 'Last 3 Months', label: 'Last 3 Months' },
+                { value: 'Last 6 Months', label: 'Last 6 Months' },
+                { value: 'This Year', label: 'This Year' }
+              ]}
+              renderInline={true}
+            />
+          </div>
+          
+          {(period !== 'Overall') && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-slate-700">From</label>
+                <DatePicker
+                  value={from}
+                  onChange={(val) => handlePeriodChange('Custom', val, to)}
+                  placeholder="Start date"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-slate-700">To</label>
+                <DatePicker
+                  value={to}
+                  onChange={(val) => handlePeriodChange('Custom', from, val)}
+                  placeholder="End date"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3 pb-8">
+            <label className="text-sm font-medium text-slate-700">Category</label>
+            <Dropdown
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              options={filterCategories.map(c => ({ value: c, label: c === 'All Categories' ? 'All Categories' : c }))}
+              renderInline={true}
+            />
+          </div>
+        </div>
+      </BottomSheet>
 
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
           <div className="p-4 border-b border-slate-200 flex justify-between items-center shrink-0">
@@ -152,12 +253,19 @@ export default function ExpensesClient({
           </div>
         ) : filteredExpenses.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-slate-900 font-medium mb-1">No expenses found</p>
+            <p className="text-slate-900 font-medium mb-1">
+              No expenses found{period === 'Overall' ? '' : period === 'Custom' ? ' in this period' : ` in ${period}`}
+            </p>
             <p className="text-slate-500 text-sm">
               {selectedCategory === 'All Categories' 
                 ? "Click 'Add Expense' to start tracking rent, salaries, and bills." 
                 : `No expenses logged for category "${selectedCategory}".`}
             </p>
+            {hasActiveFilters && (
+              <button onClick={handleClear} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
+                Clear Filters
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-hidden flex-1 flex flex-col min-h-0">
@@ -211,3 +319,5 @@ export default function ExpensesClient({
     </div>
   );
 }
+
+

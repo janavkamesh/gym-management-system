@@ -14,9 +14,10 @@ interface DropdownProps {
   options: DropdownOption[];
   className?: string;
   placeholder?: string;
+  renderInline?: boolean;
 }
 
-export function Dropdown({ value, onChange, options, className = '', placeholder }: DropdownProps) {
+export function Dropdown({ value, onChange, options, className = '', placeholder, renderInline = false }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropDirection, setDropDirection] = useState<'down' | 'up'>('down');
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -117,38 +118,77 @@ export function Dropdown({ value, onChange, options, className = '', placeholder
         <ChevronDown size={16} className={`text-slate-400 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      <ul
-        ref={listRef}
-        className={`absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-md max-h-60 overflow-auto focus:outline-none transform transition-all duration-150 ${dropDirection === 'up' ? 'bottom-full mb-1 origin-bottom' : 'mt-1 top-full origin-top'} ${isOpen ? 'scale-y-100 opacity-100' : 'scale-y-95 opacity-0 pointer-events-none'}`}
-        role="listbox"
-        tabIndex={-1}
-      >
-        {options.map((option, index) => {
-          const isSelected = option.value === value;
-          const isFocused = index === focusedIndex;
-          
-          return (
-            <li
-              key={option.value}
-              role="option"
-              aria-selected={isSelected}
-              className={`
-                px-3 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-colors duration-120
-                ${isFocused ? 'bg-slate-50' : 'hover:bg-slate-50'}
-                ${isSelected ? 'text-blue-600 font-medium' : 'text-slate-700'}
-              `}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              onMouseEnter={() => setFocusedIndex(index)}
+      {renderInline ? (
+        <div className={`grid transition-all duration-150 ease-out ${isOpen ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0 pointer-events-none'}`}>
+          <div className="overflow-hidden">
+            <ul
+              ref={listRef}
+              className="w-full bg-white border border-slate-200 rounded-lg shadow-sm max-h-60 overflow-auto focus:outline-none"
+              role="listbox"
+              tabIndex={-1}
             >
-              <span className="truncate">{option.label}</span>
-              {isSelected && <Check size={16} className="text-blue-600" />}
-            </li>
-          );
-        })}
-      </ul>
+              {options.map((option, index) => {
+                const isSelected = option.value === value;
+                const isFocused = index === focusedIndex;
+                
+                return (
+                  <li
+                    key={option.value}
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`
+                      px-3 min-h-12 cursor-pointer flex items-center justify-between transition-colors duration-120
+                      ${isFocused ? 'bg-slate-50' : 'hover:bg-slate-50'}
+                      ${isSelected ? 'text-blue-600 font-medium' : 'text-slate-700'}
+                    `}
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }}
+                    onMouseEnter={() => setFocusedIndex(index)}
+                  >
+                    <span className="truncate">{option.label}</span>
+                    {isSelected && <Check size={16} className="text-blue-600" />}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : (
+        <ul
+          ref={listRef}
+          className={`absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-md max-h-60 overflow-auto focus:outline-none transform transition-all ${isOpen ? 'duration-150 ease-out opacity-100 translate-y-0' : 'duration-100 ease-in opacity-0 pointer-events-none translate-y-[-4px]'} ${dropDirection === 'up' ? 'bottom-full mb-1 origin-bottom' : 'mt-1 top-full origin-top'}`}
+          role="listbox"
+          tabIndex={-1}
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+            const isFocused = index === focusedIndex;
+            
+            return (
+              <li
+                key={option.value}
+                role="option"
+                aria-selected={isSelected}
+                className={`
+                  px-3 min-h-12 cursor-pointer flex items-center justify-between transition-colors duration-120
+                  ${isFocused ? 'bg-slate-50' : 'hover:bg-slate-50'}
+                  ${isSelected ? 'text-blue-600 font-medium' : 'text-slate-700'}
+                `}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                onMouseEnter={() => setFocusedIndex(index)}
+              >
+                <span className="truncate">{option.label}</span>
+                {isSelected && <Check size={16} className="text-blue-600" />}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

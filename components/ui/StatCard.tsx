@@ -2,26 +2,23 @@ import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
 interface StatCardProps {
-  title: string;
+  label: string;
   value: React.ReactNode;
+  subLabel?: string;
   icon: LucideIcon;
-  variant: 'blue' | 'green' | 'yellow' | 'red';
+  colorClass: string;
 }
 
-export function StatCard({ title, value, icon: Icon, variant }: StatCardProps) {
-  const gradientClass = `card-gradient-${variant}`;
-  
+export function StatCard({ label, value, subLabel, icon: Icon, colorClass }: StatCardProps) {
   return (
-    <div className={`${gradientClass} relative overflow-hidden rounded-lg shadow-sm p-4 cursor-default group`}>
-      <div className="relative z-10 flex flex-col text-white">
-        <div className="text-3xl font-bold tracking-tight mb-1">{value}</div>
-        <p className="text-xs font-medium text-slate-100 opacity-90">{title}</p>
+    <div className={`${colorClass} relative overflow-hidden rounded-lg shadow-sm p-4 cursor-default group flex justify-between items-start`}>
+      <div className="flex flex-col text-white min-w-0 flex-1 pr-3">
+        <div className="text-2xl font-bold tracking-tight mb-1 truncate">{value}</div>
+        <p className="text-xs font-medium text-slate-100 opacity-90 truncate">{label}</p>
       </div>
-      <Icon 
-        size={56} 
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-0 transition-transform group-hover:scale-110 duration-500 text-white opacity-[0.15]" 
-        strokeWidth={1.5}
-      />
+      <div className="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center shrink-0">
+        <Icon size={20} className="text-white transition-transform group-hover:scale-110 duration-500" strokeWidth={2} />
+      </div>
     </div>
   );
 }

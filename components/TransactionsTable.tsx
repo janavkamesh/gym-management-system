@@ -4,29 +4,60 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from './ToastProvider';
 import { getTransactions, getTransactionsSummary, TransactionFilters } from '@/lib/queries/transactions';
 import { formatINR } from '@/lib/utils/formatters';
-import { Filter, X, Search, ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { Filter, X, Search, ArrowUpRight, ArrowDownRight, Wallet, TrendingUp, TrendingDown, RotateCcw } from 'lucide-react';
 import { Dropdown } from './ui/Dropdown';
 import { DatePicker } from './DatePicker';
 import { FilterCard } from './FilterCard';
 import Badge from './ui/Badge';
 import { StatCard } from './ui/StatCard';
+import { BottomSheet } from './ui/BottomSheet';
 
-export default function TransactionsTable({ categories }: { categories: string[] }) {
+import { getPeriodRange, getPeriodSubtitle } from '@/lib/utils/date';
+
+export default function TransactionsTable({ 
+  categories,
+  sharedPeriod,
+  sharedFrom,
+  sharedTo,
+  onPeriodChange,
+  isMobileTab = false
+}: { 
+  categories: string[];
+  sharedPeriod?: string;
+  sharedFrom?: string;
+  sharedTo?: string;
+  onPeriodChange?: (period: string, from?: string, to?: string) => void;
+  isMobileTab?: boolean;
+}) {
   const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ total_in: 0, total_out: 0, net: 0 });
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
 
-  const now = new Date();
-  const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  const [internalPeriod, setInternalPeriod] = useState('This Month');
+  const [internalFrom, setInternalFrom] = useState('');
+  const [internalTo, setInternalTo] = useState('');
 
-  const [period, setPeriod] = useState('Overall');
+  const period = sharedPeriod !== undefined ? sharedPeriod : internalPeriod;
+  const { from, to } = getPeriodRange(
+    period,
+    sharedPeriod !== undefined ? sharedFrom : internalFrom,
+    sharedPeriod !== undefined ? sharedTo : internalTo
+  );
+
+  const handlePeriodChange = (p: string, f?: string, t?: string) => {
+    if (onPeriodChange) {
+      onPeriodChange(p, f, t);
+    } else {
+      setInternalPeriod(p);
+      setInternalFrom(f || '');
+      setInternalTo(t || '');
+    }
+  };
+
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [direction, setDirection] = useState<'all' | 'in' | 'out'>('all');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -37,7 +68,7 @@ export default function TransactionsTable({ categories }: { categories: string[]
   const requestCounter = useRef(0);
   
   const dateError = !!(from && to && from > to);
-  const hasActiveFilters = !!(search || category !== 'All' || direction !== 'all' || period !== 'This Month' || from !== initialStart || to !== initialEnd);
+  const hasActiveFilters = !!(search || category !== 'All' || direction !== 'all' || period !== 'This Month');
 
   const fetchTransactions = useCallback(async (isLoadMore = false) => {
     if (dateError) return;
@@ -107,26 +138,70 @@ export default function TransactionsTable({ categories }: { categories: string[]
     setSearch('');
     setCategory('All');
     setDirection('all');
-    setPeriod('This Month');
-    setFrom(initialStart);
-    setTo(initialEnd);
+    handlePeriodChange('This Month');
   };
 
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const activeFilterCount = (search ? 1 : 0) + (category !== 'All' ? 1 : 0) + (direction !== 'all' ? 1 : 0) + (period !== 'This Month' ? 1 : 0);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
+      {isMobileTab && (
+        <div className="flex lg:hidden justify-between items-center mb-2 mt-4">
+          <div className="flex flex-col justify-center">
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Transactions</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              {getPeriodSubtitle(period, from, to)}
+            </p>
+          </div>
+          
+          <button 
+            onClick={() => setIsSheetOpen(true)}
+            className="flex items-center gap-1.5 min-h-12 px-4 rounded-lg bg-white border border-slate-200 shadow-sm font-medium text-slate-700 active:scale-95 transition-all touch-manipulation"
+          >
+            <div className="relative">
+              <Filter size={18} />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-navy text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </div>
+            Filters
+          </button>
+        </div>
+      )}
+
       {/* Summary Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Total In" value={isInitialLoading ? '-' : formatINR(summary.total_in)} icon={TrendingUp} variant="green" />
-        <StatCard title="Total Out" value={isInitialLoading ? '-' : formatINR(summary.total_out)} icon={TrendingDown} variant="red" />
-        <StatCard title="Net" value={isInitialLoading ? '-' : formatINR(summary.net)} icon={Wallet} variant="blue" />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <StatCard label="Total In" value={isInitialLoading ? '-' : formatINR(summary.total_in)} icon={TrendingUp} colorClass="card-gradient-green" />
+        <StatCard label="Total Out" value={isInitialLoading ? '-' : formatINR(summary.total_out)} icon={TrendingDown} colorClass="card-gradient-red" />
+        <div className="col-span-2 md:col-span-1">
+          <StatCard label="Net" value={isInitialLoading ? '-' : formatINR(summary.net)} icon={Wallet} colorClass="card-gradient-blue" />
+        </div>
       </div>
 
-      {/* Filter Card */}
-      <FilterCard
-        variant="card"
-        showSearch={true}
-        search={search}
-        onSearchChange={setSearch}
+      {/* Mobile Search */}
+      {isMobileTab && (
+        <div className="lg:hidden relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input 
+            type="text" 
+            placeholder="Search transactions..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-12 pl-10 pr-4 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+          />
+        </div>
+      )}
+
+      {/* Desktop Filter Card */}
+      <div className={isMobileTab ? "hidden lg:block" : "block"}>
+        <FilterCard
+          variant="card"
+          showSearch={true}
+          search={search}
+          onSearchChange={setSearch}
             searchPlaceholder="Search..."
             
             showDirection={true}
@@ -149,31 +224,8 @@ export default function TransactionsTable({ categories }: { categories: string[]
             showPeriod={true}
             period={period}
             onPeriodChange={(newPeriod) => {
-              setPeriod(newPeriod);
-              const today = new Date();
-              let start: Date;
-              let end: Date = new Date();
-              if (newPeriod === 'Overall') {
-                setFrom('');
-                setTo('');
-                return;
-              } else if (newPeriod === 'This Month') {
-                start = new Date(today.getFullYear(), today.getMonth(), 1);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              } else if (newPeriod === 'Last 3 Months') {
-                start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              } else if (newPeriod === 'Last 6 Months') {
-                start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              } else if (newPeriod === 'This Year') {
-                start = new Date(today.getFullYear(), 0, 1);
-                end = new Date(today.getFullYear(), 11, 31);
-              } else {
-                return;
-              }
-              setFrom(start.toISOString().split('T')[0]);
-              setTo(end.toISOString().split('T')[0]);
+              const { from: newF, to: newT } = getPeriodRange(newPeriod, from, to);
+              handlePeriodChange(newPeriod, newF, newT);
             }}
             periodOptions={[
               { value: 'Overall', label: 'Overall' },
@@ -185,14 +237,101 @@ export default function TransactionsTable({ categories }: { categories: string[]
 
             showDatePickers={true}
             fromDate={from}
-            onFromDateChange={setFrom}
+            onFromDateChange={(val) => handlePeriodChange('Custom', val, to)}
             toDate={to}
-            onToDateChange={setTo}
+            onToDateChange={(val) => handlePeriodChange('Custom', from, val)}
             dateError={dateError}
 
             hasActiveFilters={hasActiveFilters}
             onClear={handleClear}
           />
+      </div>
+
+      <BottomSheet
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+        title="Filters"
+        headerAction={
+          hasActiveFilters ? (
+            <button 
+              onClick={handleClear}
+              className="flex items-center gap-1.5 min-h-8 px-3 text-sm rounded-full bg-white border border-slate-200 shadow-sm font-semibold text-slate-900 active:scale-95 transition-all duration-120 touch-manipulation"
+            >
+              <RotateCcw size={14} />
+              Reset
+            </button>
+          ) : null
+        }
+      >
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-slate-700">Time Period</label>
+            <Dropdown
+              value={period}
+              onChange={(newPeriod) => {
+                const { from: newF, to: newT } = getPeriodRange(newPeriod, from, to);
+                handlePeriodChange(newPeriod, newF, newT);
+              }}
+              options={[
+                { value: 'Overall', label: 'Overall' },
+                { value: 'This Month', label: 'This Month' },
+                { value: 'Last 3 Months', label: 'Last 3 Months' },
+                { value: 'Last 6 Months', label: 'Last 6 Months' },
+                { value: 'This Year', label: 'This Year' }
+              ]}
+              renderInline={true}
+            />
+          </div>
+          
+          {(period !== 'Overall') && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-slate-700">From</label>
+                <DatePicker
+                  value={from}
+                  onChange={(val) => handlePeriodChange('Custom', val, to)}
+                  placeholder="Start date"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-slate-700">To</label>
+                <DatePicker
+                  value={to}
+                  onChange={(val) => handlePeriodChange('Custom', from, val)}
+                  placeholder="End date"
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-slate-700">Direction</label>
+            <Dropdown
+              value={direction}
+              onChange={(val) => setDirection(val as any)}
+              options={[
+                { value: 'all', label: 'All Directions' },
+                { value: 'in', label: 'Money In' },
+                { value: 'out', label: 'Money Out' }
+              ]}
+              renderInline={true}
+            />
+          </div>
+          
+          <div className="space-y-3 pb-8">
+            <label className="text-sm font-medium text-slate-700">Category</label>
+            <Dropdown
+              value={category}
+              onChange={setCategory}
+              options={[
+                { value: 'All', label: 'All Categories' },
+                ...categories.map(cat => ({ value: cat, label: cat }))
+              ]}
+              renderInline={true}
+            />
+          </div>
+        </div>
+      </BottomSheet>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         <div className="overflow-x-auto overflow-y-hidden flex-1 flex flex-col min-h-0">
@@ -222,9 +361,9 @@ export default function TransactionsTable({ categories }: { categories: string[]
               ) : data.length === 0 ? (
                 <tr className="flex-1 flex items-center justify-center w-full">
                   <td colSpan={6} className="px-4 md:px-6 py-12 text-center text-slate-500 w-full">
-                    <p className="font-medium text-slate-900 mb-1">{hasActiveFilters ? "No matching transactions" : "No transactions yet"}</p>
-                    <p className="text-sm">{hasActiveFilters ? "Try changing or clearing your filters." : "Payments and expenses will appear here."}</p>
-                    {hasActiveFilters && (
+                    <p className="font-medium text-slate-900 mb-1">No transactions found{period === 'Overall' ? '' : period === 'Custom' ? ' in this period' : ` in ${period}`}</p>
+                    <p className="text-sm">{(search || category !== 'All' || direction !== 'all') ? "Try clearing your filters." : "Payments and expenses will appear here."}</p>
+                    {(search || category !== 'All' || direction !== 'all' || period !== 'This Month') && (
                       <button onClick={handleClear} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
                         Clear Filters
                       </button>
@@ -315,3 +454,5 @@ export default function TransactionsTable({ categories }: { categories: string[]
     </div>
   );
 }
+
+

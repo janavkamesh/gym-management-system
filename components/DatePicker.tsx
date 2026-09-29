@@ -54,7 +54,7 @@ function CustomDropdown(props: any) {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="z-9999 bg-white rounded-lg shadow-md border border-slate-200 p-1 w-32 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95"
+          className="z-[9999] bg-white rounded-lg shadow-md border border-slate-200 p-1 w-32 max-h-60 overflow-y-auto origin-top animate-in fade-in slide-in-from-top-1 duration-150 ease-out data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-top-1 data-[state=closed]:duration-100 data-[state=closed]:ease-in"
           align="center"
           sideOffset={4}
         >
@@ -152,7 +152,7 @@ export function DatePicker({
       
       <Popover.Portal>
         <Popover.Content 
-          className="z-9999 bg-white rounded-xl shadow-md border border-slate-200 p-3 animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95"
+          className="z-[9999] bg-white rounded-xl shadow-md border border-slate-200 p-3 origin-top animate-in fade-in slide-in-from-top-1 duration-150 ease-out data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-top-1 data-[state=closed]:duration-100 data-[state=closed]:ease-in"
           align="start"
           sideOffset={8}
         >
