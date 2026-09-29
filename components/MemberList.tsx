@@ -50,7 +50,7 @@ export default function MemberList({
       ) : (
         isDesktop ? (
           <div className="overflow-x-auto hide-scrollbar">
-            <table className="w-full text-left text-sm text-slate-900 min-w-[800px]">
+            <table className="w-full text-left text-sm text-slate-900 min-w-200">
               <thead className="table-header-dark border-b border-slate-200 text-slate-100">
                 <tr>
                   <th className="px-4 md:px-6 font-medium text-left">Name</th>
