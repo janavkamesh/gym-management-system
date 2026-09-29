@@ -64,12 +64,16 @@ export default function FinancialsClient({
   const now = new Date();
   const initialStart = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), 1));
   const initialEnd = toLocalISOString(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  
+  const DEFAULT_PERIOD = 'This Month';
+  const DEFAULT_FROM = initialStart;
+  const DEFAULT_TO = initialEnd;
 
-  const [period, setPeriod] = useState('Overall');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [period, setPeriod] = useState(DEFAULT_PERIOD);
+  const [fromDate, setFromDate] = useState(DEFAULT_FROM);
+  const [toDate, setToDate] = useState(DEFAULT_TO);
   const dateError = !!(fromDate && toDate && fromDate > toDate);
-  const hasActiveFilters = period !== 'This Month' || fromDate !== initialStart || toDate !== initialEnd;
+  const hasActiveFilters = period !== DEFAULT_PERIOD || fromDate !== DEFAULT_FROM || toDate !== DEFAULT_TO;
 
   // Local Data State for Filterable Widgets
   const [profitabilityData, setProfitabilityData] = useState(profitability);
@@ -421,42 +425,24 @@ export default function FinancialsClient({
         <PageHeader 
           title="Financials"
           subtitle="Track profitability, expenses, and revenue trends."
-          className="mb-3 lg:mb-6"
+          className="hidden lg:flex mb-6"
         />
 
-      {/* Mobile Toolbar */}
-      <div className="lg:hidden mb-8">
-        <div className="flex flex-col gap-3">
+        {/* Mobile Header Row */}
+        <div className="flex lg:hidden justify-between items-center mb-6">
+          <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Financials</h1>
           <button
+            type="button"
+            aria-label="Filters"
             onClick={() => setIsFilterSheetOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={isFilterSheetOpen}
-            className="flex items-center justify-center gap-2 px-4 h-12 w-28 bg-white border border-slate-200 rounded-lg shadow-sm active:scale-95 transition-all duration-120 text-slate-700 text-sm font-medium relative touch-manipulation"
+            className="flex items-center justify-center h-12 w-12 rounded-full bg-white border border-slate-200 shadow-sm active:scale-95 transition-all duration-120 relative touch-manipulation"
           >
-            <Filter size={18} />
-            Filters
+            <Filter size={20} className="text-slate-700" />
             {hasActiveFilters && (
-              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-600 rounded-full border-2 border-white"></span>
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white translate-x-0 -translate-y-0.5"></span>
             )}
           </button>
-          
-          {hasActiveFilters && (
-            <div className="flex">
-              <button
-                onClick={() => {
-                  setPeriod('This Month');
-                  setFromDate(initialStart);
-                  setToDate(initialEnd);
-                }}
-                className="flex items-center gap-1.5 px-3 h-10 bg-blue-50 text-blue-700 rounded-full text-xs font-medium active:scale-95 transition-all touch-manipulation border border-blue-200"
-              >
-                Filters active
-                <X size={16} className="text-blue-600" />
-              </button>
-            </div>
-          )}
         </div>
-      </div>
 
       <div className="hidden lg:block mb-8">
         <FilterCard
@@ -504,9 +490,9 @@ export default function FinancialsClient({
           dateError={dateError}
           hasActiveFilters={hasActiveFilters}
           onClear={() => {
-            setPeriod('This Month');
-            setFromDate(initialStart);
-            setToDate(initialEnd);
+            setPeriod(DEFAULT_PERIOD);
+            setFromDate(DEFAULT_FROM);
+            setToDate(DEFAULT_TO);
           }}
         />
       </div>
@@ -743,6 +729,19 @@ export default function FinancialsClient({
         isOpen={isFilterSheetOpen}
         onClose={() => setIsFilterSheetOpen(false)}
         title="Filters"
+        headerAction={
+          <button
+            onClick={() => {
+              setPeriod(DEFAULT_PERIOD);
+              setFromDate(DEFAULT_FROM);
+              setToDate(DEFAULT_TO);
+            }}
+            disabled={!hasActiveFilters}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-h-[48px] px-3 rounded-md touch-manipulation ${hasActiveFilters ? 'text-blue-600 active:bg-blue-50' : 'text-slate-300 cursor-not-allowed'}`}
+          >
+            Clear
+          </button>
+        }
         footer={
           <button
             onClick={() => setIsFilterSheetOpen(false)}
@@ -799,9 +798,9 @@ export default function FinancialsClient({
             dateError={dateError}
             hasActiveFilters={hasActiveFilters}
             onClear={() => {
-              setPeriod('This Month');
-              setFromDate(initialStart);
-              setToDate(initialEnd);
+              setPeriod(DEFAULT_PERIOD);
+              setFromDate(DEFAULT_FROM);
+              setToDate(DEFAULT_TO);
             }}
           />
         </div>

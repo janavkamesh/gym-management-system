@@ -8,9 +8,10 @@ interface BottomSheetProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  headerAction?: ReactNode;
 }
 
-export function BottomSheet({ isOpen, onClose, title, children, footer }: BottomSheetProps) {
+export function BottomSheet({ isOpen, onClose, title, children, footer, headerAction }: BottomSheetProps) {
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -56,15 +57,18 @@ export function BottomSheet({ isOpen, onClose, title, children, footer }: Bottom
         className="bg-white rounded-t-2xl shadow-2xl w-full max-w-4xl max-h-[85dvh] flex flex-col translate-y-0 transition-transform duration-200 ease-out motion-reduce:transition-none animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center px-4 py-3 shrink-0 border-b border-slate-200">
+        <div className="flex justify-between items-center px-4 py-3 shrink-0 border-b border-slate-200 min-h-[60px]">
           <h2 id="bottom-sheet-title" className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button 
-            onClick={onClose} 
-            className="text-slate-400 hover:text-slate-700 transition-colors rounded-full p-2 touch-manipulation flex items-center justify-center min-h-[44px] min-w-[44px]"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1">
+            {headerAction}
+            <button 
+              onClick={onClose} 
+              className="text-slate-400 hover:text-slate-700 transition-colors rounded-full p-2 touch-manipulation flex items-center justify-center min-h-[48px] min-w-[48px]"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="overflow-y-auto overscroll-contain px-4 py-2 flex-1 min-h-0">
