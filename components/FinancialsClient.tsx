@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from './ToastProvider';
-import { IndianRupee, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, PiggyBank } from 'lucide-react';
+import { IndianRupee, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, PiggyBank, Filter, X } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { StatCard } from './ui/StatCard';
 import Badge from './ui/Badge';
 import { FilterCard, DateChipOption } from './FilterCard';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { getProfitability, getRevenueSplit, getPaymentMethodSplit, getTrendPayments, getTrendExpenses, getPlanBreakdown, getNewVsLostMembers } from '@/lib/queries/financials';
 import { TrendChart } from './ui/TrendChart';
 import { SegmentedControl } from './ui/SegmentedControl';
@@ -57,6 +58,7 @@ export default function FinancialsClient({
   initialError
 }: FinancialsClientProps) {
   const [activeTab, setActiveTab] = useState('Financials');
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   
   // FilterCard State
   const now = new Date();
@@ -422,7 +424,41 @@ export default function FinancialsClient({
           className="mb-3 lg:mb-6"
         />
 
-      <div className="mb-8">
+      {/* Mobile Toolbar */}
+      <div className="lg:hidden mb-8">
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => setIsFilterSheetOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={isFilterSheetOpen}
+            className="flex items-center justify-center gap-2 px-4 h-12 w-28 bg-white border border-slate-200 rounded-lg shadow-sm active:scale-95 transition-all duration-120 text-slate-700 text-sm font-medium relative touch-manipulation"
+          >
+            <Filter size={18} />
+            Filters
+            {hasActiveFilters && (
+              <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-blue-600 rounded-full border-2 border-white"></span>
+            )}
+          </button>
+          
+          {hasActiveFilters && (
+            <div className="flex">
+              <button
+                onClick={() => {
+                  setPeriod('This Month');
+                  setFromDate(initialStart);
+                  setToDate(initialEnd);
+                }}
+                className="flex items-center gap-1.5 px-3 h-10 bg-blue-50 text-blue-700 rounded-full text-xs font-medium active:scale-95 transition-all touch-manipulation border border-blue-200"
+              >
+                Filters active
+                <X size={16} className="text-blue-600" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="hidden lg:block mb-8">
         <FilterCard
           showPeriod={true}
           period={period}
@@ -702,6 +738,74 @@ export default function FinancialsClient({
           hideHeader={true}
         />
       </div>
+
+      <BottomSheet
+        isOpen={isFilterSheetOpen}
+        onClose={() => setIsFilterSheetOpen(false)}
+        title="Filters"
+        footer={
+          <button
+            onClick={() => setIsFilterSheetOpen(false)}
+            className="w-full h-12 bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
+          >
+            Done
+          </button>
+        }
+      >
+        <div className="-mx-4 -mt-4">
+          <FilterCard
+            variant="inline"
+            showPeriod={true}
+            period={period}
+            onPeriodChange={(newPeriod) => {
+              setPeriod(newPeriod);
+              const today = new Date();
+              let start: Date;
+              let end: Date = new Date();
+              if (newPeriod === 'Overall') {
+                setFromDate('');
+                setToDate('');
+                return;
+              } else if (newPeriod === 'This Month') {
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              } else if (newPeriod === 'Last 3 Months') {
+                start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              } else if (newPeriod === 'Last 6 Months') {
+                start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              } else if (newPeriod === 'This Year') {
+                start = new Date(today.getFullYear(), 0, 1);
+                end = new Date(today.getFullYear(), 11, 31);
+              } else {
+                return;
+              }
+              setFromDate(toLocalISOString(start));
+              setToDate(toLocalISOString(end));
+            }}
+            periodOptions={[
+              { value: 'Overall', label: 'Overall' },
+              { value: 'This Month', label: 'This Month' },
+              { value: 'Last 3 Months', label: 'Last 3 Months' },
+              { value: 'Last 6 Months', label: 'Last 6 Months' },
+              { value: 'This Year', label: 'This Year' }
+            ]}
+            showDatePickers={true}
+            fromDate={fromDate}
+            onFromDateChange={setFromDate}
+            toDate={toDate}
+            onToDateChange={setToDate}
+            dateError={dateError}
+            hasActiveFilters={hasActiveFilters}
+            onClear={() => {
+              setPeriod('This Month');
+              setFromDate(initialStart);
+              setToDate(initialEnd);
+            }}
+          />
+        </div>
+      </BottomSheet>
     </div>
   );
 }
