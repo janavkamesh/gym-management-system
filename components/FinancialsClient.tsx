@@ -737,7 +737,7 @@ export default function FinancialsClient({
               setToDate(DEFAULT_TO);
             }}
             disabled={!hasActiveFilters}
-            className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-h-[48px] px-3 rounded-md touch-manipulation ${hasActiveFilters ? 'text-blue-600 active:bg-blue-50' : 'text-slate-300 cursor-not-allowed'}`}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-h-12 px-3 rounded-md touch-manipulation ${hasActiveFilters ? 'text-blue-600 active:bg-blue-50' : 'text-slate-300 cursor-not-allowed'}`}
           >
             Clear
           </button>

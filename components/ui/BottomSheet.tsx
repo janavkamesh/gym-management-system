@@ -47,7 +47,7 @@ export function BottomSheet({ isOpen, onClose, title, children, footer, headerAc
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/50 transition-opacity duration-200 motion-reduce:transition-none"
+      className="fixed inset-0 z-100 flex items-end justify-center bg-slate-900/50 transition-opacity duration-200 motion-reduce:transition-none"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"
       aria-modal="true"
@@ -57,13 +57,13 @@ export function BottomSheet({ isOpen, onClose, title, children, footer, headerAc
         className="bg-white rounded-t-2xl shadow-2xl w-full max-w-4xl max-h-[85dvh] flex flex-col translate-y-0 transition-transform duration-200 ease-out motion-reduce:transition-none animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center px-4 py-3 shrink-0 border-b border-slate-200 min-h-[60px]">
+        <div className="flex justify-between items-center px-4 py-3 shrink-0 border-b border-slate-200 min-h-15">
           <h2 id="bottom-sheet-title" className="text-lg font-semibold text-slate-900">{title}</h2>
           <div className="flex items-center gap-1">
             {headerAction}
             <button 
               onClick={onClose} 
-              className="text-slate-400 hover:text-slate-700 transition-colors rounded-full p-2 touch-manipulation flex items-center justify-center min-h-[48px] min-w-[48px]"
+              className="text-slate-400 hover:text-slate-700 transition-colors rounded-full p-2 touch-manipulation flex items-center justify-center min-h-12 min-w-12"
               aria-label="Close"
             >
               <X size={20} />

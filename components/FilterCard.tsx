@@ -114,7 +114,7 @@ export function FilterCard({
           <button
             onClick={onClear}
             disabled={!hasActiveFilters}
-            className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-h-[48px] px-2 touch-manipulation ${hasActiveFilters ? 'text-slate-600 hover:text-slate-900' : 'text-slate-300 cursor-not-allowed'}`}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-colors min-h-12 px-2 touch-manipulation ${hasActiveFilters ? 'text-slate-600 hover:text-slate-900' : 'text-slate-300 cursor-not-allowed'}`}
           >
             <X size={16} />
             Clear
@@ -152,36 +152,36 @@ export function FilterCard({
                 placeholder={searchPlaceholder}
                 value={search}
                 onChange={(e) => onSearchChange?.(e.target.value)}
-                className="w-full min-h-[48px] pl-9 pr-3 rounded-md border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-shadow touch-manipulation"
+                className="w-full min-h-12 pl-9 pr-3 rounded-md border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-shadow touch-manipulation"
               />
             </div>
           )}
           
           {showDirection && (
-            <div className="w-full [&>div>button]:min-h-[48px]">
+            <div className="w-full [&>div>button]:min-h-12">
               <Dropdown value={direction} onChange={(val) => onDirectionChange?.(val)} options={directionOptions} />
             </div>
           )}
           
           {showCategory && (
-            <div className="w-full [&>div>button]:min-h-[48px]">
+            <div className="w-full [&>div>button]:min-h-12">
               <Dropdown value={category} onChange={(val) => onCategoryChange?.(val)} options={categoryOptions} />
             </div>
           )}
 
           {showPeriod && (
-            <div className="w-full [&>div>button]:min-h-[48px]">
+            <div className="w-full [&>div>button]:min-h-12">
               <Dropdown value={period} onChange={(val) => onPeriodChange?.(val)} options={periodOptions} />
             </div>
           )}
           
           {showDates && (
             <div className="flex w-full gap-3">
-              <div className="flex-1 min-w-0 [&>button]:min-h-[48px]">
+              <div className="flex-1 min-w-0 [&>button]:min-h-12">
                 <DatePicker value={fromDate} onChange={(val) => onFromDateChange?.(val)} placeholder="From" />
               </div>
               
-              <div className="flex-1 min-w-0 [&>button]:min-h-[48px]">
+              <div className="flex-1 min-w-0 [&>button]:min-h-12">
                 <DatePicker value={toDate} onChange={(val) => onToDateChange?.(val)} placeholder="To" />
               </div>
             </div>
@@ -190,7 +190,7 @@ export function FilterCard({
       ) : cols > 0 && (
         <div className={`grid grid-cols-1 ${gridColsClass} gap-4`}>
           {showSearch && (
-            <div className={`relative ${variant === 'inline' ? 'flex-1 min-w-[200px]' : 'md:col-span-1'}`}>
+            <div className={`relative ${variant === 'inline' ? 'flex-1 min-w-50' : 'md:col-span-1'}`}>
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search size={16} className="text-slate-400" />
               </div>
@@ -205,7 +205,7 @@ export function FilterCard({
           )}
 
           {showDirection && (
-            <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+            <div className={variant === 'inline' ? 'flex-1 min-w-35' : ''}>
               <Dropdown
                 value={direction}
                 onChange={(val) => onDirectionChange?.(val)}
@@ -215,7 +215,7 @@ export function FilterCard({
           )}
           
           {showCategory && (
-            <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+            <div className={variant === 'inline' ? 'flex-1 min-w-35' : ''}>
               <Dropdown
                 value={category}
                 onChange={(val) => onCategoryChange?.(val)}
@@ -225,7 +225,7 @@ export function FilterCard({
           )}
 
           {showPeriod && (
-            <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+            <div className={variant === 'inline' ? 'flex-1 min-w-35' : ''}>
               <Dropdown
                 value={period}
                 onChange={(val) => onPeriodChange?.(val)}
@@ -236,7 +236,7 @@ export function FilterCard({
           
           {showDates && (
             <>
-              <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+              <div className={variant === 'inline' ? 'flex-1 min-w-35' : ''}>
                 <DatePicker
                   value={fromDate}
                   onChange={(val) => onFromDateChange?.(val)}
@@ -244,7 +244,7 @@ export function FilterCard({
                 />
               </div>
               
-              <div className={variant === 'inline' ? 'flex-1 min-w-[140px]' : ''}>
+              <div className={variant === 'inline' ? 'flex-1 min-w-35' : ''}>
                 <DatePicker
                   value={toDate}
                   onChange={(val) => onToDateChange?.(val)}
