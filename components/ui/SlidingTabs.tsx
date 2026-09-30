@@ -13,13 +13,14 @@ export function SlidingTabs({
   options, 
   value, 
   onChange, 
-  activeColorClass = 'bg-navy',
-  containerClassName = 'w-full max-w-sm mx-auto h-14',
-  buttonClassName = 'min-h-12 flex-1'
+  activeColorClass = 'max-lg:bg-navy lg:bg-white shadow-sm max-lg:text-white lg:text-slate-900',
+  containerClassName = 'w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation items-center',
+  buttonClassName = 'flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2'
 }: SlidingTabsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
   const [mounted, setMounted] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -37,12 +38,29 @@ export function SlidingTabs({
         width: activeButton.offsetWidth,
         left: activeButton.offsetLeft,
       });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsReady(true);
+        });
+      });
     }
   };
 
   useEffect(() => {
+    updateIndicator();
+    let active = true;
+    
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        if (active) updateIndicator();
+      });
+    }
+
     const timer = setTimeout(updateIndicator, 10);
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [value, options, mounted]);
 
   useEffect(() => {
@@ -56,7 +74,7 @@ export function SlidingTabs({
       className={`flex relative bg-slate-100 rounded-lg p-1 overflow-x-auto hide-scrollbar touch-manipulation items-center ${containerClassName}`}
     >
       <div 
-        className={`absolute top-1 bottom-1 ${activeColorClass} rounded-md shadow-sm transition-transform duration-180 ease-out motion-reduce:transition-none`}
+        className={`absolute left-0 top-1 bottom-1 ${activeColorClass} rounded-md shadow-sm ${isReady ? 'transition-transform duration-180 ease-out motion-reduce:transition-none' : ''}`}
         style={{
           width: `${indicatorStyle.width}px`,
           transform: `translateX(${indicatorStyle.left}px)`,
@@ -71,7 +89,7 @@ export function SlidingTabs({
             onClick={() => onChange(option)}
             className={`relative z-10 px-3 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center active:scale-95 touch-manipulation ${buttonClassName} ${
               isActive 
-                ? 'text-white' 
+                ? 'max-lg:text-white lg:text-slate-900' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >

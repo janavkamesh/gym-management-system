@@ -4,13 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { collectPaymentAmount, collectPtPayment } from '@/lib/actions/payments';
 import { useToast } from './ToastProvider';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 interface CollectPaymentModalProps {
+  isOpen: boolean;
   member: any;
   onClose: () => void;
 }
 
-export default function CollectPaymentModal({ member, onClose }: CollectPaymentModalProps) {
+export default function CollectPaymentModal({ isOpen, member, onClose }: CollectPaymentModalProps) {
   const activePt = member.pt_assignments?.find((pt: any) => pt.is_active);
   const hasPt = !!activePt;
 
@@ -87,20 +90,21 @@ export default function CollectPaymentModal({ member, onClose }: CollectPaymentM
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-slate-900/50"
-      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-md overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
+      overlayClassName="z-[60]"
     >
-      <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
+      <ModalHeader 
+        title={
           <div>
-            <h3 className="text-xl font-semibold text-white">Amount Collected</h3>
-            <p className="text-xs text-slate-300 mt-1">Log payment for {member.name}</p>
+            <h3 className="text-lg md:text-xl font-semibold text-slate-900 md:text-white">Amount Collected</h3>
+            <p className="text-xs text-slate-500 md:text-slate-300 mt-0.5 md:mt-1">Log payment for {member.name}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
-          </button>
-        </div>
+        } 
+        onClose={onClose} 
+      />
 
         {showConfirmation ? (
           <div className="p-6 pb-safe">
@@ -224,7 +228,6 @@ export default function CollectPaymentModal({ member, onClose }: CollectPaymentM
             </div>
           </form>
         )}
-      </div>
-    </div>
+    </ModalTransition>
   );
 }

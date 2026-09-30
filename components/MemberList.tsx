@@ -17,6 +17,9 @@ interface MemberListProps {
   targetMemberId?: string;
   openMemberId?: string;
   action?: string;
+  animationKey?: string;
+  animationClass?: string;
+  onAnimationEnd?: () => void;
 }
 
 export default function MemberList({
@@ -32,7 +35,10 @@ export default function MemberList({
   onRestore,
   targetMemberId,
   openMemberId,
-  action
+  action,
+  animationKey,
+  animationClass,
+  onAnimationEnd
 }: MemberListProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)', true);
 
@@ -90,7 +96,11 @@ export default function MemberList({
               <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Reminder</div>
               <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Collected</div>
             </div>
-            <div className="flex flex-col">
+            <div 
+              className={`flex flex-col ${animationClass || ''}`}
+              key={animationKey}
+              onAnimationEnd={onAnimationEnd}
+            >
               {members.map((member) => (
                 <MemberRow
                   key={`mobile-${member.id}`}

@@ -12,7 +12,7 @@ import AddExpenseModal from './AddExpenseModal';
 import { FilterCard } from './FilterCard';
 import PageHeader from './PageHeader';
 
-import { getPeriodRange, getPeriodSubtitle } from '@/lib/utils/date';
+import { getPeriodRange, getPeriodSubtitle, getMobileDayLabel } from '@/lib/utils/date';
 
 interface ExpensesClientProps {
   initialExpenses: any[] | null;
@@ -23,6 +23,9 @@ interface ExpensesClientProps {
   sharedFrom?: string;
   sharedTo?: string;
   onPeriodChange?: (period: string, from?: string, to?: string) => void;
+  animationClass?: string;
+  isAnimating?: boolean;
+  onAnimationEnd?: () => void;
 }
 
 export default function ExpensesClient({
@@ -33,7 +36,10 @@ export default function ExpensesClient({
   sharedPeriod,
   sharedFrom,
   sharedTo,
-  onPeriodChange
+  onPeriodChange,
+  animationClass = '',
+  isAnimating = false,
+  onAnimationEnd
 }: ExpensesClientProps) {
   const [expenses, setExpenses] = useState(initialExpenses || []);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -129,7 +135,8 @@ export default function ExpensesClient({
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className={`${animationClass} ${isAnimating ? 'overflow-x-clip' : ''}`} onAnimationEnd={onAnimationEnd}>
+      <div className="max-lg:space-y-section lg:space-y-6">
         <div className={hideHeader ? "hidden lg:block" : "block"}>
         <FilterCard
           variant="card"
@@ -268,43 +275,90 @@ export default function ExpensesClient({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-hidden flex-1 flex flex-col min-h-0">
-            <table className="w-full text-left min-w-[600px] flex flex-col flex-1 min-h-0">
-              <thead className="table-header-dark border-b border-slate-200 text-slate-100 z-10 shrink-0">
-                <tr className="text-xs font-medium tracking-wider grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
-                  <th className="px-4 md:px-6 py-3 text-left">Category</th>
-                  <th className="px-4 md:px-6 py-3 text-right">Amount</th>
-                  <th className="px-4 md:px-6 py-3 text-left">Date</th>
-                  <th className="px-4 md:px-6 py-3 text-center">Type</th>
-                  <th className="px-4 md:px-6 py-3 text-center">Receipt</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto block min-h-0">
-                {filteredExpenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-slate-50 transition-colors grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr] items-center">
-                    <td className="px-4 md:px-6 py-4 text-left text-sm font-medium text-slate-900 whitespace-nowrap max-w-30 md:max-w-50 overflow-hidden text-ellipsis" title={exp.category}>{exp.category}</td>
-                    <td className="px-4 md:px-6 py-4 text-right tabular-nums text-sm text-slate-700">{formatCurrency(exp.amount)}</td>
-                    <td className="px-4 md:px-6 py-4 text-left text-sm text-slate-500 whitespace-nowrap">{new Date(exp.date).toLocaleDateString('en-IN')}</td>
-                    <td className="px-4 md:px-6 py-4 text-center text-sm text-slate-500">
-                      {exp.recurring_flag ? (
-                        <Badge className="bg-blue-100 text-blue-800">Recurring</Badge>
-                      ) : (
-                        <Badge className="bg-slate-100 text-slate-800">One-time</Badge>
-                      )}
-                    </td>
-                    <td className="px-4 md:px-6 py-4 text-center text-sm text-slate-500">
-                      {exp.receipt_url ? (
-                        <a href={exp.receipt_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex justify-center w-full">View</a>
-                      ) : (
-                        <span className="text-slate-400">None</span>
-                      )}
-                    </td>
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:flex overflow-x-auto overflow-y-hidden flex-1 flex-col min-h-0">
+              <table className="w-full text-left min-w-[600px] flex flex-col flex-1 min-h-0">
+                <thead className="table-header-dark border-b border-slate-200 text-slate-100 z-10 shrink-0">
+                  <tr className="text-xs font-medium tracking-wider grid grid-cols-[1.5fr_1fr_1fr_1fr]">
+                    <th className="px-4 md:px-6 py-3 text-left">Category</th>
+                    <th className="px-4 md:px-6 py-3 text-right">Amount</th>
+                    <th className="px-4 md:px-6 py-3 text-left">Date</th>
+                    <th className="px-4 md:px-6 py-3 text-center">Type</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-200 flex-1 overflow-y-auto block min-h-0">
+                  {filteredExpenses.map((exp) => (
+                    <tr key={exp.id} className="hover:bg-slate-50 transition-colors grid grid-cols-[1.5fr_1fr_1fr_1fr] items-center">
+                      <td className="px-4 md:px-6 py-4 text-left text-sm font-medium text-slate-900 whitespace-nowrap max-w-30 md:max-w-50 overflow-hidden text-ellipsis" title={exp.category}>{exp.category}</td>
+                      <td className="px-4 md:px-6 py-4 text-right tabular-nums text-sm text-slate-700">{formatCurrency(exp.amount)}</td>
+                      <td className="px-4 md:px-6 py-4 text-left text-sm text-slate-500 whitespace-nowrap">{new Date(exp.date).toLocaleDateString('en-IN')}</td>
+                      <td className="px-4 md:px-6 py-4 text-center text-sm text-slate-500">
+                        {exp.recurring_flag ? (
+                          <Badge className="bg-blue-100 text-blue-800">Recurring</Badge>
+                        ) : (
+                          <Badge className="bg-slate-100 text-slate-800">One-time</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile List */}
+            <div className="block lg:hidden flex-1 overflow-y-auto min-h-0 bg-slate-50">
+              <ul className="flex flex-col divide-y divide-slate-200">
+                {(() => {
+                  const mobileGroups: { key: string; label: string; rows: any[] }[] = [];
+                  const sortedData = [...filteredExpenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                  
+                  sortedData.forEach((row: any) => {
+                    const key = row.date;
+                    let group = mobileGroups.find(g => g.key === key);
+                    if (!group) {
+                      group = { key, label: getMobileDayLabel(row.date), rows: [] };
+                      mobileGroups.push(group);
+                    }
+                    group.rows.push(row);
+                  });
+                  
+                  return mobileGroups.map((group) => (
+                    <li key={group.key} className="flex flex-col">
+                      <div className="table-header-dark px-4 py-1.5 text-xs min-[380px]:text-sm font-medium text-slate-100 sticky top-0 z-10">
+                        {group.label}
+                      </div>
+                      <ul className="divide-y divide-slate-200 bg-white">
+                        {group.rows.map(row => (
+                          <li key={row.id} className="mobile-table-row px-4 !py-3 !min-h-0 items-start flex-col gap-2">
+                            <div className="flex items-start justify-between gap-3 w-full">
+                              <div className="text-sm font-semibold text-slate-900 leading-tight break-words flex-1 min-w-0">
+                                {row.category}
+                              </div>
+                              <div className="text-sm font-medium text-red-600 tabular-nums shrink-0">
+                                -{formatCurrency(row.amount)}
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between gap-3 w-full mt-1">
+                              <div className="flex items-center gap-2">
+                                {row.recurring_flag ? (
+                                  <Badge className="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 min-h-0">Recurring</Badge>
+                                ) : (
+                                  <Badge className="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 min-h-0">One-time</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ));
+                })()}
+              </ul>
+            </div>
+          </>
         )}
+      </div>
       </div>
     </div>
 

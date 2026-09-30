@@ -12,6 +12,8 @@ import Tooltip from './Tooltip';
 import CollectPaymentModal from './CollectPaymentModal';
 import PaymentHistoryModal from './PaymentHistoryModal';
 import Member360Modal from './Member360Modal';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 import Badge from './ui/Badge';
 import { getMobileStatusDisplay } from '@/lib/memberStatus';
 
@@ -139,77 +141,43 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
 
   const Modals = (
     <>
-      {showCollectModal && (
-        isDesktop ? (
-          <tr>
-            <td colSpan={9} className="p-0 border-0 h-0">
-              <CollectPaymentModal member={member} onClose={() => setShowCollectModal(false)} />
-            </td>
-          </tr>
-        ) : (
-          <CollectPaymentModal member={member} onClose={() => setShowCollectModal(false)} />
-        )
+      <CollectPaymentModal isOpen={showCollectModal} member={member} onClose={() => setShowCollectModal(false)} />
+      
+      {isDesktop ? (
+        <tr>
+          <td colSpan={9} className="p-0 border-0 h-0">
+            <PaymentHistoryModal isOpen={showHistoryModal} member={member} onClose={() => setShowHistoryModal(false)} />
+          </td>
+        </tr>
+      ) : (
+        <PaymentHistoryModal isOpen={showHistoryModal} member={member} onClose={() => setShowHistoryModal(false)} />
       )}
 
-      {showHistoryModal && (
-        isDesktop ? (
-          <tr>
-            <td colSpan={9} className="p-0 border-0 h-0">
-              <PaymentHistoryModal member={member} onClose={() => setShowHistoryModal(false)} />
-            </td>
-          </tr>
-        ) : (
-          <PaymentHistoryModal member={member} onClose={() => setShowHistoryModal(false)} />
-        )
-      )}
-
-      {showDeleteModal && (
-        isDesktop ? (
-          <tr>
-            <td colSpan={9} className="p-0 border-0 h-0">
-              <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
-                <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-                  <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Member</h3>
-                  <p className="text-slate-500 mb-6">
-                    Are you sure you want to remove <span className="font-semibold text-slate-900">{member.name}</span>?
-                  </p>
-                  <div className="flex gap-3 pb-safe">
-                    <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95">Cancel</button>
-                    <button onClick={handleDelete} disabled={isDeleting} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50">{isDeleting ? 'Removing...' : 'Remove'}</button>
-                  </div>
-                </div>
-              </div>
-            </td>
-          </tr>
-        ) : (
-          <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
-            <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Member</h3>
-              <p className="text-slate-500 mb-6">
-                Are you sure you want to remove <span className="font-semibold text-slate-900">{member.name}</span>?
-              </p>
-              <div className="flex gap-3 pb-safe">
-                <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95">Cancel</button>
-                <button onClick={handleDelete} disabled={isDeleting} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50">{isDeleting ? 'Removing...' : 'Remove'}</button>
-              </div>
-            </div>
+      <ModalTransition 
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        containerClassName="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+      >
+        <ModalHeader title="Remove Member" onClose={() => setShowDeleteModal(false)} />
+        <div className="p-6">
+          <p className="text-slate-500 mb-6">
+            Are you sure you want to remove <span className="font-semibold text-slate-900">{member.name}</span>?
+          </p>
+          <div className="flex gap-3 pb-safe">
+            <button onClick={() => setShowDeleteModal(false)} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95">Cancel</button>
+            <button onClick={handleDelete} disabled={isDeleting} className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50">{isDeleting ? 'Removing...' : 'Remove'}</button>
           </div>
-        )
-      )}
+        </div>
+      </ModalTransition>
 
-      {showProfileModal && !isArchived && (
-        isDesktop ? (
-          <tr>
-            <td colSpan={9} className="p-0 border-0 h-0">
-              <Member360Modal member={member} trainers={trainers} onClose={() => setShowProfileModal(false)} onEdit={onEdit} onRemove={() => setShowDeleteModal(true)} />
-            </td>
-          </tr>
-        ) : (
-          <Member360Modal member={member} trainers={trainers} onClose={() => setShowProfileModal(false)} onEdit={onEdit} onRemove={() => setShowDeleteModal(true)} />
-        )
-      )}
+      <Member360Modal 
+        isOpen={showProfileModal} 
+        member={member} 
+        trainers={trainers} 
+        onClose={() => setShowProfileModal(false)} 
+        onEdit={onEdit} 
+        onRemove={() => setShowDeleteModal(true)} 
+      />
     </>
   );
 

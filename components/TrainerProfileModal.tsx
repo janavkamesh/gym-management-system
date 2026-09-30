@@ -9,14 +9,17 @@ import { WhatsAppIcon } from './MemberRow';
 import { fetchTrainerStats, fetchTrainerPtClients, fetchTrainerLedger } from '@/lib/actions/trainers';
 import TrainerPtClientsTable from './TrainerPtClientsTable';
 import TrainerLedgerTable from './TrainerLedgerTable';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 interface TrainerProfileModalProps {
+  isOpen: boolean;
   trainer: any;
   onClose: () => void;
   onRemove?: () => void;
 }
 
-export default function TrainerProfileModal({ trainer, onClose, onRemove }: TrainerProfileModalProps) {
+export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove }: TrainerProfileModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'personal training' | 'payments'>('overview');
   
   const [stats, setStats] = useState<any>(null);
@@ -28,6 +31,8 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
   const [tabIndicatorStyle, setTabIndicatorStyle] = useState({ width: 0, left: 0 });
 
   useEffect(() => {
+    if (!isOpen) return;
+    
     let mounted = true;
     setIsLoading(true);
     
@@ -48,7 +53,7 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
     });
 
     return () => { mounted = false; };
-  }, [trainer.id]);
+  }, [trainer.id, isOpen]);
 
   useEffect(() => {
     if (!tabsContainerRef.current) return;
@@ -81,59 +86,55 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
     window.open(link, '_blank');
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
-      <div className="relative bg-slate-50 w-full md:max-w-4xl rounded-t-2xl md:rounded-2xl shadow-2xl z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200 flex flex-col h-[90vh] md:h-[80vh] overflow-hidden">
-        
-        {/* Slim Title Bar */}
-        <div className="flex items-center justify-between px-6 py-3 shrink-0 bg-slate-900 border-b border-slate-800 relative z-20">
-          <h2 className="text-base font-semibold text-white">Trainer Profile</h2>
-          <button 
-            onClick={onClose}
-            className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-1.5 -mr-1.5"
-          >
-            <X size={20} className="transition-transform duration-120" />
-          </button>
-        </div>
+  if (!trainer && !isOpen) return null;
 
-        {/* Gap background and Info Card */}
-        <div className="px-4 md:px-6 py-4 shrink-0 bg-slate-50 z-10">
-          <div className="p-5 bg-slate-900 rounded-2xl relative shadow-md">
-            {/* Action Icons in Top Right */}
-            <div className="absolute top-4 right-5 bottom-4 flex items-stretch gap-2.5">
-              <button onClick={handleWaAction} className="flex flex-col items-center justify-between px-3 pt-3 pb-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors text-green-400 border border-slate-700/50 min-w-[80px]" title="Welcome Msg">
-                <div className="flex-1 flex items-center justify-center">
-                  <WhatsAppIcon size={28} />
+  return (
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="bg-white w-full md:max-w-4xl rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col h-[90vh] md:h-[80vh] overflow-hidden"
+      mobileFixed
+    >
+      <ModalHeader title="Trainer Profile" onClose={onClose} variant="light" />
+
+      <div className="w-full h-px bg-slate-200 shrink-0 lg:hidden" />
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto lg:overflow-hidden overscroll-contain bg-white">
+        <div className="profile-section-spacing pt-4 shrink-0">
+          {/* Gap background and Info Card */}
+        <div className="px-4 md:px-6 shrink-0 bg-white z-10">
+          <div className="profile-header-card">
+            <div className="w-[44px] h-[44px] lg:w-14 lg:h-14 rounded-full bg-slate-700 flex items-center justify-center text-xl lg:text-2xl font-bold text-white shrink-0 uppercase shadow-inner">
+              {trainer.name.charAt(0)}
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-0 justify-center h-[44px] lg:h-auto lg:pr-[120px]">
+              {/* Row 1 */}
+              <div className="flex items-center gap-2 flex-nowrap">
+                <h2 className="text-lg font-semibold text-white truncate leading-tight">{trainer.name}</h2>
+              </div>
+              {/* Row 2 */}
+              <div className="flex items-center">
+                <div className="shrink-0 px-1 py-[2px] bg-slate-800 text-slate-300 text-[9px] font-medium rounded border border-slate-700 leading-none">
+                  {trainer.uid || 'No UID'}
                 </div>
-                <span className="text-[10px] font-medium text-slate-300">Welcome Msg</span>
-              </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-2xl font-bold text-white shrink-0 uppercase shadow-inner">
-                {trainer.name.charAt(0)}
-              </div>
-              <div className="flex flex-col gap-1 pr-[120px] min-w-0 justify-center">
-                {/* Row 1 */}
-                <div className="flex items-center flex-wrap gap-2">
-                  <h2 className="text-lg font-semibold text-white truncate leading-tight">{trainer.name}</h2>
+            {/* Action Icons in Top Right */}
+            <div className="flex items-start justify-end gap-2 lg:absolute lg:top-4 lg:right-5 lg:bottom-4 lg:items-stretch lg:gap-2.5">
+              <button onClick={handleWaAction} className="profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
+                <div className="profile-action-circle">
+                  <div className="lg:hidden"><WhatsAppIcon size={22} /></div>
+                  <div className="hidden lg:block"><WhatsAppIcon size={28} /></div>
                 </div>
-                
-                {/* Row 2 */}
-                <div className="mt-0.5">
-                  <div className="inline-block px-1 py-[2px] bg-slate-800 text-slate-300 text-[9px] font-medium rounded border border-slate-700 leading-none">
-                    {trainer.uid || 'No UID'}
-                  </div>
-                </div>
-              </div>
+                <span className="profile-action-btn-text">Welcome</span>
+              </button>
             </div>
           </div>
         </div>
 
         {/* Stat Chip Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-white px-6 py-4 shrink-0">
-          <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3 border border-slate-200/60">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-white px-6 shrink-0">
+          <div className="profile-card rounded-xl p-3 flex items-center gap-3 last:odd:col-span-2 md:last:odd:col-span-1">
             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center shrink-0 text-white">
               <Briefcase size={16} />
             </div>
@@ -142,7 +143,7 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
               <div className="text-sm font-semibold text-slate-900 truncate">{formatINR(trainer.base_salary)}</div>
             </div>
           </div>
-          <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3 border border-slate-200/60">
+          <div className="profile-card rounded-xl p-3 flex items-center gap-3 last:odd:col-span-2 md:last:odd:col-span-1">
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 text-white">
               <Dumbbell size={16} />
             </div>
@@ -153,7 +154,7 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
               </div>
             </div>
           </div>
-          <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3 border border-slate-200/60">
+          <div className="profile-card rounded-xl p-3 flex items-center gap-3 last:odd:col-span-2 md:last:odd:col-span-1">
             <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 text-white">
               <Wallet size={16} />
             </div>
@@ -162,7 +163,7 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
               <div className="text-sm font-semibold text-slate-900">{isLoading ? '-' : formatINR(stats?.lifetimePaid || 0)}</div>
             </div>
           </div>
-          <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3 border border-slate-200/60">
+          <div className="profile-card rounded-xl p-3 flex items-center gap-3 last:odd:col-span-2 md:last:odd:col-span-1">
             <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center shrink-0 text-white">
               <Banknote size={16} />
             </div>
@@ -173,7 +174,7 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
               </div>
             </div>
           </div>
-          <div className="bg-slate-50 rounded-xl p-3 flex items-center gap-3 border border-slate-200/60">
+          <div className="profile-card rounded-xl p-3 flex items-center gap-3 last:odd:col-span-2 md:last:odd:col-span-1">
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 text-white">
               <Calendar size={16} />
             </div>
@@ -185,9 +186,10 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
             </div>
           </div>
         </div>
+      </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 px-6 shrink-0 bg-white relative" ref={tabsContainerRef}>
+        <div className="profile-tab-container sticky top-0 z-20 lg:relative lg:top-auto lg:z-auto" ref={tabsContainerRef}>
           <div 
             className="absolute bottom-0 h-0.5 bg-blue-600 transition-all duration-120 ease-out left-0"
             style={{
@@ -201,19 +203,21 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-3 text-sm font-medium capitalize transition-colors relative z-10 flex items-center gap-2 ${
+                className={`profile-tab-btn ${
                   activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
                 }`}
+                aria-label={tab}
+                role="tab"
               >
-                <TabIcon size={16} />
-                {tab}
+                <TabIcon size={18} className="md:w-4 md:h-4" />
+                <span className="whitespace-nowrap capitalize">{tab === 'personal training' ? 'PT Clients' : tab}</span>
               </button>
             );
           })}
         </div>
         
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto bg-white p-6 pb-safe relative">
+        <div className="flex-1 bg-white p-6 pb-safe relative lg:overflow-y-auto min-h-[calc(100%-48px)] lg:min-h-0">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white">
               <div className="flex flex-col items-center gap-3">
@@ -224,23 +228,23 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
           ) : (
             <>
               {activeTab === 'overview' && (
-                <div className="w-full max-w-sm">
+                <div className="w-full">
                   {/* Identity Section */}
-                  <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm flex flex-col relative w-full">
-                    <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50 rounded-t-2xl">
+                  <div className="profile-card rounded-2xl flex flex-col relative w-full">
+                    <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2 rounded-t-2xl">
                       <IdCard size={14} className="text-slate-500" />
                       <h3 className="font-medium text-slate-700 text-sm">Identity</h3>
                     </div>
                     
-                    <div className="p-4 flex flex-col gap-3 bg-white rounded-b-2xl">
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center gap-3">
+                    <div className="p-4 flex flex-col gap-3 rounded-b-2xl">
+                      <div className="profile-row p-3 rounded-lg flex items-center gap-3">
                         <Phone size={16} className="text-slate-400" />
                         <div>
                           <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Phone Number</div>
                           <div className="text-sm text-slate-900 font-medium">{trainer.phone}</div>
                         </div>
                       </div>
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex items-center gap-3">
+                      <div className="profile-row p-3 rounded-lg flex items-center gap-3">
                         <Calendar size={16} className="text-slate-400" />
                         <div>
                           <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Joined Date</div>
@@ -279,7 +283,6 @@ export default function TrainerProfileModal({ trainer, onClose, onRemove }: Trai
           )}
         </div>
       </div>
-    </div>,
-    document.body
+      </ModalTransition>
   );
 }

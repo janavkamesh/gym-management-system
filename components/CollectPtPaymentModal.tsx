@@ -4,15 +4,18 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { collectPtPayment } from '@/lib/actions/payments';
 import { useToast } from './ToastProvider';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 interface CollectPtPaymentModalProps {
+  isOpen: boolean;
   assignment: any;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export default function CollectPtPaymentModal({ assignment, onClose, onSuccess }: CollectPtPaymentModalProps) {
-  const [amount, setAmount] = useState(assignment.fee_amount?.toString() || '');
+export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onSuccess }: CollectPtPaymentModalProps) {
+  const [amount, setAmount] = useState(assignment?.fee_amount?.toString() || '');
   const [method, setMethod] = useState('Cash');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
@@ -33,22 +36,26 @@ export default function CollectPtPaymentModal({ assignment, onClose, onSuccess }
     }
   };
 
-  return (
-    <div 
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center bg-slate-900/50"
-      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-slide-up md:animate-fade-in duration-200">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-slate-900">Collect PT Fee</h3>
-            <p className="text-sm text-slate-500 mt-1">Log PT payment for {assignment.member?.name || 'this client'}</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all rounded-full p-2 active:scale-95">
-            <X size={20} />
-          </button>
-        </div>
+  if (!assignment && !isOpen) return null;
 
+  return (
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-md overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
+      overlayClassName="z-[60]"
+    >
+      <ModalHeader 
+        title={
+          <div>
+            <h3 className="text-lg md:text-xl font-semibold text-slate-900 md:text-white">Collect PT Fee</h3>
+            <p className="text-xs text-slate-500 md:text-slate-300 mt-0.5 md:mt-1">Log PT payment for {assignment?.member?.name || 'this client'}</p>
+          </div>
+        } 
+        onClose={onClose} 
+      />
+
+      <div className="p-6 overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-5 pb-safe">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>
@@ -106,6 +113,6 @@ export default function CollectPtPaymentModal({ assignment, onClose, onSuccess }
           </div>
         </form>
       </div>
-    </div>
+    </ModalTransition>
   );
 }

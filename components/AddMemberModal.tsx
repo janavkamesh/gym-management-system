@@ -7,8 +7,10 @@ import { useToast } from './ToastProvider';
 import { X, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 import { Dropdown } from './ui/Dropdown';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
-export default function AddMemberModal({ plans, trainers = [], onClose, memberToEdit }: { plans: any[]; trainers?: any[]; onClose: (updatedMember?: any) => void; memberToEdit?: any }) {
+export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, memberToEdit }: { isOpen: boolean; plans: any[]; trainers?: any[]; onClose: (updatedMember?: any) => void; memberToEdit?: any }) {
   const [name, setName] = useState(memberToEdit?.name || '');
   const [phone, setPhone] = useState(memberToEdit?.phone || '');
   const [uidPreview, setUidPreview] = useState(memberToEdit?.uid || 'Loading...');
@@ -169,169 +171,171 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
   const selectedPlan = plans.find(p => p.id === planId);
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/50"
-      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={() => onClose()}
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-4xl overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
+      mobileFixed
     >
-      <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-4xl overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
-          <h2 className="text-xl font-semibold text-white">{memberToEdit ? 'Edit Member' : 'Add Member'}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
-          </button>
-        </div>
+      <ModalHeader title={memberToEdit ? 'Edit Member' : 'Add Member'} onClose={() => onClose()} variant="light" />
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="px-6 pt-3 pb-3 overflow-y-auto flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
-              {/* Column 1 */}
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Name <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                    placeholder="e.g. John Doe"
-                  />
-                </div>
+            <div className="grid grid-cols-1 min-[341px]:grid-cols-10 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-6 md:gap-y-5">
+              {/* Name */}
+              <div className="col-span-1 min-[341px]:col-span-6 md:col-span-1 md:col-start-1 md:row-start-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">UID</label>
-                  <input
-                    type="text"
-                    value={uidPreview}
-                    disabled
-                    className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed"
-                  />
-                </div>
+              {/* UID */}
+              <div className="col-span-1 min-[341px]:col-span-4 md:col-span-1 md:col-start-1 md:row-start-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">UID</label>
+                <input
+                  type="text"
+                  value={uidPreview}
+                  disabled
+                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed"
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Phone <span className="text-red-500">*</span> 
-                    {phone.length > 0 && !isValidPhone && <span className="text-red-500 text-xs ml-2 font-normal">(10 digits required)</span>}
+              {/* Phone */}
+              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-1 md:row-start-3">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Phone <span className="text-red-500">*</span> 
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+                    phone.length > 0 && !isValidPhone ? 'border-red-300 bg-red-50' : 'border-slate-300'
+                  }`}
+                  placeholder="9876543210"
+                />
+              </div>
+
+              {/* Phone Validation Error */}
+              {phone.length > 0 && !isValidPhone && (
+                <div className="col-span-1 min-[341px]:col-span-10 md:col-span-1 md:col-start-1 md:row-start-4 text-red-500 text-xs mt-[-16px]">
+                  (10 digits required)
+                </div>
+              )}
+
+              {/* Plan */}
+              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-2 md:row-start-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Plan <span className="text-red-500">*</span></label>
+                <Dropdown
+                  value={planId}
+                  onChange={(val) => {
+                    setPlanId(val);
+                    const plan = plans.find(p => p.id === val);
+                    if (plan) setAmount(plan.price.toString());
+                    // Do not reset isExpiryManuallyEdited automatically here if we want to show the prompt
+                  }}
+                  options={plans
+                    .filter(p => p.is_active !== false)
+                    .sort((a, b) => a.duration_days - b.duration_days)
+                    .map(p => ({ value: p.id, label: p.plan_name }))}
+                  placeholder="Select a plan"
+                  className="w-full"
+                />
+              </div>
+
+              {/* Join Date */}
+              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-2 md:row-start-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Join Date <span className="text-red-500">*</span></label>
+                <DatePicker
+                  value={joinDate}
+                  onChange={(date) => {
+                    setJoinDate(date);
+                    setIsExpiryManuallyEdited(false); // Reset override to allow recalculation
+                  }}
+                />
+              </div>
+
+              {/* Expiry Date */}
+              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-2 md:row-start-3">
+                <div className="flex justify-between items-end mb-1">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Expiry Date
                   </label>
+                </div>
+                <DatePicker
+                  value={expiryDate}
+                  onChange={(date) => {
+                    setExpiryDate(date);
+                    setIsExpiryManuallyEdited(true); // Lock auto-calculation
+                  }}
+                  placeholder="Pick date (Editable)"
+                />
+              </div>
+
+              {/* Amount */}
+              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-3 md:row-start-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Amount <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-slate-500 font-medium">₹</span>
+                  </div>
                   <input
-                    type="tel"
-                    value={phone}
-                    onChange={handlePhoneChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
-                      phone.length > 0 && !isValidPhone ? 'border-red-300 bg-red-50' : 'border-slate-300'
-                    }`}
-                    placeholder="9876543210"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    placeholder="e.g. 1500"
+                    min="0"
                   />
                 </div>
               </div>
 
-              {/* Column 2 */}
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Plan <span className="text-red-500">*</span></label>
-                  <Dropdown
-                    value={planId}
-                    onChange={(val) => {
-                      setPlanId(val);
-                      const plan = plans.find(p => p.id === val);
-                      if (plan) setAmount(plan.price.toString());
-                      // Do not reset isExpiryManuallyEdited automatically here if we want to show the prompt
-                    }}
-                    options={plans
-                      .filter(p => p.is_active !== false)
-                      .sort((a, b) => a.duration_days - b.duration_days)
-                      .map(p => ({ value: p.id, label: p.plan_name }))}
-                    placeholder="Select a plan"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Join Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    value={joinDate}
-                    onChange={(date) => {
-                      setJoinDate(date);
-                      setIsExpiryManuallyEdited(false); // Reset override to allow recalculation
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-end mb-1">
-                    <label className="block text-sm font-medium text-slate-700">
-                      Expiry Date <span className="text-slate-400 font-normal text-xs ml-1">(Editable)</span>
-                    </label>
-                  </div>
-                  <DatePicker
-                    value={expiryDate}
-                    onChange={(date) => {
-                      setExpiryDate(date);
-                      setIsExpiryManuallyEdited(true); // Lock auto-calculation
-                    }}
-                    placeholder="Pick expiry date"
-                  />
-                </div>
+              {/* Gender */}
+              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-3 md:row-start-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Gender
+                </label>
+                <Dropdown
+                  value={gender}
+                  onChange={setGender}
+                  options={[
+                    { value: 'Male', label: 'Male' },
+                    { value: 'Female', label: 'Female' },
+                    { value: 'Other', label: 'Other' },
+                  ]}
+                  placeholder="Select (Optional)"
+                  className="w-full"
+                />
               </div>
 
-              {/* Column 3 */}
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Amount <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-slate-500 font-medium">₹</span>
-                    </div>
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                      placeholder="e.g. 1500"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Gender <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>
-                  </label>
-                  <Dropdown
-                    value={gender}
-                    onChange={setGender}
-                    options={[
-                      { value: 'Male', label: 'Male' },
-                      { value: 'Female', label: 'Female' },
-                      { value: 'Other', label: 'Other' },
-                    ]}
-                    placeholder="Select gender"
-                    className="w-full"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Personal Training</label>
-                  <button
-                    type="button"
-                    onClick={() => setHasPt(!hasPt)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors mt-2 ${
-                      hasPt ? 'bg-blue-600' : 'bg-slate-200'
+              {/* PT Toggle */}
+              <div className="col-span-1 min-[341px]:col-span-10 md:col-span-1 md:col-start-3 md:row-start-3 flex items-center justify-between pt-1">
+                <label className="block text-sm font-medium text-slate-700">Personal Training</label>
+                <button
+                  type="button"
+                  onClick={() => setHasPt(!hasPt)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    hasPt ? 'bg-blue-600' : 'bg-slate-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      hasPt ? 'translate-x-6' : 'translate-x-1'
                     }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        hasPt ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
+                  />
+                </button>
               </div>
             </div>
 
             {hasPt && (
-              <div className="mt-8 pt-6 border-t border-slate-200 bg-slate-50/50 -mx-6 px-6 pb-2">
+              <div className="mt-6 pt-4 border-t border-slate-200 bg-slate-50/50 -mx-6 px-6 pb-2">
                 <h3 className="text-sm font-semibold text-slate-900 mb-4">Personal Training Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div className="grid grid-cols-1 min-[341px]:grid-cols-2 md:grid-cols-2 gap-x-3 gap-y-5 md:gap-x-6">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Trainer <span className="text-red-500">*</span></label>
                     <Dropdown
@@ -386,7 +390,7 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Trainer's Share (%) <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Share (%) <span className="text-red-500">*</span></label>
                     <input
                       type="number"
                       value={trainerShare}
@@ -422,7 +426,6 @@ export default function AddMemberModal({ plans, trainers = [], onClose, memberTo
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalTransition>
   );
 }

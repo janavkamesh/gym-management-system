@@ -23,6 +23,7 @@ interface SharedMembersPanelProps {
   initialOpenMember?: string;
   initialAction?: string;
   onImportClick?: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
 export default function SharedMembersPanel({
@@ -37,12 +38,21 @@ export default function SharedMembersPanel({
   initialMemberId,
   initialOpenMember,
   initialAction,
-  onImportClick
+  onImportClick,
+  onTabChange
 }: SharedMembersPanelProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>(
-    initialFilter === 'expiring_today' ? 'Expiring Soon' : 
     initialFilter === 'overdue' ? 'Expired' : 'All'
   );
+
+  useEffect(() => {
+    if (onTabChange) {
+      onTabChange(activeTab);
+    }
+  }, [activeTab, onTabChange]);
+
+  const [animationClass, setAnimationClass] = useState('');
+  const [isAnimating, setIsAnimating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<any>(null);
@@ -120,9 +130,15 @@ export default function SharedMembersPanel({
           <SlidingTabs
             options={['All', 'Expiring Soon', 'Expired', 'PT']}
             value={activeTab}
-            onChange={(val) => setActiveTab(val as FilterTab)}
-            containerClassName="w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation"
-            buttonClassName="flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2"
+            onChange={(val) => {
+              if (val === activeTab) return;
+              const tabs: FilterTab[] = ['All', 'Expiring Soon', 'Expired', 'PT'];
+              const prevIdx = tabs.indexOf(activeTab);
+              const newIdx = tabs.indexOf(val as FilterTab);
+              setAnimationClass(newIdx > prevIdx ? 'animate-row-slide-right' : 'animate-row-slide-left');
+              setActiveTab(val as FilterTab);
+              setIsAnimating(true);
+            }}
           />
         </div>
 
@@ -160,27 +176,34 @@ export default function SharedMembersPanel({
         </div>
       </div>
 
-      <MemberList
-        members={filteredMembers}
-        trainers={trainers}
-        searchQuery={searchQuery}
-        emptySubtitle={activeTab === 'PT' ? "No PT clients yet." : emptySubtitle}
-        onEdit={handleEdit}
-        onDeleted={removeMemberFromList}
-        highlightedMemberId={highlightedMemberId}
-        targetMemberId={initialMemberId}
-        openMemberId={initialOpenMember}
-        action={initialAction}
-      />
-
-      {isAddModalOpen && (
-        <AddMemberModal 
-          plans={plans}
+      <div className="mt-2 lg:mt-0">
+        <MemberList
+          members={filteredMembers}
           trainers={trainers}
-          onClose={handleCloseModal} 
-          memberToEdit={memberToEdit} 
+          searchQuery={searchQuery}
+          emptySubtitle={activeTab === 'PT' ? "No PT clients yet." : emptySubtitle}
+          onEdit={handleEdit}
+          onDeleted={removeMemberFromList}
+          highlightedMemberId={highlightedMemberId}
+          targetMemberId={initialMemberId}
+          openMemberId={initialOpenMember}
+          action={initialAction}
+          animationKey={activeTab}
+          animationClass={animationClass}
+          onAnimationEnd={() => {
+            setIsAnimating(false);
+            setAnimationClass('');
+          }}
         />
-      )}
+      </div>
+
+      <AddMemberModal 
+        isOpen={isAddModalOpen}
+        plans={plans}
+        trainers={trainers}
+        onClose={handleCloseModal} 
+        memberToEdit={memberToEdit} 
+      />
     </>
   );
 }

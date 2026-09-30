@@ -57,7 +57,7 @@ export default function DashboardClient({ initialMembers, plans, trainers, initi
 
 
   return (
-    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto max-lg:space-y-section lg:space-y-6">
       <PageHeader 
         title="Dashboard" 
         subtitle="Your daily overview of renewals, follow-ups, and reviews due." 

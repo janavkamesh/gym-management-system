@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { logPayment } from '@/lib/actions/payments';
 import { useToast } from './ToastProvider';
-import { X } from 'lucide-react';
 import { DatePicker } from './DatePicker';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
-export default function PaymentModal({ member, onClose }: { member: any; onClose: () => void }) {
+export default function PaymentModal({ isOpen, member, onClose }: { isOpen: boolean; member: any; onClose: () => void }) {
   const [amount, setAmount] = useState(member.pendingAmount.toString() || '');
   const [method, setMethod] = useState('UPI');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -32,17 +33,12 @@ export default function PaymentModal({ member, onClose }: { member: any; onClose
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-slate-900/50"
-      onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-sm overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
     >
-      <div className="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-sm overflow-hidden animate-slide-up md:animate-fade-in max-h-90vh flex flex-col">
-        <div className="flex justify-between items-center p-6 border-b border-slate-200 shrink-0">
-          <h2 className="text-xl font-semibold text-slate-900">Log Payment</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
-          </button>
-        </div>
+      <ModalHeader title="Log Payment" onClose={onClose} />
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -102,7 +98,6 @@ export default function PaymentModal({ member, onClose }: { member: any; onClose
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalTransition>
   );
 }

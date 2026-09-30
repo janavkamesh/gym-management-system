@@ -14,13 +14,31 @@ import { BottomSheet } from './ui/BottomSheet';
 
 import { getPeriodRange, getPeriodSubtitle } from '@/lib/utils/date';
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const getMobileDayLabel = (dateStr: string) => {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+  const isYesterday = d.getFullYear() === yesterday.getFullYear() && d.getMonth() === yesterday.getMonth() && d.getDate() === yesterday.getDate();
+  
+  if (isToday) return 'Today';
+  if (isYesterday) return 'Yesterday';
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+
 export default function TransactionsTable({ 
   categories,
   sharedPeriod,
   sharedFrom,
   sharedTo,
   onPeriodChange,
-  isMobileTab = false
+  isMobileTab = false,
+  animationClass = '',
+  isAnimating = false,
+  onAnimationEnd
 }: { 
   categories: string[];
   sharedPeriod?: string;
@@ -28,6 +46,9 @@ export default function TransactionsTable({
   sharedTo?: string;
   onPeriodChange?: (period: string, from?: string, to?: string) => void;
   isMobileTab?: boolean;
+  animationClass?: string;
+  isAnimating?: boolean;
+  onAnimationEnd?: () => void;
 }) {
   const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState({ total_in: 0, total_out: 0, net: 0 });
@@ -145,9 +166,9 @@ export default function TransactionsTable({
   const activeFilterCount = (search ? 1 : 0) + (category !== 'All' ? 1 : 0) + (direction !== 'all' ? 1 : 0) + (period !== 'This Month' ? 1 : 0);
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div>
       {isMobileTab && (
-        <div className="flex lg:hidden justify-between items-center mb-2 mt-4">
+        <div className="flex lg:hidden justify-between items-center max-lg:mb-section lg:mb-6">
           <div className="flex flex-col justify-center">
             <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Transactions</h1>
             <p className="text-sm text-slate-500 mt-0.5">
@@ -172,6 +193,7 @@ export default function TransactionsTable({
         </div>
       )}
 
+      <div className={`max-lg:space-y-section lg:space-y-6 ${animationClass} ${isAnimating ? 'overflow-x-clip' : ''}`} onAnimationEnd={onAnimationEnd}>
       {/* Summary Strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard label="Total In" value={isInitialLoading ? <div className="h-8 w-20 bg-white/30 animate-pulse rounded" /> : formatINR(summary.total_in)} icon={TrendingUp} colorClass="card-gradient-green" />
@@ -181,19 +203,6 @@ export default function TransactionsTable({
         </div>
       </div>
 
-      {/* Mobile Search */}
-      {isMobileTab && (
-        <div className="lg:hidden relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search transactions..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-12 pl-10 pr-4 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
-          />
-        </div>
-      )}
 
       {/* Desktop Filter Card */}
       <div className={isMobileTab ? "hidden lg:block" : "block"}>
@@ -333,7 +342,159 @@ export default function TransactionsTable({
         </div>
       </BottomSheet>
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      {/* Mobile Search & Feed Group */}
+      <div className="max-lg:space-y-control">
+        {/* Mobile Search */}
+        {isMobileTab && (
+          <div className="lg:hidden relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input 
+              type="text" 
+              placeholder="Search transactions..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-12 pl-10 pr-4 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
+            />
+          </div>
+        )}
+
+        {/* Mobile Feed */}
+        <div className="block lg:hidden">
+        {isInitialLoading ? (
+          <div className="mobile-table-card">
+            <ul className="flex flex-col divide-y divide-slate-200">
+              <li className="flex flex-col">
+                <div className="table-header-dark px-4 py-1.5 text-xs min-[380px]:text-sm font-medium text-slate-100">
+                  <div className="h-3 w-16 bg-slate-600 rounded animate-pulse" />
+                </div>
+                <ul className="divide-y divide-slate-200">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <li key={i} className="mobile-table-row px-4 !py-3 !min-h-0 items-start">
+                      <div className="flex items-start justify-between gap-3 w-full animate-pulse">
+                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                          <div className="w-2 h-2 rounded-full mt-[5px] shrink-0 bg-slate-200" />
+                          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                            <div className="h-4 bg-slate-200 rounded w-3/4" />
+                            <div className="flex items-center gap-2">
+                              <div className="h-5 bg-slate-200 rounded-full w-16" />
+                              <div className="h-3 bg-slate-200 rounded w-12" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            </ul>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="mobile-table-card p-8 text-center text-slate-500">
+            <p className="font-medium text-slate-900 mb-1">
+              No transactions found{period === 'Overall' ? '' : period === 'Custom' ? ' in this period' : ` in ${period}`}
+            </p>
+            <p className="text-sm">
+              {(search || category !== 'All' || direction !== 'all') ? "Try clearing your filters." : "Payments and expenses will appear here."}
+            </p>
+            {(search || category !== 'All' || direction !== 'all' || period !== 'This Month') && (
+              <button onClick={handleClear} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mobile-table-card">
+            <ul className="flex flex-col divide-y divide-slate-200">
+              {(() => {
+                const mobileGroups: { key: string; label: string; rows: any[] }[] = [];
+                const sortedData = [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                
+                sortedData.forEach((row: any) => {
+                  const key = row.date;
+                  let group = mobileGroups.find(g => g.key === key);
+                  if (!group) {
+                    group = { key, label: getMobileDayLabel(row.date), rows: [] };
+                    mobileGroups.push(group);
+                  }
+                  group.rows.push(row);
+                });
+                
+                return mobileGroups.map((group) => (
+                  <li key={group.key} className="flex flex-col">
+                    <div className="table-header-dark px-4 py-1.5 text-xs min-[380px]:text-sm font-medium text-slate-100">
+                      {group.label}
+                    </div>
+                    <ul className="divide-y divide-slate-200">
+                      {group.rows.map(row => {
+                        const isVoided = row.is_voided;
+                        const directionColor = row.direction === 'in' ? 'bg-green-500' : 'bg-red-500';
+                        
+                        return (
+                          <li key={`${row.source_table}-${row.id}`} className={`mobile-table-row px-4 !py-3 !min-h-0 items-start ${isVoided ? 'opacity-50' : ''}`}>
+                            <div className="flex items-start justify-between gap-3 w-full">
+                              <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                <div className={`w-2 h-2 rounded-full mt-[5px] shrink-0 ${directionColor}`} aria-hidden="true" />
+                                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                  <div className={`text-sm text-slate-900 leading-tight break-words ${isVoided ? 'line-through' : ''}`}>
+                                    {row.description}
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Badge className="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 min-h-0">
+                                      {row.category}
+                                    </Badge>
+                                    <span className="mobile-table-sub">
+                                      {row.method || '-'}
+                                    </span>
+                                    {row.is_edited && !isVoided && (
+                                      <Badge className="bg-blue-50 text-blue-600 text-[10px] px-2 py-0.5 min-h-0">
+                                        Edited
+                                      </Badge>
+                                    )}
+                                    {isVoided && (
+                                      <Badge className="bg-red-100 text-red-700 uppercase tracking-wider text-[10px] px-2 py-0.5 min-h-0">
+                                        Voided
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={`text-sm font-medium tabular-nums shrink-0 ${isVoided ? 'text-slate-500 line-through' : row.direction === 'in' ? 'text-green-600' : 'text-red-600'}`}>
+                                {row.direction === 'in' ? '+' : '-'}{formatINR(row.amount)}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                ));
+              })()}
+            </ul>
+            {!isInitialLoading && data.length > 0 && (
+              <div ref={loadMoreRef} className="px-4 py-4 text-center border-t border-slate-200">
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2 text-sm text-slate-500">
+                    <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
+                    Loading more...
+                  </div>
+                ) : hasMore ? (
+                  <button 
+                    onClick={() => fetchTransactions(true)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors"
+                  >
+                    Load more
+                  </button>
+                ) : (
+                  <p className="text-sm text-slate-500">End of transactions</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
+
+      <div className="hidden lg:flex bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         <div className="overflow-x-auto overflow-y-hidden flex-1 flex flex-col min-h-0">
           <table className="w-full text-left min-w-[800px] flex flex-col flex-1 min-h-0">
             <thead className="table-header-dark border-b border-slate-200 text-slate-100 z-10 shrink-0">
@@ -450,6 +611,7 @@ export default function TransactionsTable({
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );

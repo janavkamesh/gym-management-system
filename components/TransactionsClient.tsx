@@ -11,6 +11,9 @@ interface TransactionsClientProps {
   sharedFrom?: string;
   sharedTo?: string;
   onPeriodChange?: (period: string, from?: string, to?: string) => void;
+  animationClass?: string;
+  isAnimating?: boolean;
+  onAnimationEnd?: () => void;
 }
 
 export default function TransactionsClient({
@@ -19,7 +22,10 @@ export default function TransactionsClient({
   sharedPeriod,
   sharedFrom,
   sharedTo,
-  onPeriodChange
+  onPeriodChange,
+  animationClass,
+  isAnimating,
+  onAnimationEnd
 }: TransactionsClientProps) {
   return (
     <div className={hideHeader ? "w-full" : "px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto w-full"}>
@@ -37,6 +43,9 @@ export default function TransactionsClient({
         sharedTo={sharedTo}
         onPeriodChange={onPeriodChange}
         isMobileTab={hideHeader}
+        animationClass={animationClass}
+        isAnimating={isAnimating}
+        onAnimationEnd={onAnimationEnd}
       />
     </div>
   );

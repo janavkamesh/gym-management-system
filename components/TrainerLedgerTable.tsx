@@ -1,6 +1,6 @@
 import { formatINR } from '@/lib/utils/formatters';
 import Badge from './ui/Badge';
-import { Download } from 'lucide-react';
+import { Download, Banknote } from 'lucide-react';
 
 interface TrainerLedgerTableProps {
   ledger: any[];
@@ -8,8 +8,53 @@ interface TrainerLedgerTableProps {
 
 export default function TrainerLedgerTable({ ledger }: TrainerLedgerTableProps) {
   return (
-    <div className="overflow-x-auto w-full pb-safe">
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col relative w-full min-w-[600px] mb-6">
+    <>
+      {/* Mobile List View */}
+      <div className="block lg:hidden w-full pb-safe">
+        {ledger.length === 0 ? (
+          <div className="text-center text-slate-500 py-8 flex flex-col items-center">
+            <Banknote className="mb-2 opacity-50" size={24} />
+            <span className="text-sm">No payment history yet.</span>
+          </div>
+        ) : (
+          <div className="profile-card rounded-2xl flex flex-col w-full divide-y divide-slate-200 mb-6">
+            {ledger.map((item: any, idx: number) => {
+              const typeColor = item.type === 'Salary' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+
+              return (
+                <div key={idx} className="py-3.5 px-3 flex flex-col gap-1">
+                  {/* Line 1 */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm text-slate-900 truncate">{formatINR(item.amount)}</span>
+                    <span className="text-sm text-slate-500 shrink-0">{item.date ? new Date(item.date).toLocaleDateString('en-GB') : '-'}</span>
+                  </div>
+                  {/* Line 2 */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 truncate">
+                      <Badge className={typeColor}>{item.type}</Badge>
+                      <span className="text-xs text-slate-500 truncate">{item.method || '-'}</span>
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        title="Download Receipt"
+                        className="relative p-1.5 text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-md transition-colors active:scale-95 before:absolute before:-inset-2.5"
+                        onClick={() => { console.log('Download Receipt clicked'); }}
+                      >
+                        <Download size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block overflow-x-auto w-full pb-safe">
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col relative w-full min-w-[600px] mb-6">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-900 text-white text-xs uppercase font-medium">
             <tr>
@@ -22,7 +67,7 @@ export default function TrainerLedgerTable({ ledger }: TrainerLedgerTableProps) 
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
             {ledger.map((item: any, idx: number) => {
-              const typeColor = item.type === 'Salary' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700';
+              const typeColor = item.type === 'Salary' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
 
               return (
                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -63,5 +108,6 @@ export default function TrainerLedgerTable({ ledger }: TrainerLedgerTableProps) 
         </table>
       </div>
     </div>
+    </>
   );
 }

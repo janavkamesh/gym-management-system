@@ -10,12 +10,15 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useMemo } from 'react';
 import { SlidingTabs } from './ui/SlidingTabs';
 import { isClosedOutcome } from '@/lib/utils/leads';
+import { RollingSubtext } from './ui/RollingSubtext';
 
 type TabType = 'Active' | 'Closed';
 
 export default function LeadsClient({ initialLeads, initialError, initialFilter }: { initialLeads: any[], initialError?: string, initialFilter?: string }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('Active');
+  const [animationClass, setAnimationClass] = useState('');
+  const [isAnimating, setIsAnimating] = useState(false);
   const { showToast } = useToast();
   const isDesktop = useMediaQuery('(min-width: 1024px)', true);
 
@@ -46,11 +49,28 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
     );
   }, [sortedLeads, activeTab]);
 
+  const counts = useMemo(() => {
+    let active = 0;
+    let closed = 0;
+    (initialLeads || []).forEach(lead => {
+      if (isClosedOutcome(lead.outcome)) closed++;
+      else active++;
+    });
+    return { active, closed };
+  }, [initialLeads]);
+
+  const activeStr = `${counts.active} active lead${counts.active === 1 ? '' : 's'}`;
+  const closedStr = `${counts.closed} closed lead${counts.closed === 1 ? '' : 's'}`;
+
+  const subtextItems = activeTab === 'Active' ? [activeStr, closedStr] : [closedStr, activeStr];
+  const staticSubtext = activeTab === 'Active' ? activeStr : closedStr;
+
   return (
-    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto max-lg:space-y-section lg:space-y-6">
       <PageHeader
         title="Leads"
         subtitle="Follow up on walk-ins and enquiries before they go cold."
+        mobileSubtitle={<RollingSubtext items={subtextItems} staticText={staticSubtext} />}
         action={
           <button
             onClick={() => setIsAddModalOpen(true)}
@@ -67,9 +87,15 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
         <SlidingTabs
           options={['Active', 'Closed']}
           value={activeTab}
-          onChange={(val) => setActiveTab(val as TabType)}
-          containerClassName="w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation"
-          buttonClassName="flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2"
+          onChange={(val) => {
+            if (val === activeTab) return;
+            const tabs: TabType[] = ['Active', 'Closed'];
+            const prevIdx = tabs.indexOf(activeTab);
+            const newIdx = tabs.indexOf(val as TabType);
+            setAnimationClass(newIdx > prevIdx ? 'animate-row-slide-right' : 'animate-row-slide-left');
+            setActiveTab(val as TabType);
+            setIsAnimating(true);
+          }}
         />
       </div>
 
@@ -116,7 +142,14 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
                 <div className="text-left whitespace-nowrap min-w-0">Promised</div>
                 <div className="text-left whitespace-nowrap min-w-0">Outcome</div>
               </div>
-              <div className="flex flex-col">
+              <div 
+                className={`flex flex-col ${animationClass}`}
+                key={activeTab}
+                onAnimationEnd={() => {
+                  setIsAnimating(false);
+                  setAnimationClass('');
+                }}
+              >
                 {leads.map((lead) => (
                   <LeadRow key={`mobile-${lead.id}`} lead={lead} isDesktop={false} />
                 ))}
@@ -126,9 +159,7 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
         )}
       </div>
 
-      {isAddModalOpen && (
-        <AddLeadModal onClose={() => setIsAddModalOpen(false)} />
-      )}
+      <AddLeadModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
     </div>
   );
 }

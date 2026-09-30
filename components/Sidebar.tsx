@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Users, UserPlus, Users2, IndianRupee, ClipboardList, Receipt, Wallet, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 const navigationGroups = [
   {
@@ -186,11 +188,14 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {showSignOutModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center p-4 md:p-0">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowSignOutModal(false)}></div>
-          <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">Sign Out</h3>
+      {typeof document !== 'undefined' && createPortal(
+        <ModalTransition 
+          isOpen={showSignOutModal}
+          onClose={() => setShowSignOutModal(false)}
+          containerClassName="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        >
+          <ModalHeader title="Sign Out" onClose={() => setShowSignOutModal(false)} />
+          <div className="p-6">
             <p className="text-slate-500 mb-6">
               Are you sure you want to sign out of your account?
             </p>
@@ -209,7 +214,7 @@ export default function Sidebar() {
               </button>
             </div>
           </div>
-        </div>,
+        </ModalTransition>,
         document.body
       )}
     </div>

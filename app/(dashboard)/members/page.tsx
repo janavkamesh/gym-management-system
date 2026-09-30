@@ -23,16 +23,19 @@ async function MembersContent(props: { searchParams?: Promise<{ [key: string]: s
 
   const supabase = await createClient();
 
-  const { data: plansData } = await supabase.from('plans').select('*');
-  const { data: membersData } = await supabase.from('members').select('*, plans(*), payments(*), pt_assignments(*)').is('archived_at', null);
-  const { data: trainersData } = await supabase.from('trainers').select('*').is('archived_at', null).order('name');
+  const [
+    { data: plansData },
+    { data: membersData },
+    { data: trainersData },
+    { count: archivedCount }
+  ] = await Promise.all([
+    supabase.from('plans').select('*'),
+    supabase.from('members').select('*, plans(*), payments(*), pt_assignments(*)').is('archived_at', null),
+    supabase.from('trainers').select('*').is('archived_at', null).order('name'),
+    supabase.from('members').select('*', { count: 'exact', head: true }).not('archived_at', 'is', null)
+  ]);
 
   const mappedMembers = (membersData || []).map(mapMemberData);
-
-  const { count: archivedCount } = await supabase
-    .from('members')
-    .select('*', { count: 'exact', head: true })
-    .not('archived_at', 'is', null);
 
   return (
     <div className="flex-1 w-full bg-slate-50 min-h-dvh">

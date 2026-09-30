@@ -9,6 +9,7 @@ import MemberList from './MemberList';
 import { getArchivedMembers, restoreMember } from '@/lib/actions/members';
 import PageHeader from './PageHeader';
 import ImportCSVModal from './ImportCSVModal';
+import { RollingSubtext } from './ui/RollingSubtext';
 
 type FilterTab = 'All' | 'Expiring Soon' | 'Expired' | 'PT';
 
@@ -23,6 +24,38 @@ export default function MembersClient({
   const searchParams = useSearchParams();
   const [members, setMembers] = useState(initialMembers);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>(initialFilter === 'overdue' ? 'Expired' : 'All');
+
+  const { totalCount, expiringCount, expiredCount, ptCount } = useMemo(() => {
+    let expiringCount = 0;
+    let expiredCount = 0;
+    let ptCount = 0;
+    
+    members.forEach(m => {
+      const color = computeStatusColor(m.expiry_date);
+      if (color === 'Yellow') expiringCount++;
+      if (color === 'Red') expiredCount++;
+      if (m.pt_assignments?.some((p: any) => p.is_active)) ptCount++;
+    });
+    
+    return { totalCount: members.length, expiringCount, expiredCount, ptCount };
+  }, [members]);
+
+  const subtextItems = activeTab === 'All'
+    ? [
+        `${totalCount} member${totalCount === 1 ? '' : 's'}`,
+        `${expiringCount} expiring soon`,
+        `${expiredCount} expired`
+      ]
+    : activeTab === 'Expiring Soon' ? [`${expiringCount} expiring soon`]
+    : activeTab === 'Expired' ? [`${expiredCount} expired`]
+    : activeTab === 'PT' ? [`${ptCount} on PT`]
+    : [];
+    
+  const staticSubtext = activeTab === 'All' ? `${totalCount} members`
+    : activeTab === 'Expiring Soon' ? `${expiringCount} expiring soon`
+    : activeTab === 'Expired' ? `${expiredCount} expired`
+    : `${ptCount} on PT`;
 
   const [archivedCount, setArchivedCount] = useState(initialArchivedCount);
   const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
@@ -100,10 +133,11 @@ export default function MembersClient({
   }, [archivedMembers, archivedSearchQuery]);
 
   return (
-    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto max-lg:space-y-section lg:space-y-6">
       <PageHeader 
         title="Members" 
         subtitle="Track memberships, payments, and renewals in one place."
+        mobileSubtitle={<RollingSubtext items={subtextItems} staticText={staticSubtext} />}
         action={
           <button
             onClick={() => setIsImportModalOpen(true)}
@@ -128,6 +162,7 @@ export default function MembersClient({
         initialOpenMember={initialOpenMember}
         initialAction={initialAction}
         onImportClick={() => setIsImportModalOpen(true)}
+        onTabChange={setActiveTab}
       />
 
       {/* Archived Members Section */}
@@ -191,12 +226,11 @@ export default function MembersClient({
         )}
       </div>
 
-      {isImportModalOpen && (
-        <ImportCSVModal 
-          onClose={() => setIsImportModalOpen(false)}
-          onSuccess={() => {}}
-        />
-      )}
+      <ImportCSVModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => {}}
+      />
     </div>
   );
 }

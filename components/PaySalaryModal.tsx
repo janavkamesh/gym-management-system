@@ -7,8 +7,11 @@ import { paySalary } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
 import { formatINR } from '@/lib/utils/formatters';
 import { DatePicker } from './DatePicker';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 interface PaySalaryModalProps {
+  isOpen: boolean;
   trainer: any;
   summary: any;
   month: number;
@@ -17,7 +20,7 @@ interface PaySalaryModalProps {
   onSuccess: () => void;
 }
 
-export default function PaySalaryModal({ trainer, summary, month, year, onClose, onSuccess }: PaySalaryModalProps) {
+export default function PaySalaryModal({ isOpen, trainer, summary, month, year, onClose, onSuccess }: PaySalaryModalProps) {
   const [method, setMethod] = useState('Cash');
   const [note, setNote] = useState('');
   const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0]);
@@ -39,16 +42,13 @@ export default function PaySalaryModal({ trainer, summary, month, year, onClose,
     }
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
-      <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200 flex flex-col overflow-hidden">
-        <div className="flex justify-between items-center px-6 py-4 shrink-0 bg-slate-900">
-          <h2 className="text-xl font-semibold text-white">Pay Salary</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
-          </button>
-        </div>
+  return (
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+    >
+      <ModalHeader title="Pay Salary" onClose={onClose} />
         
         <div className="p-6 pb-safe">
         
@@ -116,8 +116,6 @@ export default function PaySalaryModal({ trainer, summary, month, year, onClose,
           </button>
         </div>
       </div>
-      </div>
-    </div>,
-    document.body
+    </ModalTransition>
   );
 }

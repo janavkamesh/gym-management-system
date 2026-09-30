@@ -12,6 +12,8 @@ import TrainerSalaryHistory from './TrainerSalaryHistory';
 import PaySalaryModal from './PaySalaryModal';
 import TrainerProfileModal from './TrainerProfileModal';
 import { fetchTrainerSalaryPayments } from '@/lib/actions/payments';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 interface TrainerRowProps {
   trainer: any;
@@ -269,21 +271,21 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
     <>
       {mounted && createPortal(
         <>
-          {showProfileModal && (
-            <TrainerProfileModal 
-              trainer={trainer} 
-              onClose={() => setShowProfileModal(false)} 
-              onRemove={() => setShowDeleteModal(true)}
-            />
-          )}
+          <TrainerProfileModal 
+            isOpen={showProfileModal}
+            trainer={trainer} 
+            onClose={() => setShowProfileModal(false)} 
+            onRemove={() => setShowDeleteModal(true)}
+          />
           <AddSalaryAdvanceModal 
             isOpen={isAdvanceModalOpen}
             onClose={() => setIsAdvanceModalOpen(false)}
             trainerId={trainer.id}
             onSuccess={() => setSalarySummary(null)}
           />
-          {showPayModal && salarySummary && (
+          {salarySummary && (
             <PaySalaryModal 
+              isOpen={showPayModal}
               trainer={trainer}
               summary={salarySummary}
               month={currentMonth}
@@ -296,11 +298,14 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
         document.body
       )}
 
-      {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
-          <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Trainer</h3>
+      {typeof document !== 'undefined' && createPortal(
+        <ModalTransition 
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          containerClassName="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        >
+          <ModalHeader title="Remove Trainer" onClose={() => setShowDeleteModal(false)} />
+          <div className="p-6">
             <p className="text-slate-500 mb-6">
               Are you sure you want to remove <span className="font-semibold text-slate-900">{trainer.name}</span>?
             </p>
@@ -320,14 +325,18 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
               </button>
             </div>
           </div>
-        </div>
+        </ModalTransition>,
+        document.body
       )}
 
-      {ptToDelete && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setPtToDelete(null)}></div>
-          <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-            <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove PT Client</h3>
+      {typeof document !== 'undefined' && createPortal(
+        <ModalTransition 
+          isOpen={!!ptToDelete}
+          onClose={() => setPtToDelete(null)}
+          containerClassName="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        >
+          <ModalHeader title="Remove PT Client" onClose={() => setPtToDelete(null)} />
+          <div className="p-6">
             <p className="text-slate-500 mb-6">
               Are you sure you want to unassign this PT client?
             </p>
@@ -346,11 +355,13 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
               </button>
             </div>
           </div>
-        </div>
+        </ModalTransition>,
+        document.body
       )}
 
-      {paymentPt && createPortal(
+      {createPortal(
         <CollectPtPaymentModal 
+          isOpen={!!paymentPt}
           assignment={paymentPt} 
           onClose={() => setPaymentPt(null)}
           onSuccess={() => loadDetails()}

@@ -5,6 +5,9 @@ import { createTrainer } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
 import { X } from 'lucide-react';
 import { DatePicker } from './DatePicker';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
+import { handlePhoneInput, isValidPhone } from '@/lib/utils/phone';
 
 export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: (trainer: any) => void }) {
   const [name, setName] = useState('');
@@ -17,7 +20,8 @@ export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen
 
   if (!isOpen) return null;
 
-  const isValid = name.trim() !== '' && phone.trim() !== '' && Number(baseSalary) >= 0 && joinDate !== '';
+  const isPhoneValid = isValidPhone(phone);
+  const isValid = name.trim() !== '' && isPhoneValid && Number(baseSalary) >= 0 && joinDate !== '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,24 +43,21 @@ export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen
       setBaseSalary('');
       setJoinDate(new Date().toISOString().split('T')[0]);
       showToast('Trainer added successfully', 'success');
-    } catch (error) {
-      showToast('Failed to save. Check your connection.', 'error');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to save. Check your connection.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
-      <div className="relative bg-white w-full md:max-w-md rounded-none md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 md:fade-in duration-200 z-10 h-[calc(100dvh-20px)] mt-auto md:mt-0 md:h-auto md:max-h-90vh flex flex-col">
-        
-        <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-slate-900">
-          <h2 className="text-xl font-semibold text-white">Add Trainer</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
-          </button>
-        </div>
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden z-10 h-[calc(100dvh-20px)] mt-auto md:mt-0 md:h-auto md:max-h-90vh flex flex-col"
+      mobileFixed
+    >
+      <ModalHeader title="Add Trainer" onClose={onClose} variant="light" />
 
         <div className="p-5 overflow-y-auto min-h-0">
           <form id="add-trainer-form" onSubmit={handleSubmit} className="space-y-4">
@@ -76,12 +77,22 @@ export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen
               <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
               <input
                 type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                autoComplete="tel"
                 placeholder="e.g. 9876543210"
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900"
+                className={`w-full px-3 py-2.5 bg-slate-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 ${
+                  phone.length > 0 && !isPhoneValid ? 'border-red-300 bg-red-50' : 'border-slate-200'
+                }`}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => handlePhoneInput(e, setPhone)}
                 required
               />
+              {phone.length > 0 && !isPhoneValid && (
+                <div className="text-red-500 text-xs mt-1">
+                  Enter a valid 10-digit phone number
+                </div>
+              )}
             </div>
 
             <div>
@@ -108,11 +119,11 @@ export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen
           </form>
         </div>
 
-        <div className="p-5 border-t border-slate-100 bg-slate-50 shrink-0 flex gap-3 pb-safe">
+        <div className="p-5 border-t border-slate-100 bg-white shrink-0 flex gap-3 pb-safe">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+            className="flex-1 px-4 py-2.5 bg-white border border-slate-300 shadow-sm text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
           >
             Cancel
           </button>
@@ -129,7 +140,6 @@ export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen
             )}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalTransition>
   );
 }

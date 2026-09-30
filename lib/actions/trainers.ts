@@ -21,6 +21,10 @@ export async function createTrainer(data: {
   base_salary: number;
   join_date: string;
 }) {
+  if (!/^\d{10}$/.test(data.phone)) {
+    throw new Error('Enter a valid 10-digit phone number');
+  }
+
   const supabase = await createClient()
   const userId = await getUserId(supabase)
   
@@ -59,6 +63,10 @@ export async function updateTrainer(trainerId: string, data: {
   phone?: string;
   base_salary?: number;
 }) {
+  if (data.phone !== undefined && !/^\d{10}$/.test(data.phone)) {
+    throw new Error('Enter a valid 10-digit phone number');
+  }
+
   const supabase = await createClient()
   const userId = await getUserId(supabase)
 

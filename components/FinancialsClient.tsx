@@ -58,7 +58,19 @@ export default function FinancialsClient({
   initialError
 }: FinancialsClientProps) {
   const [activeTab, setActiveTab] = useState('Financials');
+  const [animationClass, setAnimationClass] = useState('');
+  const [isAnimating, setIsAnimating] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+
+  const handleTabChange = (newTab: string) => {
+    if (newTab === activeTab) return;
+    const tabs = ['Financials', 'Transactions', 'Expenses'];
+    const prevIdx = tabs.indexOf(activeTab);
+    const newIdx = tabs.indexOf(newTab);
+    setAnimationClass(newIdx > prevIdx ? 'animate-page-slide-right' : 'animate-page-slide-left');
+    setActiveTab(newTab);
+    setIsAnimating(true);
+  };
   
   // FilterCard State
   const now = new Date();
@@ -402,26 +414,23 @@ export default function FinancialsClient({
   return (
     <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto w-full overflow-hidden">
       <style>{`
-        @keyframes tabSlideIn { 
-          from { opacity: 0; transform: translateX(10px); } 
-          to { opacity: 1; transform: translateX(0); } 
-        }
-        .animate-tab-slide { animation: tabSlideIn 180ms ease-out forwards; }
         .chart-card *:focus:not(:focus-visible) { outline: none !important; }
         .chart-card *:focus-visible { outline: 2px solid #2563EB !important; outline-offset: 2px; }
         .recharts-legend-item { display: inline-flex !important; align-items: center !important; margin-right: 16px !important; }
         .recharts-legend-item-text { font-size: 0.75rem !important; color: #64748b !important; padding-top: 1px !important; }
       `}</style>
       
-      <div className="md:hidden flex justify-center mb-6">
+      <div className="md:hidden flex w-full lg:w-auto items-center gap-3 max-lg:mb-header lg:mb-6">
         <SlidingTabs 
           options={['Financials', 'Transactions', 'Expenses']} 
           value={activeTab} 
-          onChange={setActiveTab} 
+          onChange={handleTabChange} 
+          containerClassName="w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation"
+          buttonClassName="flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2"
         />
       </div>
 
-      <div className={activeTab === 'Financials' ? 'animate-tab-slide block' : 'hidden'}>
+      <div className={activeTab === 'Financials' ? 'block' : 'hidden'}>
         <PageHeader 
           title="Financials"
           subtitle="Track profitability, expenses, and revenue trends."
@@ -429,7 +438,7 @@ export default function FinancialsClient({
         />
 
         {/* Mobile Header Row */}
-        <div className="flex lg:hidden justify-between items-center mb-6">
+        <div className="flex lg:hidden justify-between items-center max-lg:mb-section lg:mb-6">
           <div className="flex flex-col justify-center">
             <h1 className="text-xl md:text-2xl font-semibold text-slate-900 tracking-tight">Financials</h1>
             <p className="text-sm text-slate-500 mt-0.5">
@@ -517,8 +526,17 @@ export default function FinancialsClient({
         />
       </div>
 
+      <div 
+        className={`${activeTab === 'Financials' ? animationClass : ''} ${isAnimating ? 'overflow-x-clip' : ''}`}
+        onAnimationEnd={() => {
+          if (activeTab === 'Financials') {
+            setIsAnimating(false);
+            setAnimationClass('');
+          }
+        }}
+      >
       {/* Row 1: 4 Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-lg:mb-section lg:mb-8">
         <StatCard label="Total Revenue" value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.revenue) : <span className="text-sm text-red-500">Failed</span>)} icon={Wallet} colorClass="card-gradient-green" />
         <StatCard label="Total Expenses" value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.expenses) : <span className="text-sm text-red-500">Failed</span>)} icon={Receipt} colorClass="card-gradient-red" />
         <StatCard label="Net Profit" value={isLoadingProfitability ? <div className="h-9 w-24 bg-white/30 animate-pulse rounded"></div> : (profitabilityData ? formatCurrency(profitabilityData.netProfit) : <span className="text-sm text-red-500">Failed</span>)} icon={PiggyBank} colorClass="card-gradient-blue" />
@@ -626,7 +644,7 @@ export default function FinancialsClient({
       </div>
 
       {/* Row 3: New Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-lg:mb-section lg:mb-8">
         
         {/* Revenue vs Expenses (Fixed 6 months) */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
@@ -725,13 +743,13 @@ export default function FinancialsClient({
               </div>
             )}
           </div>
-        </div>
-
       </div>
 
+      </div>
+      </div>
       </div>
       
-      <div className={activeTab === 'Transactions' ? 'md:hidden animate-tab-slide block' : 'hidden'}>
+      <div className={activeTab === 'Transactions' ? 'md:hidden block' : 'hidden'}>
         <TransactionsClient 
           distinctCategories={distinctCategories}
           hideHeader={true}
@@ -743,10 +761,18 @@ export default function FinancialsClient({
             if (f !== undefined) setFromDate(f);
             if (t !== undefined) setToDate(t);
           }}
+          animationClass={activeTab === 'Transactions' ? animationClass : ''}
+          isAnimating={activeTab === 'Transactions' ? isAnimating : false}
+          onAnimationEnd={() => {
+            if (activeTab === 'Transactions') {
+              setIsAnimating(false);
+              setAnimationClass('');
+            }
+          }}
         />
       </div>
 
-      <div className={activeTab === 'Expenses' ? 'md:hidden animate-tab-slide block' : 'hidden'}>
+      <div className={activeTab === 'Expenses' ? 'md:hidden block' : 'hidden'}>
         <ExpensesClient 
           initialExpenses={initialExpenses}
           hideHeader={true}
@@ -757,6 +783,14 @@ export default function FinancialsClient({
             setPeriod(p);
             if (f !== undefined) setFromDate(f);
             if (t !== undefined) setToDate(t);
+          }}
+          animationClass={activeTab === 'Expenses' ? animationClass : ''}
+          isAnimating={activeTab === 'Expenses' ? isAnimating : false}
+          onAnimationEnd={() => {
+            if (activeTab === 'Expenses') {
+              setIsAnimating(false);
+              setAnimationClass('');
+            }
           }}
         />
       </div>

@@ -3,13 +3,18 @@
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --color-navy: #1E293B;
+  --shadow-up-sm: 0 -2px 4px 0 rgba(15, 23, 42, 0.052);
   /* Slate 800 */
 }
 
 @layer base {
   :root {
-    --header-h: 56px;
+    --header-h: calc(56px * 1.15);
     --nav-h: 71px;
+    --space-group: 1rem;      /* 16px, Tailwind 4 */
+    --space-control: 1.25rem; /* 20px, Tailwind 5 */
+    --space-section: 1.5rem;  /* 24px, Tailwind 6 */
+    --space-header: 2rem;     /* 32px, Tailwind 8 */
   }
 
   body {
@@ -42,6 +47,22 @@
 
 
 
+
+@utility gap-group { gap: var(--space-group); }
+@utility gap-control { gap: var(--space-control); }
+@utility gap-section { gap: var(--space-section); }
+@utility gap-header { gap: var(--space-header); }
+
+@utility space-y-group { > * + * { margin-top: var(--space-group); } }
+@utility space-y-control { > * + * { margin-top: var(--space-control); } }
+@utility space-y-section { > * + * { margin-top: var(--space-section); } }
+@utility space-y-header { > * + * { margin-top: var(--space-header); } }
+@utility mb-group { margin-bottom: var(--space-group); }
+@utility mb-control { margin-bottom: var(--space-control); }
+@utility mb-section { margin-bottom: var(--space-section); }
+@utility mb-header { margin-bottom: var(--space-header); }
+@utility mt-control { margin-top: var(--space-control); }
+@utility mt-header { margin-top: var(--space-header); }
 
 @layer utilities {
   .hide-scrollbar {
@@ -266,25 +287,89 @@
   }
 }
 
+@keyframes rowSlideRight {
+  from {
+    transform: translateX(5%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes rowSlideLeft {
+  from {
+    transform: translateX(-5%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 @layer utilities {
   .animate-page-slide-right {
-    animation: pageSlideRight 180ms ease-out;
+    animation: pageSlideRight 180ms ease-out forwards;
   }
   .animate-page-slide-left {
-    animation: pageSlideLeft 180ms ease-out;
+    animation: pageSlideLeft 180ms ease-out forwards;
+  }
+  .animate-row-slide-right {
+    animation: rowSlideRight 180ms ease-out forwards;
+  }
+  .animate-row-slide-left {
+    animation: rowSlideLeft 180ms ease-out forwards;
   }
 
   @media (min-width: 1024px) {
     .animate-page-slide-right,
-    .animate-page-slide-left {
+    .animate-page-slide-left,
+    .animate-row-slide-right,
+    .animate-row-slide-left {
       animation: none !important;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .animate-page-slide-right,
-    .animate-page-slide-left {
+    .animate-page-slide-left,
+    .animate-row-slide-right,
+    .animate-row-slide-left {
       animation: none !important;
     }
+  }
+
+  .profile-card {
+    @apply bg-slate-50 border border-slate-200 shadow-sm;
+  }
+  .profile-row {
+    @apply bg-white border border-slate-200;
+  }
+  .profile-section-spacing {
+    @apply flex flex-col gap-4 pb-4;
+  }
+  .profile-tab-container {
+    @apply flex w-full border-b border-slate-200 shrink-0 bg-white relative px-2 md:px-6;
+  }
+  .profile-tab-btn {
+    @apply relative z-10 transition-colors active:scale-95 min-h-[48px] flex-1 flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] md:flex-none md:flex-row md:px-4 md:py-3 md:text-sm md:active:scale-100;
+  }
+  .profile-header-card {
+    @apply p-4 lg:p-5 bg-slate-900 rounded-2xl relative shadow-md flex items-start gap-3;
+  }
+  .profile-action-btn {
+    @apply relative flex flex-col items-center group active:scale-95 touch-manipulation;
+    @apply lg:min-w-[80px] lg:bg-slate-800 lg:hover:bg-slate-700 lg:border lg:border-slate-700/50 lg:px-3 lg:pt-3 lg:pb-1.5 lg:rounded-xl lg:justify-between lg:transition-colors;
+  }
+  .profile-action-circle {
+    @apply relative flex items-center justify-center bg-slate-800 border border-slate-700/50 rounded-full w-[44px] h-[44px] shrink-0 transition-colors group-hover:bg-slate-700;
+    @apply before:absolute before:-inset-0.5;
+    @apply lg:border-0 lg:bg-transparent lg:w-auto lg:h-auto lg:rounded-none lg:before:hidden lg:group-hover:bg-transparent lg:transition-none;
+  }
+  .profile-action-btn-text {
+    @apply text-[10px] font-medium text-slate-400 mt-1 whitespace-nowrap;
+    @apply lg:text-slate-300;
   }
 }

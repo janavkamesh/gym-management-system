@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import MobileShell from "@/components/MobileShell";
 import PushAutoRegister from "@/components/PushAutoRegister";
 import TenantSetupClient from "@/components/TenantSetupClient";
+import SwipeNavigation from "@/components/SwipeNavigation";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
     <>
       <TenantSetupClient />
       <PushAutoRegister />
+      <SwipeNavigation />
       <Sidebar />
       <MobileShell gymName={gymName} ownerName={ownerName} />
       <main className="flex-1 flex flex-col min-h-dvh overflow-auto pt-header pb-nav lg:pt-0 lg:pb-0">

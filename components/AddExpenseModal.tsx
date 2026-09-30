@@ -4,9 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { createExpense } from '@/lib/actions/expenses';
 import { useToast } from './ToastProvider';
-import { X, Upload, Info, ChevronDown } from 'lucide-react';
-import Tooltip from './Tooltip';
+import { X, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCategory }: { isOpen: boolean; onClose: () => void; onSuccess: (expense: any) => void; initialCategory?: string }) {
   const [category, setCategory] = useState('');
@@ -79,16 +80,12 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCat
   const predefinedCategories = ['Rent', 'Electricity', 'Salaries', 'Maintenance', 'Equipment', 'Other'];
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
-      <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 md:fade-in duration-200 z-10 max-h-90vh flex flex-col">
-        
-        <div className="flex items-center justify-between px-6 py-4 shrink-0 bg-slate-900">
-          <h2 className="text-xl font-semibold text-white">Add Expense</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-120 rounded-full p-2 md:p-1.5 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={24} className="md:w-5 md:h-5 transition-transform duration-120" />
-          </button>
-        </div>
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden z-10 max-h-90vh flex flex-col"
+    >
+        <ModalHeader title="Add Expense" onClose={onClose} />
 
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto">
           <div className="space-y-5">
@@ -170,22 +167,6 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCat
               <span className="text-sm font-medium text-slate-700">Recurring Monthly Expense</span>
             </label>
 
-            {/* Receipt Upload Placeholder */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Receipt Photo</label>
-              <div className="relative group">
-                <div className="w-full border-2 border-dashed border-slate-200 rounded-lg px-4 py-6 bg-slate-50 flex flex-col items-center justify-center opacity-70 cursor-not-allowed">
-                  <Upload size={24} className="text-slate-400 mb-2" />
-                  <span className="text-sm text-slate-500 font-medium">Upload feature coming soon</span>
-                </div>
-                <Tooltip content="Supabase Storage bucket setup pending">
-                  <div className="absolute top-2 right-2 text-slate-400">
-                    <Info size={16} />
-                  </div>
-                </Tooltip>
-              </div>
-            </div>
-
           </div>
 
           <div className="mt-8">
@@ -202,7 +183,6 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCat
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalTransition>
   );
 }

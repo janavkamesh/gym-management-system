@@ -13,7 +13,7 @@ export default function MobileHeader({ gymName, ownerName, onOpenDrawer }: Mobil
 
   return (
     <header className="lg:hidden fixed top-0 inset-x-0 z-40 bg-navy pt-safe h-[var(--header-h)] border-b border-slate-700/50">
-      <div className="flex items-center h-full px-4 gap-3">
+      <div className="flex items-center h-[56px] px-4 gap-3">
         <button
           onClick={onOpenDrawer}
           aria-label="Open menu"

@@ -5,6 +5,8 @@ import { createSalaryAdvance } from '@/lib/actions/trainers';
 import { useToast } from './ToastProvider';
 import { X } from 'lucide-react';
 import { DatePicker } from './DatePicker';
+import { ModalTransition } from './ui/ModalTransition';
+import { ModalHeader } from './ui/ModalHeader';
 
 export default function AddSalaryAdvanceModal({ 
   isOpen, 
@@ -55,16 +57,12 @@ export default function AddSalaryAdvanceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={onClose}></div>
-      <div className="relative bg-white w-full md:max-w-md rounded-none md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 md:fade-in duration-200 z-10 h-[calc(100dvh-20px)] mt-auto md:mt-0 md:h-auto md:max-h-90vh flex flex-col">
-        
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 shrink-0">
-          <h2 className="text-xl font-semibold text-slate-900">Log Salary Advance</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-120 rounded-full p-2 touch-manipulation min-h-12 min-w-12 md:min-h-8 md:min-w-8 flex items-center justify-center">
-            <X size={20} className="transition-transform duration-120" />
-          </button>
-        </div>
+    <ModalTransition 
+      isOpen={isOpen} 
+      onClose={onClose}
+      containerClassName="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden z-10 h-[calc(100dvh-20px)] mt-auto md:mt-0 md:h-auto md:max-h-90vh flex flex-col"
+    >
+      <ModalHeader title="Log Salary Advance" onClose={onClose} />
 
         <div className="p-5 overflow-y-auto min-h-0">
           <form id="add-advance-form" onSubmit={handleSubmit} className="space-y-4">
@@ -124,7 +122,6 @@ export default function AddSalaryAdvanceModal({
             )}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalTransition>
   );
 }

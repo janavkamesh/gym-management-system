@@ -43,7 +43,13 @@ export default function BottomNav() {
   }, [activeIndex]);
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 flex items-center px-0 pb-safe">
+    <div 
+      className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 flex items-center px-0 pb-safe shadow-up-sm"
+      style={{
+        borderTopLeftRadius: 'calc((var(--nav-h) + env(safe-area-inset-bottom, 0px)) * 0.2)',
+        borderTopRightRadius: 'calc((var(--nav-h) + env(safe-area-inset-bottom, 0px)) * 0.2)'
+      }}
+    >
       <div 
         className="absolute top-0 bottom-[env(safe-area-inset-bottom,0px)] left-0 w-[20%] flex flex-col items-center justify-center py-2.5 pointer-events-none transition-all duration-180 ease-out motion-reduce:transition-none"
         style={{ 

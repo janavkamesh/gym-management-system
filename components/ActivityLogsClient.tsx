@@ -206,7 +206,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
   };
 
   return (
-    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto max-lg:space-y-section lg:space-y-6">
       <div className="hidden lg:block">
         <PageHeader
           title="Activity Logs"
@@ -395,7 +395,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
           <div className="mobile-table-card">
             <ul className="flex flex-col divide-y divide-slate-200">
               <li className="flex flex-col">
-                <div className="table-header-dark px-4 py-1.5 text-xs font-medium text-white">
+                <div className="table-header-dark px-4 py-1.5 text-xs min-[380px]:text-sm font-medium text-slate-100">
                   <div className="h-3 w-16 bg-slate-600 rounded animate-pulse" />
                 </div>
                 <ul className="divide-y divide-slate-200">
@@ -450,7 +450,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
                 
                 return mobileGroups.map((group) => (
                   <li key={group.key} className="flex flex-col">
-                    <div className="table-header-dark px-4 py-1.5 text-xs font-medium text-white">
+                    <div className="table-header-dark px-4 py-1.5 text-xs min-[380px]:text-sm font-medium text-slate-100">
                       {group.label}
                     </div>
                     <ul className="divide-y divide-slate-200">

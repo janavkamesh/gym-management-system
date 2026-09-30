@@ -7,15 +7,17 @@ import AddTrainerModal from './AddTrainerModal';
 import { getArchivedTrainers } from '@/lib/actions/trainers';
 import PageHeader from './PageHeader';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { RollingSubtext } from './ui/RollingSubtext';
 
 interface TrainersClientProps {
   initialTrainers: any[];
   members: any[];
+  initialArchivedCount?: number;
   initialTrainerId?: string;
   initialAction?: string;
 }
 
-export default function TrainersClient({ initialTrainers, members, initialTrainerId, initialAction }: TrainersClientProps) {
+export default function TrainersClient({ initialTrainers, members, initialArchivedCount = 0, initialTrainerId, initialAction }: TrainersClientProps) {
   const [trainers, setTrainers] = useState(initialTrainers);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 1024px)', true);
@@ -38,15 +40,8 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
   const [archivedTrainers, setArchivedTrainers] = useState<any[]>([]);
   const [isArchivedExpanded, setIsArchivedExpanded] = useState(false);
   const [isLoadingArchived, setIsLoadingArchived] = useState(false);
-  const [archivedCount, setArchivedCount] = useState(0);
+  const [archivedCount, setArchivedCount] = useState(initialArchivedCount);
   const [archivedSearchQuery, setArchivedSearchQuery] = useState('');
-
-  // Initial fetch for count
-  useEffect(() => {
-    getArchivedTrainers().then(data => {
-      setArchivedCount(data?.length || 0);
-    }).catch(console.error);
-  }, []);
 
   const loadArchived = async () => {
     setIsLoadingArchived(true);
@@ -86,13 +81,19 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
     }
   };
 
+  const activeStr = `${trainers.length} active`;
+  const archivedStr = `${archivedCount} archived`;
+  const subtextItems = [activeStr, archivedStr];
+  const staticSubtext = `${trainers.length} active · ${archivedCount} archived`;
+
   return (
-    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
+    <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto max-lg:space-y-section lg:space-y-6">
       
       {/* Header */}
       <PageHeader
         title="Trainers"
         subtitle="Manage salaries, PT commissions, and advances."
+        mobileSubtitle={<RollingSubtext items={subtextItems} staticText={staticSubtext} />}
         action={
           <button
             onClick={() => setIsAddModalOpen(true)}
