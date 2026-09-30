@@ -25,7 +25,7 @@ export function ChartCard({
   children
 }: ChartCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 relative overflow-hidden flex flex-col chart-card h-[380px]">
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 relative overflow-hidden flex flex-col chart-card min-h-[380px]">
       {/* 3px primary blue accent strip */}
       <div className="h-[3px] bg-blue-600 w-full shrink-0" />
       
@@ -60,7 +60,7 @@ export function ChartCard({
             </div>
           ) : (
             <>
-              <div className={`absolute inset-0 transition-opacity duration-300 flex flex-col ${isLoading && isEmpty ? 'opacity-0' : 'opacity-100'}`}>
+              <div className={`relative flex-1 w-full h-full flex flex-col transition-opacity duration-300 ${isLoading && isEmpty ? 'opacity-0' : 'opacity-100'}`}>
                 {children}
               </div>
               

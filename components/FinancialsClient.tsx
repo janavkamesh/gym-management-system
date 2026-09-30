@@ -555,8 +555,6 @@ export default function FinancialsClient({
           title="New vs. Renewal"
           subtitle={periodLabel.replace(/[()]/g, '')}
           icon={PieChartIcon}
-          headlineValue={revenueSplitData ? formatCurrency(revenueSplitData.newRevenue + revenueSplitData.renewalRevenue) : undefined}
-          headlineCaption="Total Revenue"
           isLoading={isLoadingRevenueSplit}
           isEmpty={splitData.length === 0}
           emptyMessage="Not enough data yet"
@@ -571,8 +569,6 @@ export default function FinancialsClient({
           title="Payment Methods"
           subtitle={periodLabel.replace(/[()]/g, '')}
           icon={CreditCard}
-          headlineValue={paymentMethodSplitData ? formatCurrency(paymentMethodSplitData.Cash + paymentMethodSplitData.UPI + paymentMethodSplitData.Card) : undefined}
-          headlineCaption="Total Received"
           isLoading={isLoadingPaymentSplit}
           isEmpty={paymentPieData.length === 0}
           emptyMessage="Not enough data yet"
@@ -631,8 +627,6 @@ export default function FinancialsClient({
           title="Plan Breakdown"
           subtitle={periodLabel.replace(/[()]/g, '')}
           icon={Users}
-          headlineValue={planBreakdownData ? planBreakdownData.reduce((acc: number, curr: any) => acc + curr.value, 0).toString() : undefined}
-          headlineCaption="Total Members"
           isLoading={isLoadingPlanBreakdown}
           isEmpty={!planBreakdownData || planBreakdownData.length === 0}
           emptyMessage="No active members"
