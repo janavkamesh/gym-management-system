@@ -360,7 +360,7 @@
     @apply p-4 lg:p-5 bg-slate-900 rounded-2xl relative shadow-md flex items-start gap-3;
   }
   .profile-action-btn {
-    @apply relative flex flex-col items-center group active:scale-95 touch-manipulation;
+    @apply relative flex flex-col items-center active:scale-95 touch-manipulation;
     @apply lg:min-w-[80px] lg:bg-slate-800 lg:hover:bg-slate-700 lg:border lg:border-slate-700/50 lg:px-3 lg:pt-3 lg:pb-1.5 lg:rounded-xl lg:justify-between lg:transition-colors;
   }
   .profile-action-circle {

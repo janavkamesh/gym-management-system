@@ -155,7 +155,7 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
             {/* Action Icons in Top Right */}
             <div className="flex items-start justify-end gap-2 lg:absolute lg:top-4 lg:right-5 lg:bottom-4 lg:items-stretch lg:gap-2.5">
               {isEligibleForWelcome && (
-                <button onClick={() => handleWaAction('welcome')} className="profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
+                <button onClick={() => handleWaAction('welcome')} className="group profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
                   <div className="profile-action-circle">
                     <div className="lg:hidden"><WhatsAppIcon size={22} /></div>
                     <div className="hidden lg:block"><WhatsAppIcon size={28} /></div>
@@ -164,7 +164,7 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
                 </button>
               )}
               {(statusColor === 'Yellow' || statusColor === 'Red') && (
-                <button onClick={() => handleWaAction('expiry')} className="profile-action-btn text-yellow-400" title="Expiry Reminder" aria-label="Expiry Reminder">
+                <button onClick={() => handleWaAction('expiry')} className="group profile-action-btn text-yellow-400" title="Expiry Reminder" aria-label="Expiry Reminder">
                   <div className="profile-action-circle">
                     <Bell size={22} className="lg:hidden" />
                     <Bell size={28} className="hidden lg:block" />
@@ -173,7 +173,7 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
                 </button>
               )}
               {isEligibleForReview && (
-                <button onClick={() => handleWaAction('review')} className="profile-action-btn text-blue-400" title="Request Review" aria-label="Request Review">
+                <button onClick={() => handleWaAction('review')} className="group profile-action-btn text-blue-400" title="Request Review" aria-label="Request Review">
                   <div className="profile-action-circle">
                     <Star size={22} className="lg:hidden" />
                     <Star size={28} className="hidden lg:block" />

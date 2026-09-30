@@ -121,7 +121,7 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
 
             {/* Action Icons in Top Right */}
             <div className="flex items-start justify-end gap-2 lg:absolute lg:top-4 lg:right-5 lg:bottom-4 lg:items-stretch lg:gap-2.5">
-              <button onClick={handleWaAction} className="profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
+              <button onClick={handleWaAction} className="group profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
                 <div className="profile-action-circle">
                   <div className="lg:hidden"><WhatsAppIcon size={22} /></div>
                   <div className="hidden lg:block"><WhatsAppIcon size={28} /></div>
