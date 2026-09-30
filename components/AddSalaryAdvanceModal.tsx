@@ -60,7 +60,7 @@ export default function AddSalaryAdvanceModal({
     <ModalTransition 
       isOpen={isOpen} 
       onClose={onClose}
-      containerClassName="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden z-10 h-[calc(100dvh-20px)] mt-auto md:mt-0 md:h-auto md:max-h-90vh flex flex-col"
+      containerClassName="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden z-10 max-h-[85dvh] mt-auto md:mt-0 md:h-auto md:max-h-90vh flex flex-col"
     >
       <ModalHeader title="Log Salary Advance" onClose={onClose} />
 

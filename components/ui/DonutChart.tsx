@@ -1,9 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import type { TrendChartProps } from './TrendChartImpl';
+import type { DonutChartProps } from './DonutChartImpl';
 
-const TrendChartDynamic = dynamic(() => import('./TrendChartImpl').then(mod => mod.TrendChart), {
+const DonutChartDynamic = dynamic(() => import('./DonutChartImpl').then(mod => mod.DonutChart), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
@@ -12,8 +12,8 @@ const TrendChartDynamic = dynamic(() => import('./TrendChartImpl').then(mod => m
   )
 });
 
-export function TrendChart(props: TrendChartProps) {
-  return <TrendChartDynamic {...props} />;
+export function DonutChart(props: DonutChartProps) {
+  return <DonutChartDynamic {...props} />;
 }
 
-export type { TrendSeriesConfig } from './TrendChartImpl';
+export type { DonutChartData } from './DonutChartImpl';

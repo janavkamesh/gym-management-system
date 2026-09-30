@@ -10,7 +10,9 @@ import { ModalHeader } from './ui/ModalHeader';
 export default function PaymentModal({ isOpen, member, onClose }: { isOpen: boolean; member: any; onClose: () => void }) {
   const [amount, setAmount] = useState(member.pendingAmount.toString() || '');
   const [method, setMethod] = useState('UPI');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -36,9 +38,9 @@ export default function PaymentModal({ isOpen, member, onClose }: { isOpen: bool
     <ModalTransition 
       isOpen={isOpen} 
       onClose={onClose}
-      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-sm overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full md:max-w-sm overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
     >
-      <ModalHeader title="Log Payment" onClose={onClose} />
+      <ModalHeader title="Log Payment" onClose={onClose} variant="mobile-light" />
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -60,6 +62,15 @@ export default function PaymentModal({ isOpen, member, onClose }: { isOpen: bool
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Date <span className="text-red-500">*</span></label>
+            <DatePicker
+              value={date}
+              onChange={setDate}
+              max={new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Method <span className="text-red-500">*</span></label>
             <select
               value={method}
@@ -71,14 +82,6 @@ export default function PaymentModal({ isOpen, member, onClose }: { isOpen: bool
               <option value="Card">Card</option>
             </select>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Date <span className="text-red-500">*</span></label>
-            <DatePicker
-              value={date}
-              onChange={setDate}
-            />
-            </div>
           </div>
 
           <div className="px-6 py-4 border-t border-slate-100 bg-white shrink-0 flex justify-end gap-3">

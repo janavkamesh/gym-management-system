@@ -3,14 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from './ToastProvider';
 import { IndianRupee, TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownRight, Receipt, PiggyBank, Filter, X, RotateCcw } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
-import type { ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { StatCard } from './ui/StatCard';
 import Badge from './ui/Badge';
 import { FilterCard, DateChipOption } from './FilterCard';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { getProfitability, getRevenueSplit, getPaymentMethodSplit, getTrendPayments, getTrendExpenses, getPlanBreakdown, getNewVsLostMembers } from '@/lib/queries/financials';
 import { TrendChart } from './ui/TrendChart';
+import { ChartCard } from './ui/ChartCard';
+import { DonutChart } from './ui/DonutChart';
 import { SlidingTabs } from './ui/SlidingTabs';
 import TransactionsClient from './TransactionsClient';
 import ExpensesClient from './ExpensesClient';
@@ -18,6 +18,7 @@ import { PinnedChartWrapper } from './ui/usePinnedPoint';
 import { isSingleMonth, toLocalISOString } from '@/lib/utils/date';
 import { formatCompactINR } from '@/lib/utils/formatters';
 import PageHeader from './PageHeader';
+import { Users, CreditCard, Activity, PieChart as PieChartIcon } from 'lucide-react';
 
 interface FinancialsClientProps {
   initialExpenses: any[] | null;
@@ -36,13 +37,13 @@ interface FinancialsClientProps {
 const COLORS = {
   Cash: '#1E3A8A', // Blue 900
   UPI: '#2563EB',  // Blue 600
-  Card: '#60A5FA', // Blue 400
+  Card: '#64748b', // Slate 500
   New: '#1E3A8A', // Blue 900
   Renewal: '#3B82F6', // Blue 500
   Lost: '#93C5FD', // Blue 300
   Expense: '#60A5FA', // Blue 400
 };
-const PLAN_COLORS = ['#1E3A8A', '#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD'];
+const PLAN_COLORS = ['#3B82F6', '#93C5FD', '#64748b', '#94a3b8', '#cbd5e1', '#f1f5f9'];
 
 export default function FinancialsClient({
   initialExpenses,
@@ -104,6 +105,7 @@ export default function FinancialsClient({
   const [isLoadingPlanBreakdown, setIsLoadingPlanBreakdown] = useState(false);
   const [isLoadingNewVsLost, setIsLoadingNewVsLost] = useState(false);
   const isFirstRender = useRef(true);
+  const currentRequestId = useRef(0);
 
   const { showToast } = useToast();
 
@@ -118,44 +120,47 @@ export default function FinancialsClient({
 
     let fetchFrom = fromDate;
     let fetchTo = toDate;
+    
+    currentRequestId.current += 1;
+    const reqId = currentRequestId.current;
 
     setIsLoadingProfitability(true);
     getProfitability(fetchFrom, fetchTo)
-      .then(setProfitabilityData)
+      .then(res => { if (reqId === currentRequestId.current) setProfitabilityData(res); })
       .catch(() => showToast('Failed to load profitability', 'error'))
-      .finally(() => setIsLoadingProfitability(false));
+      .finally(() => { if (reqId === currentRequestId.current) setIsLoadingProfitability(false); });
 
     setIsLoadingRevenueSplit(true);
     getRevenueSplit(fetchFrom, fetchTo)
-      .then(setRevenueSplitData)
+      .then(res => { if (reqId === currentRequestId.current) setRevenueSplitData(res); })
       .catch(() => showToast('Failed to load revenue split', 'error'))
-      .finally(() => setIsLoadingRevenueSplit(false));
+      .finally(() => { if (reqId === currentRequestId.current) setIsLoadingRevenueSplit(false); });
 
     setIsLoadingPaymentSplit(true);
     getPaymentMethodSplit(fetchFrom, fetchTo)
-      .then(setPaymentMethodSplitData)
+      .then(res => { if (reqId === currentRequestId.current) setPaymentMethodSplitData(res); })
       .catch(() => showToast('Failed to load payment methods', 'error'))
-      .finally(() => setIsLoadingPaymentSplit(false));
+      .finally(() => { if (reqId === currentRequestId.current) setIsLoadingPaymentSplit(false); });
 
     setIsLoadingTrend(true);
     Promise.all([
-      getTrendPayments(fetchFrom, fetchTo).then(setTrendPaymentsData),
-      getTrendExpenses(fetchFrom, fetchTo).then(setTrendExpensesData)
+      getTrendPayments(fetchFrom, fetchTo).then(res => { if (reqId === currentRequestId.current) setTrendPaymentsData(res); }),
+      getTrendExpenses(fetchFrom, fetchTo).then(res => { if (reqId === currentRequestId.current) setTrendExpensesData(res); })
     ])
       .catch(() => showToast('Failed to load trend data', 'error'))
-      .finally(() => setIsLoadingTrend(false));
+      .finally(() => { if (reqId === currentRequestId.current) setIsLoadingTrend(false); });
 
     setIsLoadingPlanBreakdown(true);
     getPlanBreakdown(fetchTo)
-      .then(setPlanBreakdownData)
+      .then(res => { if (reqId === currentRequestId.current) setPlanBreakdownData(res); })
       .catch(() => showToast('Failed to load plan breakdown', 'error'))
-      .finally(() => setIsLoadingPlanBreakdown(false));
+      .finally(() => { if (reqId === currentRequestId.current) setIsLoadingPlanBreakdown(false); });
 
     setIsLoadingNewVsLost(true);
     getNewVsLostMembers(fetchFrom, fetchTo)
-      .then(setNewVsLostData)
+      .then(res => { if (reqId === currentRequestId.current) setNewVsLostData(res); })
       .catch(() => showToast('Failed to load new vs lost members', 'error'))
-      .finally(() => setIsLoadingNewVsLost(false));
+      .finally(() => { if (reqId === currentRequestId.current) setIsLoadingNewVsLost(false); });
   };
 
   useEffect(() => {
@@ -254,7 +259,7 @@ export default function FinancialsClient({
           weeks[weekIndex].revenue += Number(p.amount);
         }
       });
-      if (weeks[4].revenue === 0) weeks.pop();
+      
       return weeks;
     } else {
       const start = effectiveStart;
@@ -307,7 +312,7 @@ export default function FinancialsClient({
         const weekIndex = Math.floor((day - 1) / 7);
         if (weekIndex >= 0 && weekIndex < 5) weeks[weekIndex].expenses += Number(e.amount);
       });
-      if (weeks[4].revenue === 0 && weeks[4].expenses === 0) weeks.pop();
+      
       return weeks;
     } else {
       const start = effectiveStart;
@@ -365,7 +370,7 @@ export default function FinancialsClient({
           else if (m.type === 'Lost') weeks[weekIndex]['Lost Members'] += 1;
         }
       });
-      if (weeks[4].New === 0 && weeks[4]['Lost Members'] === 0) weeks.pop();
+      
       return weeks;
     } else {
       const start = effectiveStart;
@@ -398,9 +403,9 @@ export default function FinancialsClient({
   })();
 
   const paymentPieData = paymentMethodSplitData ? [
-    { name: 'Cash', value: paymentMethodSplitData.Cash },
-    { name: 'UPI', value: paymentMethodSplitData.UPI },
-    { name: 'Card', value: paymentMethodSplitData.Card },
+    { name: 'Cash', value: paymentMethodSplitData.Cash, fill: COLORS.Cash },
+    { name: 'UPI', value: paymentMethodSplitData.UPI, fill: COLORS.UPI },
+    { name: 'Card', value: paymentMethodSplitData.Card, fill: COLORS.Card },
   ].filter(d => d.value > 0) : [];
 
   const splitData = revenueSplitData ? [
@@ -545,211 +550,126 @@ export default function FinancialsClient({
 
       {/* Row 2: Charts (Grid of 3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-        
         {/* New vs Renewal */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
-          <h2 className="text-sm font-medium text-slate-700 mb-4">New vs. Renewal {periodLabel}</h2>
-          <div className="h-64 relative">
-            {isLoadingRevenueSplit ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 bg-slate-200 rounded-full animate-pulse"></div>
-              </div>
-            ) : revenueSplitData === null ? (
-              <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load split</div>
-            ) : splitData.length > 0 ? (
-              <PinnedChartWrapper resetDeps={[revenueSplitData]} valueFormatter={formatCompactINR}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={splitData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {splitData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip formatter={(value: ValueType | undefined) => value !== undefined ? formatCurrency(Number(value)) : ''} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </PinnedChartWrapper>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
-                <span className="text-xs text-slate-500">Log payments to see breakdown</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ChartCard
+          title="New vs. Renewal"
+          subtitle={periodLabel.replace(/[()]/g, '')}
+          icon={PieChartIcon}
+          headlineValue={revenueSplitData ? formatCurrency(revenueSplitData.newRevenue + revenueSplitData.renewalRevenue) : undefined}
+          headlineCaption="Total Revenue"
+          isLoading={isLoadingRevenueSplit}
+          isEmpty={splitData.length === 0}
+          emptyMessage="Not enough data yet"
+        >
+          {splitData.length > 0 && revenueSplitData !== null && (
+            <DonutChart data={splitData} totalLabel="Total" />
+          )}
+        </ChartCard>
 
         {/* Payment Method Pie */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
-          <h2 className="text-sm font-medium text-slate-700 mb-4">Payment Methods {periodLabel}</h2>
-          <div className="h-64 relative">
-            {isLoadingPaymentSplit ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 bg-slate-200 rounded-full animate-pulse"></div>
-              </div>
-            ) : paymentMethodSplitData === null ? (
-              <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load methods</div>
-            ) : paymentPieData.length > 0 ? (
-              <PinnedChartWrapper resetDeps={[paymentMethodSplitData]} valueFormatter={formatCompactINR}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={paymentPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {paymentPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || '#94a3b8'} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip formatter={(value: ValueType | undefined) => value !== undefined ? formatCurrency(Number(value)) : ''} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </PinnedChartWrapper>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
-                <span className="text-xs text-slate-500">Log payments to see breakdown</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ChartCard
+          title="Payment Methods"
+          subtitle={periodLabel.replace(/[()]/g, '')}
+          icon={CreditCard}
+          headlineValue={paymentMethodSplitData ? formatCurrency(paymentMethodSplitData.Cash + paymentMethodSplitData.UPI + paymentMethodSplitData.Card) : undefined}
+          headlineCaption="Total Received"
+          isLoading={isLoadingPaymentSplit}
+          isEmpty={paymentPieData.length === 0}
+          emptyMessage="Not enough data yet"
+        >
+          {paymentPieData.length > 0 && paymentMethodSplitData !== null && (
+            <DonutChart data={paymentPieData} totalLabel="Total" />
+          )}
+        </ChartCard>
 
         {/* MoM Trend Chart */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
-          <h2 className="text-sm font-medium text-slate-700 mb-4">Revenue Trend {periodLabel}</h2>
-          <div className="h-64 relative">
-            {isLoadingTrend ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 bg-slate-200 rounded animate-pulse"></div>
-              </div>
-            ) : trendPaymentsData === null ? (
-              <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load trend</div>
-            ) : trendChartData.length > 0 && trendChartData.some(m => m.revenue > 0) ? (
-              <PinnedChartWrapper resetDeps={[trendPaymentsData, isSingleMonthRange]} valueFormatter={formatCompactINR}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <TrendChart 
-                    data={trendChartData} 
-                    chartType={period === 'Overall' || period === 'This Year' ? 'area' : 'bar'} 
-                    series={[{ key: 'revenue', color: '#2563EB' }]} 
-                    valueFormatter={formatCompactINR} 
-                  />
-                </ResponsiveContainer>
-              </PinnedChartWrapper>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
-                <span className="text-xs text-slate-500">Wait for next month to see trend</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ChartCard
+          title="Revenue Trend"
+          subtitle={periodLabel.replace(/[()]/g, '')}
+          icon={TrendingUp}
+          isLoading={isLoadingTrend}
+          isEmpty={trendChartData.length === 0 || !trendChartData.some(m => m.revenue > 0)}
+          emptyMessage="Wait for next month to see trend"
+        >
+          {trendChartData.length > 0 && trendChartData.some(m => m.revenue > 0) && trendPaymentsData !== null && (
+            <TrendChart 
+              data={trendChartData} 
+              chartType={period === 'Overall' || period === 'This Year' ? 'area' : 'bar'} 
+              series={[{ key: 'revenue', color: '#2563EB' }]} 
+              valueFormatter={formatCompactINR} 
+            />
+          )}
+        </ChartCard>
       </div>
 
       {/* Row 3: New Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 max-lg:mb-section lg:mb-8">
-        
         {/* Revenue vs Expenses (Fixed 6 months) */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
-          <h2 className="text-sm font-medium text-slate-700 mb-4">Revenue vs. Expenses {periodLabel}</h2>
-          <div className="h-64 relative">
-            {isLoadingTrend ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 bg-slate-200 rounded animate-pulse"></div>
-              </div>
-            ) : (!trendPaymentsData || !trendExpensesData) ? (
-              <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load data</div>
-            ) : revenueVsExpensesChartData.length > 0 && revenueVsExpensesChartData.some((m: any) => m.revenue > 0 || m.expenses > 0) ? (
-              <PinnedChartWrapper resetDeps={[trendPaymentsData, trendExpensesData, isSingleMonthRange]} valueFormatter={formatCompactINR}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <TrendChart 
-                    data={revenueVsExpensesChartData} 
-                    chartType="bar" 
-                    series={[
-                      { key: 'revenue', name: 'Revenue', color: COLORS.New },
-                      { key: 'expenses', name: 'Expenses', color: COLORS.Expense }
-                    ]} 
-                    valueFormatter={formatCompactINR} 
-                  />
-                </ResponsiveContainer>
-              </PinnedChartWrapper>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
-                <span className="text-xs text-slate-500">Log payments or expenses to compare</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ChartCard
+          title="Revenue vs. Expenses"
+          subtitle={periodLabel.replace(/[()]/g, '')}
+          icon={Activity}
+          isLoading={isLoadingTrend}
+          isEmpty={revenueVsExpensesChartData.length === 0 || !revenueVsExpensesChartData.some((m: any) => m.revenue > 0 || m.expenses > 0)}
+          emptyMessage="Log payments or expenses to compare"
+        >
+          {revenueVsExpensesChartData.length > 0 && revenueVsExpensesChartData.some((m: any) => m.revenue > 0 || m.expenses > 0) && trendPaymentsData && trendExpensesData && (
+            <TrendChart 
+              data={revenueVsExpensesChartData} 
+              chartType="bar" 
+              series={[
+                { key: 'revenue', name: 'Revenue', color: COLORS.New },
+                { key: 'expenses', name: 'Expenses', color: COLORS.Expense }
+              ]} 
+              valueFormatter={formatCompactINR} 
+            />
+          )}
+        </ChartCard>
 
         {/* Plan Breakdown */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
-          <h2 className="text-sm font-medium text-slate-700 mb-4">Plan Breakdown {periodLabel}</h2>
-          <div className="h-64 relative">
-            {isLoadingPlanBreakdown ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 bg-slate-200 rounded-full animate-pulse"></div>
-              </div>
-            ) : planBreakdownData === null ? (
-              <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load plan breakdown</div>
-            ) : planBreakdownData.length > 0 ? (
-              <PinnedChartWrapper resetDeps={[planBreakdownData]}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={planBreakdownData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                      {planBreakdownData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={PLAN_COLORS[index % PLAN_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ paddingTop: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </PinnedChartWrapper>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-medium text-slate-900 mb-1">No active members</span>
-                <span className="text-xs text-slate-500">Add members to see plan distribution</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <ChartCard
+          title="Plan Breakdown"
+          subtitle={periodLabel.replace(/[()]/g, '')}
+          icon={Users}
+          headlineValue={planBreakdownData ? planBreakdownData.reduce((acc: number, curr: any) => acc + curr.value, 0).toString() : undefined}
+          headlineCaption="Total Members"
+          isLoading={isLoadingPlanBreakdown}
+          isEmpty={!planBreakdownData || planBreakdownData.length === 0}
+          emptyMessage="No active members"
+        >
+          {planBreakdownData && planBreakdownData.length > 0 && (
+            <DonutChart 
+              data={planBreakdownData.map((d: any, i: number) => ({ ...d, fill: PLAN_COLORS[i % PLAN_COLORS.length] }))} 
+              totalLabel="Members" 
+              valueFormatter={(v: number) => v.toString()}
+            />
+          )}
+        </ChartCard>
 
         {/* New vs Lost Members */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-5 chart-card">
-          <h2 className="text-sm font-medium text-slate-700 mb-4">New vs. Lost Members {periodLabel}</h2>
-          <div className="h-64 relative">
-            {isLoadingNewVsLost ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 bg-slate-200 rounded animate-pulse"></div>
-              </div>
-            ) : newVsLostData === null ? (
-              <div className="h-full flex items-center justify-center text-red-500 text-sm">Failed to load data</div>
-            ) : newVsLostChartData.length > 0 && newVsLostChartData.some((m: any) => m.New > 0 || m['Lost Members'] > 0) ? (
-              <PinnedChartWrapper resetDeps={[newVsLostData, isSingleMonthRange]}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <TrendChart 
-                    data={newVsLostChartData} 
-                    chartType={period === 'Overall' || period === 'This Year' ? 'area' : 'bar'} 
-                    series={[
-                      { key: 'New', color: COLORS.New },
-                      { key: 'Lost Members', color: COLORS.Lost }
-                    ]} 
-                    valueFormatter={(val) => Math.round(val).toString()}
-                  />
-                </ResponsiveContainer>
-              </PinnedChartWrapper>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <span className="text-sm font-medium text-slate-900 mb-1">Not enough data yet</span>
-                <span className="text-xs text-slate-500">Wait for next month to see trend</span>
-              </div>
-            )}
-          </div>
-      </div>
-
+        <ChartCard
+          title="New vs. Lost Members"
+          subtitle={periodLabel.replace(/[()]/g, '')}
+          icon={Users}
+          isLoading={isLoadingNewVsLost}
+          isEmpty={newVsLostChartData.length === 0 || !newVsLostChartData.some((m: any) => m.New > 0 || m['Lost Members'] > 0)}
+          emptyMessage="Wait for next month to see trend"
+        >
+          {newVsLostChartData.length > 0 && newVsLostChartData.some((m: any) => m.New > 0 || m['Lost Members'] > 0) && newVsLostData !== null && (
+            <TrendChart 
+              data={newVsLostChartData} 
+              chartType={period === 'Overall' || period === 'This Year' ? 'area' : 'bar'} 
+              series={[
+                { key: 'New', color: COLORS.New },
+                { key: 'Lost Members', color: COLORS.Lost }
+              ]} 
+              valueFormatter={(val: number) => Math.round(val).toString()}
+            />
+          )}
+        </ChartCard>
       </div>
       </div>
-      </div>
-      
-      <div className={activeTab === 'Transactions' ? 'md:hidden block' : 'hidden'}>
+      </div>      <div className={activeTab === 'Transactions' ? 'md:hidden block' : 'hidden'}>
         <TransactionsClient 
           distinctCategories={distinctCategories}
           hideHeader={true}

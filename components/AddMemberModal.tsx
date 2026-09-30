@@ -179,65 +179,57 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
     >
       <ModalHeader title={memberToEdit ? 'Edit Member' : 'Add Member'} onClose={() => onClose()} variant="light" />
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden border-t border-slate-200 md:border-t-0">
           <div className="px-6 pt-3 pb-3 overflow-y-auto flex-1">
-            <div className="grid grid-cols-1 min-[341px]:grid-cols-10 md:grid-cols-3 gap-x-3 gap-y-5 md:gap-x-6 md:gap-y-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-x-6 md:gap-y-5">
               {/* Name */}
-              <div className="col-span-1 min-[341px]:col-span-6 md:col-span-1 md:col-start-1 md:row-start-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Name <span className="text-red-500">*</span></label>
+              <div className="col-span-1 md:col-start-1 md:row-start-1 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate"
                   placeholder="e.g. John Doe"
                 />
               </div>
 
               {/* UID */}
-              <div className="col-span-1 min-[341px]:col-span-4 md:col-span-1 md:col-start-1 md:row-start-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">UID</label>
+              <div className="col-span-1 md:col-start-1 md:row-start-2 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">UID</label>
                 <input
                   type="text"
                   value={uidPreview}
                   disabled
-                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed truncate"
                 />
               </div>
 
               {/* Phone */}
-              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-1 md:row-start-3">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+              <div className="col-span-1 md:col-start-1 md:row-start-3 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">
                   Phone <span className="text-red-500">*</span> 
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={handlePhoneChange}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 ${
+                  className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate ${
                     phone.length > 0 && !isValidPhone ? 'border-red-300 bg-red-50' : 'border-slate-300'
                   }`}
                   placeholder="9876543210"
                 />
               </div>
 
-              {/* Phone Validation Error */}
-              {phone.length > 0 && !isValidPhone && (
-                <div className="col-span-1 min-[341px]:col-span-10 md:col-span-1 md:col-start-1 md:row-start-4 text-red-500 text-xs mt-[-16px]">
-                  (10 digits required)
-                </div>
-              )}
-
               {/* Plan */}
-              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-2 md:row-start-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Plan <span className="text-red-500">*</span></label>
+              <div className="col-span-1 md:col-start-2 md:row-start-1 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Plan <span className="text-red-500">*</span></label>
                 <Dropdown
                   value={planId}
                   onChange={(val) => {
                     setPlanId(val);
                     const plan = plans.find(p => p.id === val);
                     if (plan) setAmount(plan.price.toString());
-                    // Do not reset isExpiryManuallyEdited automatically here if we want to show the prompt
                   }}
                   options={plans
                     .filter(p => p.is_active !== false)
@@ -248,22 +240,29 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                 />
               </div>
 
+              {/* Phone Validation Error */}
+              {phone.length > 0 && !isValidPhone && (
+                <div className="col-span-2 md:col-span-1 md:col-start-1 md:row-start-4 text-red-500 text-xs mt-[-16px]">
+                  (10 digits required)
+                </div>
+              )}
+
               {/* Join Date */}
-              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-2 md:row-start-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Join Date <span className="text-red-500">*</span></label>
+              <div className="col-span-1 md:col-start-2 md:row-start-2 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Join Date <span className="text-red-500">*</span></label>
                 <DatePicker
                   value={joinDate}
                   onChange={(date) => {
                     setJoinDate(date);
-                    setIsExpiryManuallyEdited(false); // Reset override to allow recalculation
+                    setIsExpiryManuallyEdited(false);
                   }}
                 />
               </div>
 
               {/* Expiry Date */}
-              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-2 md:row-start-3">
+              <div className="col-span-1 md:col-start-2 md:row-start-3 min-w-0">
                 <div className="flex justify-between items-end mb-1">
-                  <label className="block text-sm font-medium text-slate-700">
+                  <label className="block text-sm font-medium text-slate-700 truncate">
                     Expiry Date
                   </label>
                 </div>
@@ -271,15 +270,15 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                   value={expiryDate}
                   onChange={(date) => {
                     setExpiryDate(date);
-                    setIsExpiryManuallyEdited(true); // Lock auto-calculation
+                    setIsExpiryManuallyEdited(true);
                   }}
                   placeholder="Pick date (Editable)"
                 />
               </div>
 
               {/* Amount */}
-              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-3 md:row-start-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Amount <span className="text-red-500">*</span></label>
+              <div className="col-span-1 md:col-start-3 md:row-start-1 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Amount <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <span className="text-slate-500 font-medium">₹</span>
@@ -288,7 +287,7 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate"
                     placeholder="e.g. 1500"
                     min="0"
                   />
@@ -296,8 +295,8 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
               </div>
 
               {/* Gender */}
-              <div className="col-span-1 min-[341px]:col-span-5 md:col-span-1 md:col-start-3 md:row-start-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+              <div className="col-span-1 md:col-start-3 md:row-start-2 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">
                   Gender
                 </label>
                 <Dropdown
@@ -314,12 +313,12 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
               </div>
 
               {/* PT Toggle */}
-              <div className="col-span-1 min-[341px]:col-span-10 md:col-span-1 md:col-start-3 md:row-start-3 flex items-center justify-between pt-1">
-                <label className="block text-sm font-medium text-slate-700">Personal Training</label>
+              <div className="col-span-2 md:col-span-1 md:col-start-3 md:row-start-3 flex items-center justify-between pt-1 min-w-0">
+                <label className="block text-sm font-medium text-slate-700 truncate">Personal Training</label>
                 <button
                   type="button"
                   onClick={() => setHasPt(!hasPt)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
                     hasPt ? 'bg-blue-600' : 'bg-slate-200'
                   }`}
                 >
@@ -333,11 +332,11 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
             </div>
 
             {hasPt && (
-              <div className="mt-6 pt-4 border-t border-slate-200 bg-slate-50/50 -mx-6 px-6 pb-2">
+              <div className="mt-6 pt-4 border-t border-slate-200 bg-white md:bg-slate-50/50 -mx-6 px-6 pb-2">
                 <h3 className="text-sm font-semibold text-slate-900 mb-4">Personal Training Details</h3>
-                <div className="grid grid-cols-1 min-[341px]:grid-cols-2 md:grid-cols-2 gap-x-3 gap-y-5 md:gap-x-6">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Trainer <span className="text-red-500">*</span></label>
+                <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-x-6 md:gap-y-5">
+                  <div className="col-span-1 min-w-0">
+                    <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Trainer <span className="text-red-500">*</span></label>
                     <Dropdown
                       value={trainerId}
                       onChange={setTrainerId}
@@ -347,8 +346,8 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Duration <span className="text-red-500">*</span></label>
+                  <div className="col-span-1 min-w-0">
+                    <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Duration <span className="text-red-500">*</span></label>
                     <Dropdown
                       value={ptDurationDays}
                       onChange={(val) => {
@@ -372,8 +371,8 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">PT Fee <span className="text-red-500">*</span></label>
+                  <div className="col-span-1 min-w-0">
+                    <label className="block text-sm font-medium text-slate-700 mb-1 truncate">PT Fee <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <span className="text-slate-500 font-medium">₹</span>
@@ -382,15 +381,15 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                         type="number"
                         value={ptFee}
                         onChange={(e) => setPtFee(e.target.value)}
-                        className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        className="w-full pl-7 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate"
                         placeholder="e.g. 5000"
                         min="0"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Share (%) <span className="text-red-500">*</span></label>
+                  <div className="col-span-1 min-w-0">
+                    <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Share (%) <span className="text-red-500">*</span></label>
                     <input
                       type="number"
                       value={trainerShare}
@@ -398,7 +397,7 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                         const val = Number(e.target.value);
                         if (val >= 0 && val <= 100) setTrainerShare(e.target.value);
                       }}
-                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate"
                       placeholder="e.g. 50"
                       min="0"
                       max="100"
@@ -409,7 +408,7 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
             )}
           </div>
 
-          <div className="px-6 pt-2 pb-4 bg-white shrink-0 flex justify-end gap-3">
+          <div className="px-6 pt-2 pb-4 bg-white shrink-0 flex justify-end gap-3 border-t border-slate-200 md:border-t-0">
             <button
               type="button"
               onClick={onClose}

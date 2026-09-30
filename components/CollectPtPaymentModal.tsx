@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { collectPtPayment } from '@/lib/actions/payments';
 import { useToast } from './ToastProvider';
+import { DatePicker } from './DatePicker';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
 
@@ -17,6 +18,9 @@ interface CollectPtPaymentModalProps {
 export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onSuccess }: CollectPtPaymentModalProps) {
   const [amount, setAmount] = useState(assignment?.fee_amount?.toString() || '');
   const [method, setMethod] = useState('Cash');
+  const [date, setDate] = useState(() => {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -26,7 +30,7 @@ export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onS
 
     setIsSubmitting(true);
     try {
-      await collectPtPayment(assignment.id, Number(amount), method);
+      await collectPtPayment(assignment.id, Number(amount), method, date);
       showToast('PT Payment collected successfully', 'success');
       if (onSuccess) onSuccess();
       onClose();
@@ -42,7 +46,7 @@ export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onS
     <ModalTransition 
       isOpen={isOpen} 
       onClose={onClose}
-      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-md overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full md:max-w-md overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
       overlayClassName="z-[60]"
     >
       <ModalHeader 
@@ -52,7 +56,8 @@ export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onS
             <p className="text-xs text-slate-500 md:text-slate-300 mt-0.5 md:mt-1">Log PT payment for {assignment?.member?.name || 'this client'}</p>
           </div>
         } 
-        onClose={onClose} 
+        onClose={onClose}
+        variant="mobile-light"
       />
 
       <div className="p-6 overflow-y-auto">
@@ -73,6 +78,15 @@ export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onS
                 required
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+            <DatePicker
+              value={date}
+              onChange={setDate}
+              max={new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}
+            />
           </div>
 
           <div>

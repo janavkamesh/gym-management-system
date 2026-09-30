@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { collectPaymentAmount, collectPtPayment } from '@/lib/actions/payments';
 import { useToast } from './ToastProvider';
+import { DatePicker } from './DatePicker';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
 
@@ -25,6 +26,9 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
     return val > 0 ? val.toString() : '';
   });
   const [method, setMethod] = useState('Cash');
+  const [date, setDate] = useState(() => {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const { showToast } = useToast();
@@ -76,9 +80,9 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
     setIsSubmitting(true);
     try {
       if (paymentType === 'Membership') {
-        await collectPaymentAmount(member.id, Number(amount), method);
+        await collectPaymentAmount(member.id, Number(amount), method, date);
       } else {
-        await collectPtPayment(activePt.id, Number(amount), method);
+        await collectPtPayment(activePt.id, Number(amount), method, date);
       }
       showToast('Payment collected successfully', 'success');
       onClose();
@@ -93,7 +97,7 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
     <ModalTransition 
       isOpen={isOpen} 
       onClose={onClose}
-      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full max-w-md overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
+      containerClassName="bg-white rounded-t-2xl md:rounded-lg shadow-2xl w-full md:max-w-md overflow-hidden md:animate-fade-in max-h-90vh flex flex-col"
       overlayClassName="z-[60]"
     >
       <ModalHeader 
@@ -103,7 +107,8 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
             <p className="text-xs text-slate-500 md:text-slate-300 mt-0.5 md:mt-1">Log payment for {member.name}</p>
           </div>
         } 
-        onClose={onClose} 
+        onClose={onClose}
+        variant="mobile-light"
       />
 
         {showConfirmation ? (
@@ -188,6 +193,15 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+              <DatePicker
+                value={date}
+                onChange={setDate}
+                max={new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}
+              />
             </div>
 
             <div>

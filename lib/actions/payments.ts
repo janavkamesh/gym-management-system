@@ -133,7 +133,7 @@ export async function logPayment(memberId: string, amount: number, method: strin
  * Task Feature B — Collect Payment Amount
  * Updates member expiry and logs a payment with backdated recognition.
  */
-export async function collectPaymentAmount(memberId: string, amount: number, method: string) {
+export async function collectPaymentAmount(memberId: string, amount: number, method: string, customDate?: string) {
   const supabase = await createClient()
 
   // 1. Read current expiry_date and plan_id
@@ -162,8 +162,8 @@ export async function collectPaymentAmount(memberId: string, amount: number, met
   const oldExpiryStr = oldExpiryDate.toISOString().split('T')[0]
   const newExpiryStr = newExpiryDate.toISOString().split('T')[0]
 
-  // 4. Insert payment with date = today, period_start = oldExpiryStr, period_end = newExpiryStr
-  const todayStr = new Date().toISOString().split('T')[0]
+  // 4. Insert payment with date = today (or customDate), period_start = oldExpiryStr, period_end = newExpiryStr
+  const todayStr = customDate || new Date().toISOString().split('T')[0]
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
@@ -208,7 +208,7 @@ export async function collectPaymentAmount(memberId: string, amount: number, met
  * Task Feature A & B — Collect PT Payment Amount
  * Updates PT assignment next_pt_due_date and logs a payment with backdated recognition.
  */
-export async function collectPtPayment(assignmentId: string, amount: number, method: string) {
+export async function collectPtPayment(assignmentId: string, amount: number, method: string, customDate?: string) {
   const supabase = await createClient()
 
   // 1. Read current assignment
@@ -232,8 +232,8 @@ export async function collectPtPayment(assignmentId: string, amount: number, met
   
   const newDueStr = newDueDate.toISOString().split('T')[0]
 
-  // 3. Insert payment with date = today, period_start = oldDueStr, period_end = newDueStr
-  const todayStr = new Date().toISOString().split('T')[0]
+  // 3. Insert payment with date = today (or customDate), period_start = oldDueStr, period_end = newDueStr
+  const todayStr = customDate || new Date().toISOString().split('T')[0]
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
