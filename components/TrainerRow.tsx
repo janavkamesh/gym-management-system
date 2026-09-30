@@ -20,9 +20,10 @@ interface TrainerRowProps {
   onRestore?: () => void;
   isTarget?: boolean;
   action?: string;
+  isDesktop?: boolean;
 }
 
-export default function TrainerRow({ trainer, members, onDeleted, onRestore, isTarget, action }: TrainerRowProps) {
+export default function TrainerRow({ trainer, members, onDeleted, onRestore, isTarget, action, isDesktop = true }: TrainerRowProps) {
   const rowRef = useRef<HTMLTableRowElement>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -212,7 +213,203 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
   };
 
+  const viewBtn = (
+    <Tooltip content="View Profile">
+      <button
+        onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}
+        className="mobile-table-btn text-blue-600 bg-blue-50 hover:bg-blue-100"
+      >
+        <Eye size={18} />
+      </button>
+    </Tooltip>
+  );
 
+  const payBtn = (
+    <Tooltip content="Pay Salary">
+      <button
+        onClick={async (e) => { 
+          e.stopPropagation(); 
+          if (!salarySummary) {
+            await loadSummary();
+          }
+          setShowPayModal(true); 
+        }}
+        disabled={isLoadingSummary}
+        className="mobile-table-btn text-green-600 bg-green-50 hover:bg-green-100 disabled:opacity-50"
+      >
+        {isLoadingSummary ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />}
+      </button>
+    </Tooltip>
+  );
+
+  const advBtn = (
+    <Tooltip content="Log Advance">
+      <button
+        onClick={(e) => { e.stopPropagation(); setIsAdvanceModalOpen(true); }}
+        className="mobile-table-btn text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900"
+      >
+        <Plus size={18} strokeWidth={2.5} />
+      </button>
+    </Tooltip>
+  );
+
+  const removeBtn = (
+    <Tooltip content="Remove Trainer">
+      <button
+        onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
+        disabled={isDeleting}
+        className="mobile-table-btn text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 disabled:opacity-50"
+      >
+        <Trash2 size={18} strokeWidth={2.5} />
+      </button>
+    </Tooltip>
+  );
+
+  const modals = (
+    <>
+      {mounted && createPortal(
+        <>
+          {showProfileModal && (
+            <TrainerProfileModal 
+              trainer={trainer} 
+              onClose={() => setShowProfileModal(false)} 
+              onRemove={() => setShowDeleteModal(true)}
+            />
+          )}
+          <AddSalaryAdvanceModal 
+            isOpen={isAdvanceModalOpen}
+            onClose={() => setIsAdvanceModalOpen(false)}
+            trainerId={trainer.id}
+            onSuccess={() => setSalarySummary(null)}
+          />
+          {showPayModal && salarySummary && (
+            <PaySalaryModal 
+              trainer={trainer}
+              summary={salarySummary}
+              month={currentMonth}
+              year={currentYear}
+              onClose={() => setShowPayModal(false)}
+              onSuccess={() => setSalarySummary(null)}
+            />
+          )}
+        </>,
+        document.body
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
+          <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Trainer</h3>
+            <p className="text-slate-500 mb-6">
+              Are you sure you want to remove <span className="font-semibold text-slate-900">{trainer.name}</span>?
+            </p>
+            <div className="flex gap-3 pb-safe">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50"
+              >
+                {isDeleting ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {ptToDelete && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setPtToDelete(null)}></div>
+          <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove PT Client</h3>
+            <p className="text-slate-500 mb-6">
+              Are you sure you want to unassign this PT client?
+            </p>
+            <div className="flex gap-3 pb-safe">
+              <button
+                onClick={() => setPtToDelete(null)}
+                className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeletePt}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {paymentPt && createPortal(
+        <CollectPtPaymentModal 
+          assignment={paymentPt} 
+          onClose={() => setPaymentPt(null)}
+          onSuccess={() => loadDetails()}
+        />,
+        document.body
+      )}
+    </>
+  );
+
+  if (!isDesktop) {
+    return (
+      <>
+        <div
+          ref={rowRef as any}
+          role="button"
+          tabIndex={0}
+          onClick={() => { if (!isArchived) setShowProfileModal(true); }}
+          onKeyDown={(e) => {
+            if (!isArchived && (e.key === 'Enter' || e.key === ' ')) {
+              e.preventDefault();
+              setShowProfileModal(true);
+            }
+          }}
+          className={`mobile-member-grid mobile-table-row ${!isArchived ? 'active:bg-slate-50 cursor-pointer' : 'opacity-50'} ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
+        >
+          <div className="flex flex-col min-w-0 pr-2">
+            <span className="mobile-table-name">{trainer.name}</span>
+            <span className="mobile-table-sub">{trainer.phone}</span>
+          </div>
+
+          {!isArchived ? (
+            <>
+              <div className="text-center justify-self-center min-w-0 flex items-center justify-center">
+                {advBtn}
+              </div>
+              <div className="text-center justify-self-center min-w-0 flex items-center justify-center">
+                {payBtn}
+              </div>
+              <div className="text-center justify-self-center min-w-0 flex items-center justify-center">
+                {viewBtn}
+              </div>
+            </>
+          ) : (
+            <div className="col-start-4 text-center justify-self-center">
+              <button
+                onClick={handleRestore}
+                disabled={isRestoring}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded transition-all active:scale-95 disabled:opacity-50"
+              >
+                <Undo2 size={14} className={isRestoring ? 'animate-spin' : ''} />
+                Restore
+              </button>
+            </div>
+          )}
+        </div>
+        {!isArchived && modals}
+      </>
+    );
+  }
 
   return (
     <>
@@ -237,52 +434,16 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
         {!isArchived ? (
           <>
             <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-              <Tooltip content="View Profile">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowProfileModal(true); }}
-                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
-                >
-                  <Eye size={18} />
-                </button>
-              </Tooltip>
+              {viewBtn}
             </td>
             <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-              <Tooltip content="Pay Salary">
-                <button
-                  onClick={async (e) => { 
-                    e.stopPropagation(); 
-                    if (!salarySummary) {
-                      await loadSummary();
-                    }
-                    setShowPayModal(true); 
-                  }}
-                  disabled={isLoadingSummary}
-                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation disabled:opacity-50"
-                >
-                  {isLoadingSummary ? <RefreshCw size={18} className="animate-spin" /> : <Banknote size={18} />}
-                </button>
-              </Tooltip>
+              {payBtn}
             </td>
             <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-              <Tooltip content="Log Advance">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setIsAdvanceModalOpen(true); }}
-                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
-                >
-                  <Plus size={18} strokeWidth={2.5} />
-                </button>
-              </Tooltip>
+              {advBtn}
             </td>
             <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
-              <Tooltip content="Remove Trainer">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
-                  disabled={isDeleting}
-                  className="inline-flex mx-auto items-center justify-center min-h-12 min-w-12 md:min-h-9 md:min-w-9 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 bg-red-50/50 rounded-md transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
-                >
-                  <Trash2 size={18} strokeWidth={2.5} />
-                </button>
-              </Tooltip>
+              {removeBtn}
             </td>
           </>
         ) : (
@@ -301,107 +462,7 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
 
 
 
-      {/* Modals for this row */}
-      {mounted && createPortal(
-        <>
-          {showProfileModal && (
-            <TrainerProfileModal 
-              trainer={trainer} 
-              onClose={() => setShowProfileModal(false)} 
-            />
-          )}
-          <AddSalaryAdvanceModal 
-            isOpen={isAdvanceModalOpen}
-            onClose={() => setIsAdvanceModalOpen(false)}
-            trainerId={trainer.id}
-            onSuccess={() => setSalarySummary(null)}
-          />
-          {showPayModal && salarySummary && (
-            <PaySalaryModal 
-              trainer={trainer}
-              summary={salarySummary}
-              month={currentMonth}
-              year={currentYear}
-              onClose={() => setShowPayModal(false)}
-              onSuccess={() => setSalarySummary(null)}
-            />
-          )}
-        </>,
-        document.body
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <tr>
-          <td colSpan={6} className="p-0 border-0 h-0">
-            <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setShowDeleteModal(false)}></div>
-              <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove Trainer</h3>
-                <p className="text-slate-500 mb-6">
-                  Are you sure you want to remove <span className="font-semibold text-slate-900">{trainer.name}</span>?
-                </p>
-                <div className="flex gap-3 pb-safe">
-                  <button
-                    onClick={() => setShowDeleteModal(false)}
-                    className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center disabled:opacity-50"
-                  >
-                    {isDeleting ? 'Removing...' : 'Remove'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
-
-      {/* Remove PT Confirmation Modal */}
-      {ptToDelete && (
-        <tr>
-          <td colSpan={6} className="p-0 border-0 h-0">
-            <div className="fixed inset-0 z-50 flex flex-col justify-end md:justify-center md:items-center">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onPointerDown={() => setPtToDelete(null)}></div>
-              <div className="relative bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl p-6 z-10 animate-in slide-in-from-bottom-full md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">Remove PT Client</h3>
-                <p className="text-slate-500 mb-6">
-                  Are you sure you want to unassign this PT client?
-                </p>
-                <div className="flex gap-3 pb-safe">
-                  <button
-                    onClick={() => setPtToDelete(null)}
-                    className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors active:scale-95"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDeletePt}
-                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors active:scale-95 flex justify-center items-center"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr>
-      )}
-
-      {/* Collect PT Payment Modal */}
-      {paymentPt && createPortal(
-        <CollectPtPaymentModal 
-          assignment={paymentPt} 
-          onClose={() => setPaymentPt(null)}
-          onSuccess={() => loadDetails()}
-        />,
-        document.body
-      )}
+      {modals}
     </>
   );
 }

@@ -37,7 +37,7 @@ export default function MemberList({
   const isDesktop = useMediaQuery('(min-width: 1024px)', true);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <div className="mobile-table-card">
       {members.length === 0 ? (
         <div className="p-12 text-center">
           <h3 className="text-lg font-medium text-slate-900 mb-2">{emptyTitle}</h3>
@@ -48,8 +48,8 @@ export default function MemberList({
           </p>
         </div>
       ) : (
-        isDesktop ? (
-          <div className="overflow-x-auto hide-scrollbar">
+        <>
+          <div className="hidden lg:block overflow-x-auto hide-scrollbar">
             <table className="w-full text-left text-sm text-slate-900 min-w-200">
               <thead className="table-header-dark border-b border-slate-200 text-slate-100">
                 <tr>
@@ -66,7 +66,7 @@ export default function MemberList({
               <tbody className="divide-y divide-slate-200">
                 {members.map((member) => (
                   <MemberRow
-                    key={member.id}
+                    key={`desktop-${member.id}`}
                     member={member}
                     trainers={trainers}
                     isArchived={isArchived}
@@ -83,18 +83,17 @@ export default function MemberList({
               </tbody>
             </table>
           </div>
-        ) : (
-          <div className="flex flex-col w-full">
-            <div className="table-header-dark mobile-member-grid h-[50px] text-xs min-[380px]:text-sm font-medium text-slate-100 border-b border-slate-200 items-center leading-none">
-              <div className="text-left whitespace-nowrap leading-none min-w-0 pr-2">Name</div>
-              <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0" style={{ transform: 'translateX(var(--status-shift))' }}>Status</div>
+          <div className="block lg:hidden flex flex-col w-full">
+            <div className="table-header-dark mobile-member-grid mobile-table-header">
+              <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
+              <div className="text-center justify-self-center whitespace-nowrap min-w-0" style={{ transform: 'translateX(var(--status-shift))' }}>Status</div>
               <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Reminder</div>
               <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Collected</div>
             </div>
             <div className="flex flex-col">
               {members.map((member) => (
                 <MemberRow
-                  key={member.id}
+                  key={`mobile-${member.id}`}
                   member={member}
                   trainers={trainers}
                   isArchived={isArchived}
@@ -110,7 +109,7 @@ export default function MemberList({
               ))}
             </div>
           </div>
-        )
+        </>
       )}
     </div>
   );

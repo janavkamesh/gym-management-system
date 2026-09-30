@@ -228,11 +228,11 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
               setShowProfileModal(true);
             }
           }}
-          className={`mobile-member-grid items-center py-2 min-h-14 border-b border-slate-200 transition-colors ${!isArchived ? 'active:bg-slate-50 cursor-pointer' : 'opacity-50'} ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
+          className={`mobile-member-grid mobile-table-row ${!isArchived ? 'active:bg-slate-50 cursor-pointer' : 'opacity-50'} ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
         >
           <div className="flex flex-col min-w-0 pr-2">
-            <span className="truncate font-semibold text-sm text-slate-900">{member.name}</span>
-            <span className="truncate text-xs text-slate-500">{member.uid || '-'}</span>
+            <span className="mobile-table-name">{member.name}</span>
+            <span className="mobile-table-sub">{member.uid || '-'}</span>
           </div>
 
           <div className="text-center justify-self-center min-w-0 flex items-center justify-center" style={{ transform: 'translateX(var(--status-shift))' }}>
@@ -264,7 +264,7 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
                     rel="noopener noreferrer"
                     onClick={(e) => { e.stopPropagation(); handleWaClick(); }}
                     aria-label="Send WhatsApp reminder"
-                    className="relative after:absolute after:-inset-[2px] after:content-[''] inline-flex items-center justify-center size-10 text-green-600 bg-green-50 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+                    className="relative after:absolute after:-inset-[2px] after:content-[''] mobile-table-btn text-green-600 bg-green-50"
                   >
                     <WhatsAppIcon size={18} />
                   </a>
@@ -272,7 +272,7 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
                   <div
                     aria-disabled="true"
                     aria-label="No phone number"
-                    className="inline-flex items-center justify-center size-10 text-slate-400 bg-slate-100 rounded-md font-medium"
+                    className="mobile-table-btn text-slate-400 bg-slate-100"
                   >
                     <WhatsAppIcon size={18} />
                   </div>
@@ -283,7 +283,7 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowCollectModal(true); }}
                   aria-label="Collect payment"
-                  className="relative after:absolute after:-inset-[2px] after:content-[''] inline-flex items-center justify-center size-10 text-slate-600 bg-slate-100 rounded-md font-medium transition-colors active:scale-95 duration-120 touch-manipulation"
+                  className="relative after:absolute after:-inset-[2px] after:content-[''] mobile-table-btn text-slate-600 bg-slate-100"
                 >
                   <Check size={18} strokeWidth={2.5} />
                 </button>

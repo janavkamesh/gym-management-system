@@ -6,12 +6,13 @@ import { Plus } from 'lucide-react';
 import AddLeadModal from './AddLeadModal';
 import LeadRow from './LeadRow';
 import PageHeader from './PageHeader';
-
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useMemo } from 'react';
 
 export default function LeadsClient({ initialLeads, initialError, initialFilter }: { initialLeads: any[], initialError?: string, initialFilter?: string }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { showToast } = useToast();
+  const isDesktop = useMediaQuery('(min-width: 1024px)', true);
 
   useEffect(() => {
     if (initialError) {
@@ -53,30 +54,47 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
         }
       />
 
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div className="mobile-table-card">
         {leads.length === 0 ? (
           <div className="p-8 md:p-12 text-center">
             <h3 className="text-lg font-medium text-slate-900 mb-2">No leads yet</h3>
             <p className="text-sm text-slate-500">Click 'Add Lead' when a walk-in visitor shows interest.</p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm text-slate-900">
-            <thead className="table-header-dark border-b border-slate-200 text-slate-100">
-              <tr>
-                <th className="px-4 md:px-6 font-medium text-left">Name</th>
-                <th className="px-4 md:px-6 font-medium text-left">Phone</th>
-                <th className="px-4 md:px-6 font-medium text-left">Promised Date</th>
-                <th className="px-4 md:px-6 font-medium text-left">Outcome</th>
-                <th className="px-4 md:px-6 font-medium text-center">Call</th>
-                <th className="px-4 md:px-6 font-medium text-center">WhatsApp</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {leads.map((lead) => (
-                <LeadRow key={lead.id} lead={lead} />
-              ))}
-            </tbody>
-          </table>
+          <>
+            <div className="hidden lg:block w-full">
+              <table className="w-full text-left text-sm text-slate-900">
+                <thead className="table-header-dark border-b border-slate-200 text-slate-100">
+                  <tr>
+                    <th className="px-4 md:px-6 font-medium text-left">Name</th>
+                    <th className="px-4 md:px-6 font-medium text-left">Phone</th>
+                    <th className="px-4 md:px-6 font-medium text-left">Promised</th>
+                    <th className="px-4 md:px-6 font-medium text-left">Outcome</th>
+                    <th className="px-4 md:px-6 font-medium text-center">Call</th>
+                    <th className="px-4 md:px-6 font-medium text-center">WhatsApp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {leads.map((lead) => (
+                    <LeadRow key={`desktop-${lead.id}`} lead={lead} isDesktop={true} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="block lg:hidden flex flex-col w-full">
+              <div className="table-header-dark mobile-lead-grid mobile-table-header">
+                <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
+                <div className="text-left whitespace-nowrap min-w-0">Phone</div>
+                <div className="text-left whitespace-nowrap min-w-0">Promised</div>
+                <div className="text-left whitespace-nowrap min-w-0">Outcome</div>
+              </div>
+              <div className="flex flex-col">
+                {leads.map((lead) => (
+                  <LeadRow key={`mobile-${lead.id}`} lead={lead} isDesktop={false} />
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
 

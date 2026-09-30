@@ -27,7 +27,7 @@ export default function TransactionsClient({
         title="Transactions" 
         subtitle="A complete ledger of all money in and money out." 
         hidden={hideHeader}
-        className="mb-3 lg:mb-6"
+        className="mb-6 lg:mb-6"
       />
 
       <TransactionsTable 

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, User, Clock, IndianRupee, MessageCircle, Wallet, ReceiptText, LayoutDashboard, Award, Banknote, IdCard, Phone, PersonStanding, Bell, Star, Dumbbell, Coins, Briefcase } from 'lucide-react';
+import { X, Calendar, User, Clock, IndianRupee, MessageCircle, Wallet, ReceiptText, LayoutDashboard, Award, Banknote, IdCard, Phone, PersonStanding, Bell, Star, Dumbbell, Coins, Briefcase, Trash2 } from 'lucide-react';
 import { formatINR } from '@/lib/utils/formatters';
 import { cleanPhone } from '@/lib/utils/whatsapp';
 import Badge from './ui/Badge';
@@ -13,9 +13,10 @@ import TrainerLedgerTable from './TrainerLedgerTable';
 interface TrainerProfileModalProps {
   trainer: any;
   onClose: () => void;
+  onRemove?: () => void;
 }
 
-export default function TrainerProfileModal({ trainer, onClose }: TrainerProfileModalProps) {
+export default function TrainerProfileModal({ trainer, onClose, onRemove }: TrainerProfileModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'personal training' | 'payments'>('overview');
   
   const [stats, setStats] = useState<any>(null);
@@ -248,6 +249,22 @@ export default function TrainerProfileModal({ trainer, onClose }: TrainerProfile
                       </div>
                     </div>
                   </div>
+
+                  {/* Danger Zone */}
+                  {onRemove && (
+                    <div className="mt-6">
+                      <button
+                        onClick={() => {
+                          onClose();
+                          onRemove();
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 rounded-xl font-medium transition-all duration-200 active:scale-95 touch-manipulation"
+                      >
+                        <Trash2 size={18} />
+                        Remove Trainer
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

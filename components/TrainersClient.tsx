@@ -6,6 +6,7 @@ import TrainerRow from './TrainerRow';
 import AddTrainerModal from './AddTrainerModal';
 import { getArchivedTrainers } from '@/lib/actions/trainers';
 import PageHeader from './PageHeader';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 interface TrainersClientProps {
   initialTrainers: any[];
@@ -17,6 +18,7 @@ interface TrainersClientProps {
 export default function TrainersClient({ initialTrainers, members, initialTrainerId, initialAction }: TrainersClientProps) {
   const [trainers, setTrainers] = useState(initialTrainers);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 1024px)', true);
 
   const handleTrainerAdded = (newTrainer: any) => {
     setTrainers(prev => [...prev, newTrainer].sort((a, b) => a.name.localeCompare(b.name)));
@@ -103,8 +105,7 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
         }
       />
 
-      {/* Main Content */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div className="mobile-table-card">
         {trainers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -121,34 +122,58 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
             </button>
           </div>
         ) : (
-          <div className="overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead className="table-header-dark border-b border-slate-200 text-slate-100 text-sm">
-                <tr>
-                  <th className="px-4 md:px-6 font-medium text-left rounded-tl-2xl">Name</th>
-                  <th className="px-4 md:px-6 font-medium text-left">Phone</th>
-                  <th className="px-4 md:px-6 font-medium text-right">Base Salary</th>
-                  <th className="px-4 md:px-6 font-medium text-left">Join Date</th>
-                  <th className="px-4 md:px-6 font-medium text-center">View</th>
-                  <th className="px-4 md:px-6 font-medium text-center">Pay Salary</th>
-                  <th className="px-4 md:px-6 font-medium text-center">Log Advance</th>
-                  <th className="px-4 md:px-6 font-medium text-center rounded-tr-2xl">Remove</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100/80">
+          <>
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="table-header-dark border-b border-slate-200 text-slate-100 text-sm">
+                  <tr>
+                    <th className="px-4 md:px-6 font-medium text-left rounded-tl-2xl">Name</th>
+                    <th className="px-4 md:px-6 font-medium text-left">Phone</th>
+                    <th className="px-4 md:px-6 font-medium text-right">Base Salary</th>
+                    <th className="px-4 md:px-6 font-medium text-left">Join Date</th>
+                    <th className="px-4 md:px-6 font-medium text-center">View</th>
+                    <th className="px-4 md:px-6 font-medium text-center">Pay Salary</th>
+                    <th className="px-4 md:px-6 font-medium text-center">Log Advance</th>
+                    <th className="px-4 md:px-6 font-medium text-center rounded-tr-2xl">Remove</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100/80">
+                  {trainers.map((trainer) => (
+                    <TrainerRow 
+                      key={`desktop-${trainer.id}`} 
+                      trainer={trainer} 
+                      members={members}
+                      onDeleted={() => handleTrainerDeleted(trainer.id)} 
+                      isTarget={initialTrainerId === trainer.id}
+                      action={initialTrainerId === trainer.id ? initialAction : undefined}
+                      isDesktop={true}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="block lg:hidden flex flex-col w-full">
+              <div className="table-header-dark mobile-member-grid mobile-table-header">
+                <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
+                <div className="text-center justify-self-center whitespace-nowrap min-w-0">Advance</div>
+                <div className="text-center justify-self-center whitespace-nowrap min-w-0">Salary</div>
+                <div className="text-center justify-self-center whitespace-nowrap min-w-0">View</div>
+              </div>
+              <div className="flex flex-col">
                 {trainers.map((trainer) => (
                   <TrainerRow 
-                    key={trainer.id} 
+                    key={`mobile-${trainer.id}`} 
                     trainer={trainer} 
                     members={members}
                     onDeleted={() => handleTrainerDeleted(trainer.id)} 
                     isTarget={initialTrainerId === trainer.id}
                     action={initialTrainerId === trainer.id ? initialAction : undefined}
+                    isDesktop={false}
                   />
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
@@ -166,18 +191,20 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
             {isArchivedExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
           </div>
           
-          <div className="relative w-full md:w-70 archived-search">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-slate-400" />
+          {archivedCount > 0 && (
+            <div className="relative w-full md:w-70 archived-search">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={18} className="text-slate-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search archived..."
+                value={archivedSearchQuery}
+                onChange={(e) => setArchivedSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Search archived..."
-              value={archivedSearchQuery}
-              onChange={(e) => setArchivedSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
-            />
-          </div>
+          )}
         </div>
 
         {isArchivedExpanded && (
@@ -197,30 +224,51 @@ export default function TrainersClient({ initialTrainers, members, initialTraine
                 No archived trainers found.
               </div>
             ) : (
-              <div className="overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead className="table-header-dark border-b border-slate-200 text-slate-100 text-sm">
-                    <tr>
-                      <th className="px-4 md:px-6 font-medium text-left rounded-tl-2xl">Name</th>
-                      <th className="px-4 md:px-6 font-medium text-left">Phone</th>
-                      <th className="px-4 md:px-6 font-medium text-right">Base Salary</th>
-                      <th className="px-4 md:px-6 font-medium text-left">Join Date</th>
-                      <th className="px-4 md:px-6 font-medium text-right" colSpan={2}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100/80">
+              <>
+                <div className="hidden lg:block overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="table-header-dark border-b border-slate-200 text-slate-100 text-sm">
+                      <tr>
+                        <th className="px-4 md:px-6 font-medium text-left rounded-tl-2xl">Name</th>
+                        <th className="px-4 md:px-6 font-medium text-left">Phone</th>
+                        <th className="px-4 md:px-6 font-medium text-right">Base Salary</th>
+                        <th className="px-4 md:px-6 font-medium text-left">Join Date</th>
+                        <th className="px-4 md:px-6 font-medium text-right" colSpan={2}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100/80">
+                      {filteredArchivedTrainers.map((trainer) => (
+                        <TrainerRow 
+                          key={`desktop-archived-${trainer.id}`} 
+                          trainer={trainer} 
+                          members={members}
+                          onDeleted={() => {}} 
+                          onRestore={() => handleRestore(trainer.id)}
+                          isDesktop={true}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="block lg:hidden flex flex-col w-full">
+                  <div className="table-header-dark mobile-member-grid mobile-table-header">
+                    <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
+                    <div className="col-start-4 text-center justify-self-center whitespace-nowrap min-w-0">Restore</div>
+                  </div>
+                  <div className="flex flex-col">
                     {filteredArchivedTrainers.map((trainer) => (
                       <TrainerRow 
-                        key={trainer.id} 
+                        key={`mobile-archived-${trainer.id}`} 
                         trainer={trainer} 
                         members={members}
                         onDeleted={() => {}} 
                         onRestore={() => handleRestore(trainer.id)}
+                        isDesktop={false}
                       />
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { computeStatusColor } from '@/lib/utils/status';
-import { Search, ChevronDown, ChevronUp, Upload } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import SharedMembersPanel from './SharedMembersPanel';
 import MemberList from './MemberList';
 import { getArchivedMembers, restoreMember } from '@/lib/actions/members';
@@ -108,9 +108,10 @@ export default function MembersClient({
           <button
             onClick={() => setIsImportModalOpen(true)}
             aria-label="Import CSV"
-            className="lg:hidden flex items-center justify-center w-11 h-11 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors active:scale-95 touch-manipulation"
+            className="lg:hidden flex flex-shrink-0 items-center justify-center gap-2 px-4 min-h-11 lg:min-h-0 py-2.5 w-auto bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors active:scale-95 touch-manipulation text-sm font-medium rounded-lg shadow-sm"
           >
-            <Upload size={18} />
+            <Download size={18} />
+            <span>Import CSV</span>
           </button>
         }
       />
