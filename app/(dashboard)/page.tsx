@@ -1,17 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/DashboardClient';
 import { mapMemberData } from '@/lib/utils/members';
+import FirstLoadSuspense from '@/components/FirstLoadSuspense';
+import DashboardSkeleton from '@/app/DashboardSkeleton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
+  return (
+    <FirstLoadSuspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </FirstLoadSuspense>
+  );
+}
+
+async function DashboardContent() {
   const supabase = await createClient();
 
   const { data: plansData } = await supabase.from('plans').select('*');
   const { data: membersData, error } = await supabase.from('members').select('*, plans(*), payments(*), pt_assignments(*)').is('archived_at', null);
   const { data: trainersData } = await supabase.from('trainers').select('*').is('archived_at', null).order('name');
 
-  // Compute pending payment for each member
   const mappedMembers = (membersData || []).map(mapMemberData);
 
   return (

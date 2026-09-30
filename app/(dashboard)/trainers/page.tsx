@@ -2,10 +2,20 @@ import { createClient } from '@/lib/supabase/server'
 import TrainersClient from '@/components/TrainersClient'
 import { getTrainers } from '@/lib/queries/trainers'
 import { redirect } from 'next/navigation'
+import FirstLoadSuspense from '@/components/FirstLoadSuspense'
+import Skeleton from './Skeleton'
 
 export const dynamic = 'force-dynamic';
 
-export default async function TrainersPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+export default function TrainersPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  return (
+    <FirstLoadSuspense fallback={<Skeleton />}>
+      <TrainersContent {...props} />
+    </FirstLoadSuspense>
+  );
+}
+
+async function TrainersContent(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const trainerId = searchParams.trainerId as string | undefined;
   const action = searchParams.action as string | undefined;

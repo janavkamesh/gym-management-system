@@ -10,6 +10,7 @@ import Tooltip from './Tooltip';
 import { cleanPhone } from '@/lib/utils/whatsapp';
 import { WhatsAppIcon } from './MemberRow';
 import { BottomSheet } from './ui/BottomSheet';
+import { isClosedOutcome } from '@/lib/utils/leads';
 
 export default function LeadRow({ lead, isDesktop = true }: { lead: any, isDesktop?: boolean }) {
   const [outcome, setOutcome] = useState(lead.outcome);
@@ -101,21 +102,33 @@ export default function LeadRow({ lead, isDesktop = true }: { lead: any, isDeskt
   }, [isDropdownOpen]);
 
   const handleOutcomeChange = async (newOutcome: string) => {
+    setIsDropdownOpen(false);
     if (newOutcome === outcome) {
-      setIsDropdownOpen(false);
       return;
     }
     
     setIsUpdating(true);
     try {
       await updateLeadOutcome(lead.id, newOutcome);
+      
+      const wasClosed = isClosedOutcome(outcome);
+      const isNowClosed = isClosedOutcome(newOutcome);
+      
       setOutcome(newOutcome);
-      showToast('Outcome updated', 'success');
+      
+      if (!wasClosed && isNowClosed) {
+        showToast('Lead moved to Closed', 'success');
+      } else if (wasClosed && !isNowClosed) {
+        showToast('Lead moved to Active', 'success');
+      } else {
+        showToast('Outcome updated', 'success');
+      }
     } catch (error) {
       showToast('Failed to save. Check your connection.', 'error');
     } finally {
-      setIsUpdating(false);
-      setIsDropdownOpen(false);
+      if (mounted) {
+        setIsUpdating(false);
+      }
     }
   };
 

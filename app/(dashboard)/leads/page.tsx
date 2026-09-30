@@ -1,9 +1,19 @@
 import { createClient } from '@/lib/supabase/server';
 import LeadsClient from '@/components/LeadsClient';
+import FirstLoadSuspense from '@/components/FirstLoadSuspense';
+import Skeleton from './Skeleton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function LeadsPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+export default function LeadsPage(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  return (
+    <FirstLoadSuspense fallback={<Skeleton />}>
+      <LeadsContent {...props} />
+    </FirstLoadSuspense>
+  );
+}
+
+async function LeadsContent(props: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const filter = searchParams.filter as string | undefined;
 

@@ -9,7 +9,7 @@
 @layer base {
   :root {
     --header-h: 56px;
-    --nav-h: 64px;
+    --nav-h: 71px;
   }
 
   body {
@@ -241,5 +241,50 @@
 
   to {
     opacity: 1;
+  }
+}
+
+@keyframes pageSlideRight {
+  from {
+    transform: translateX(10%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pageSlideLeft {
+  from {
+    transform: translateX(-10%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .animate-page-slide-right {
+    animation: pageSlideRight 180ms ease-out;
+  }
+  .animate-page-slide-left {
+    animation: pageSlideLeft 180ms ease-out;
+  }
+
+  @media (min-width: 1024px) {
+    .animate-page-slide-right,
+    .animate-page-slide-left {
+      animation: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-page-slide-right,
+    .animate-page-slide-left {
+      animation: none !important;
+    }
   }
 }

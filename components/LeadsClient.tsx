@@ -8,9 +8,14 @@ import LeadRow from './LeadRow';
 import PageHeader from './PageHeader';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useMemo } from 'react';
+import { SlidingTabs } from './ui/SlidingTabs';
+import { isClosedOutcome } from '@/lib/utils/leads';
+
+type TabType = 'Active' | 'Closed';
 
 export default function LeadsClient({ initialLeads, initialError, initialFilter }: { initialLeads: any[], initialError?: string, initialFilter?: string }) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('Active');
   const { showToast } = useToast();
   const isDesktop = useMediaQuery('(min-width: 1024px)', true);
 
@@ -35,7 +40,11 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
     return arr;
   }, [initialLeads, initialFilter]);
 
-  const leads = sortedLeads;
+  const leads = useMemo(() => {
+    return sortedLeads.filter(lead => 
+      activeTab === 'Closed' ? isClosedOutcome(lead.outcome) : !isClosedOutcome(lead.outcome)
+    );
+  }, [sortedLeads, activeTab]);
 
   return (
     <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto space-y-3 lg:space-y-6">
@@ -54,11 +63,30 @@ export default function LeadsClient({ initialLeads, initialError, initialFilter 
         }
       />
 
+      <div className="flex w-full lg:w-auto items-center gap-3">
+        <SlidingTabs
+          options={['Active', 'Closed']}
+          value={activeTab}
+          onChange={(val) => setActiveTab(val as TabType)}
+          containerClassName="w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation"
+          buttonClassName="flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2"
+        />
+      </div>
+
       <div className="mobile-table-card">
-        {leads.length === 0 ? (
+        {initialLeads?.length === 0 ? (
           <div className="p-8 md:p-12 text-center">
             <h3 className="text-lg font-medium text-slate-900 mb-2">No leads yet</h3>
             <p className="text-sm text-slate-500">Click 'Add Lead' when a walk-in visitor shows interest.</p>
+          </div>
+        ) : leads.length === 0 ? (
+          <div className="p-8 md:p-12 text-center">
+            <h3 className="text-lg font-medium text-slate-900 mb-2">{activeTab === 'Active' ? 'No active leads' : 'No closed leads yet'}</h3>
+            <p className="text-sm text-slate-500">
+              {activeTab === 'Active' 
+                ? "Click 'Add Lead' when a walk-in visitor shows interest." 
+                : "Leads marked Joined or Not Interested will appear here."}
+            </p>
           </div>
         ) : (
           <>

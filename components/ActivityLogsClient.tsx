@@ -45,8 +45,49 @@ const formatDateTime = (iso: string) => {
 const getISTStartOfDay = (dateString: string) => `${dateString}T00:00:00+05:30`;
 const getISTEndOfDay = (dateString: string) => `${dateString}T23:59:59.999+05:30`;
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const getMobileDateParts = (isoString: string) => {
+  try {
+    const d = new Date(isoString);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; // Local date parts
+    
+    // Time
+    const time = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric', minute: '2-digit', hour12: true
+    }).format(d);
+    
+    return { d, key, time };
+  } catch (e) {
+    return { d: new Date(), key: '', time: '' };
+  }
+};
+
+const getMobileDayLabel = (d: Date) => {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const isToday = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+  const isYesterday = d.getFullYear() === yesterday.getFullYear() && d.getMonth() === yesterday.getMonth() && d.getDate() === yesterday.getDate();
+  
+  if (isToday) return 'Today';
+  if (isYesterday) return 'Yesterday';
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const getActionDotColor = (action: string) => {
+  const a = action.toLowerCase();
+  if (a === 'added') return 'bg-green-500';
+  if (a === 'removed') return 'bg-red-500';
+  if (a === 'edited') return 'bg-blue-500';
+  return 'bg-slate-400';
+};
+
 export default function ActivityLogsClient({ initialData, initialHasMore, initialError }: any) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState(initialData);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [search, setSearch] = useState('');
@@ -80,6 +121,10 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
   useEffect(() => {
     if (initialError) showToast(initialError, 'error');
   }, [initialError, showToast]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchLogs = useCallback(async (isLoadMore = false) => {
     if (dateError) return;
@@ -344,8 +389,135 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
         </div>
       </BottomSheet>
 
-      {/* 3. Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+      {/* 3. Mobile Feed (block lg:hidden) */}
+      <div className="block lg:hidden space-y-4">
+        {isInitialLoading ? (
+          <div className="mobile-table-card">
+            <ul className="flex flex-col divide-y divide-slate-200">
+              <li className="flex flex-col">
+                <div className="table-header-dark px-4 py-1.5 text-xs font-medium text-white">
+                  <div className="h-3 w-16 bg-slate-600 rounded animate-pulse" />
+                </div>
+                <ul className="divide-y divide-slate-200">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <li key={i} className="mobile-table-row px-4 !py-3 !min-h-0 items-start">
+                      <div className="flex items-start justify-between gap-3 w-full animate-pulse">
+                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                          <div className="w-2 h-2 rounded-full mt-[5px] shrink-0 bg-slate-200" />
+                          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                            <div className="h-4 bg-slate-200 rounded w-3/4" />
+                            <div className="flex items-center gap-2">
+                              <div className="h-5 bg-slate-200 rounded-full w-16" />
+                              <div className="h-3 bg-slate-200 rounded w-12" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            </ul>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="mobile-table-card p-8 text-center text-slate-500">
+            <p className="font-medium text-slate-900 mb-1">
+              No activity found{period === 'Overall' ? '' : period === 'Custom' ? ' in this period' : ` in ${period}`}
+            </p>
+            <p className="text-sm">
+              {(search || category !== 'All') ? "Try clearing your filters." : "Actions like adding members and logging payments will appear here."}
+            </p>
+            {hasActiveFilters && (
+              <button onClick={handleClear} className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition-colors">
+                Clear Filters
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mobile-table-card">
+            <ul className="flex flex-col divide-y divide-slate-200">
+              {(() => {
+                const mobileGroups: { key: string; label: string; rows: any[] }[] = [];
+                data.forEach((row: any) => {
+                  const { d, key } = getMobileDateParts(row.created_at);
+                  let group = mobileGroups.find(g => g.key === key);
+                  if (!group) {
+                    group = { key, label: mounted ? getMobileDayLabel(d) : '', rows: [] };
+                    mobileGroups.push(group);
+                  }
+                  group.rows.push(row);
+                });
+                
+                return mobileGroups.map((group) => (
+                  <li key={group.key} className="flex flex-col">
+                    <div className="table-header-dark px-4 py-1.5 text-xs font-medium text-white">
+                      {group.label}
+                    </div>
+                    <ul className="divide-y divide-slate-200">
+                      {group.rows.map(row => {
+                        const { time } = getMobileDateParts(row.created_at);
+                        const pillClass = CATEGORY_COLORS[row.category] || CATEGORY_COLORS['Others'];
+                        const dotColor = getActionDotColor(row.action);
+                        const showAmount = row.amount != null;
+                        
+                        return (
+                          <li key={row.id} className="mobile-table-row px-4 !py-3 !min-h-0 items-start">
+                            <div className="flex items-start justify-between gap-3 w-full">
+                              <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                <div className={`w-2 h-2 rounded-full mt-[5px] shrink-0 ${dotColor}`} aria-hidden="true" />
+                                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                                  <div className="text-sm text-slate-900 leading-tight break-words">
+                                    {row.description || row.action}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge className={`${pillClass} text-[10px] px-2 py-0.5 min-h-0`}>
+                                      {row.category}
+                                    </Badge>
+                                    <span className="mobile-table-sub">
+                                      {time}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              {showAmount && (
+                                <div className="text-sm font-medium text-slate-900 tabular-nums shrink-0">
+                                  {formatINR(row.amount)}
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </li>
+                ));
+              })()}
+            </ul>
+            {!isInitialLoading && data.length > 0 && (
+              <div ref={loadMoreRef} className="px-4 py-4 text-center border-t border-slate-200">
+                {isLoading ? (
+                  <div className="flex justify-center items-center gap-2 text-sm text-slate-500">
+                    <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
+                    Loading more...
+                  </div>
+                ) : hasMore ? (
+                  <button 
+                    onClick={() => fetchLogs(true)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors"
+                  >
+                    Load more
+                  </button>
+                ) : (
+                  <p className="text-sm text-slate-500">End of activity log</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 4. Desktop Table (hidden lg:flex) */}
+      <div className="hidden lg:flex bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
         <div className="overflow-x-auto overflow-y-hidden flex-1 flex flex-col min-h-0">
           <table className="w-full text-left min-w-[800px] flex flex-col flex-1 min-h-0">
             <thead className="table-header-dark border-b border-slate-200 text-slate-100 z-10 shrink-0">

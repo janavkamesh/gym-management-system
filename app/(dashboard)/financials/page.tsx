@@ -12,10 +12,20 @@ import {
 } from '@/lib/queries/financials';
 import { getDistinctCategories } from '@/lib/queries/transactions';
 import FinancialsClient from '@/components/FinancialsClient';
+import FirstLoadSuspense from '@/components/FirstLoadSuspense';
+import Skeleton from './Skeleton';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FinancialsPage() {
+export default function FinancialsPage() {
+  return (
+    <FirstLoadSuspense fallback={<Skeleton />}>
+      <FinancialsContent />
+    </FirstLoadSuspense>
+  );
+}
+
+async function FinancialsContent() {
   const supabase = await createClient();
   
   let expensesData: any[] | null = [];

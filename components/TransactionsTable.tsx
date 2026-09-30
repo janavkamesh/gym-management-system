@@ -174,10 +174,10 @@ export default function TransactionsTable({
 
       {/* Summary Strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <StatCard label="Total In" value={isInitialLoading ? '-' : formatINR(summary.total_in)} icon={TrendingUp} colorClass="card-gradient-green" />
-        <StatCard label="Total Out" value={isInitialLoading ? '-' : formatINR(summary.total_out)} icon={TrendingDown} colorClass="card-gradient-red" />
+        <StatCard label="Total In" value={isInitialLoading ? <div className="h-8 w-20 bg-white/30 animate-pulse rounded" /> : formatINR(summary.total_in)} icon={TrendingUp} colorClass="card-gradient-green" />
+        <StatCard label="Total Out" value={isInitialLoading ? <div className="h-8 w-20 bg-white/30 animate-pulse rounded" /> : formatINR(summary.total_out)} icon={TrendingDown} colorClass="card-gradient-red" />
         <div className="col-span-2 md:col-span-1">
-          <StatCard label="Net" value={isInitialLoading ? '-' : formatINR(summary.net)} icon={Wallet} colorClass="card-gradient-blue" />
+          <StatCard label="Net" value={isInitialLoading ? <div className="h-8 w-20 bg-white/30 animate-pulse rounded" /> : formatINR(summary.net)} icon={Wallet} colorClass="card-gradient-blue" />
         </div>
       </div>
 
