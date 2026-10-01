@@ -142,7 +142,7 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5 pb-safe">
+          <form onSubmit={handleSubmit} className="p-6 space-y-5 max-md:pb-safe">
             {hasPt && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Payment For</label>

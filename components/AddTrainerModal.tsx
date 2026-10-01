@@ -119,7 +119,7 @@ export default function AddTrainerModal({ isOpen, onClose, onSuccess }: { isOpen
           </form>
         </div>
 
-        <div className="p-5 border-t border-slate-100 bg-white shrink-0 flex gap-3 pb-safe">
+        <div className="p-5 md:px-6 md:py-4 border-t border-slate-100 bg-white shrink-0 flex gap-3 max-md:pb-safe">
           <button
             type="button"
             onClick={onClose}

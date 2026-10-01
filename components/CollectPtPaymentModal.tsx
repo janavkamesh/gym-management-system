@@ -61,7 +61,7 @@ export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onS
       />
 
       <div className="p-6 overflow-y-auto">
-        <form onSubmit={handleSubmit} className="space-y-5 pb-safe">
+        <form onSubmit={handleSubmit} className="space-y-5 max-md:pb-safe">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Amount</label>
             <div className="relative">

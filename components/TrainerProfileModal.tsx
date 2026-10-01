@@ -27,8 +27,6 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
   const [ledger, setLedger] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
-  const [tabIndicatorStyle, setTabIndicatorStyle] = useState({ width: 0, left: 0 });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -55,29 +53,7 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
     return () => { mounted = false; };
   }, [trainer.id, isOpen]);
 
-  useEffect(() => {
-    if (!tabsContainerRef.current) return;
-    const updateIndicator = () => {
-      const tabs = ['overview', 'personal training', 'payments'];
-      const activeIndex = tabs.indexOf(activeTab);
-      const buttons = tabsContainerRef.current?.querySelectorAll('button');
-      if (!buttons) return;
-      const activeButton = buttons[activeIndex];
-      
-      if (activeButton) {
-        setTabIndicatorStyle({
-          width: activeButton.offsetWidth,
-          left: activeButton.offsetLeft,
-        });
-      }
-    };
 
-    updateIndicator();
-    // Use setTimeout to ensure DOM has updated
-    setTimeout(updateIndicator, 50);
-    window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
-  }, [activeTab]);
 
   const handleWaAction = () => {
     const phone = cleanPhone(trainer.phone);
@@ -189,22 +165,15 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
       </div>
 
         {/* Tabs */}
-        <div className="profile-tab-container sticky top-0 z-20 lg:relative lg:top-auto lg:z-auto" ref={tabsContainerRef}>
-          <div 
-            className="absolute bottom-0 h-0.5 bg-blue-600 transition-all duration-120 ease-out left-0"
-            style={{
-              width: `${tabIndicatorStyle.width}px`,
-              transform: `translateX(${tabIndicatorStyle.left}px)`,
-            }}
-          />
+        <div className="profile-tab-container sticky top-0 z-20 lg:relative lg:top-auto lg:z-auto">
           {(['overview', 'personal training', 'payments'] as const).map(tab => {
             const TabIcon = tab === 'overview' ? LayoutDashboard : tab === 'personal training' ? Dumbbell : Banknote;
             return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`profile-tab-btn ${
-                  activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+                className={`profile-tab-btn relative ${
+                  activeTab === tab ? 'text-blue-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-blue-600' : 'text-slate-500 hover:text-slate-700'
                 }`}
                 aria-label={tab}
                 role="tab"
@@ -230,21 +199,21 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
               {activeTab === 'overview' && (
                 <div className="w-full">
                   {/* Identity Section */}
-                  <div className="profile-card rounded-2xl flex flex-col relative w-full">
+                  <div className="profile-row shadow-sm rounded-2xl flex flex-col relative w-full">
                     <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2 rounded-t-2xl">
                       <IdCard size={14} className="text-slate-500" />
                       <h3 className="font-medium text-slate-700 text-sm">Identity</h3>
                     </div>
                     
                     <div className="p-4 flex flex-col gap-3 rounded-b-2xl">
-                      <div className="profile-row p-3 rounded-lg flex items-center gap-3">
+                      <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
                         <Phone size={16} className="text-slate-400" />
                         <div>
                           <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Phone Number</div>
                           <div className="text-sm text-slate-900 font-medium">{trainer.phone}</div>
                         </div>
                       </div>
-                      <div className="profile-row p-3 rounded-lg flex items-center gap-3">
+                      <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
                         <Calendar size={16} className="text-slate-400" />
                         <div>
                           <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Joined Date</div>
@@ -256,7 +225,7 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
 
                   {/* Danger Zone */}
                   {onRemove && (
-                    <div className="mt-6">
+                    <div className="mt-6 lg:hidden">
                       <button
                         onClick={() => {
                           onClose();

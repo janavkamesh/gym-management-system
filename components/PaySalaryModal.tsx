@@ -50,7 +50,7 @@ export default function PaySalaryModal({ isOpen, trainer, summary, month, year, 
     >
       <ModalHeader title="Pay Salary" onClose={onClose} />
         
-        <div className="p-6 pb-safe">
+        <div className="p-6 max-md:pb-safe">
         
         <div className="mb-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">

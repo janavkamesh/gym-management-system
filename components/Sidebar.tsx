@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, UserPlus, Users2, IndianRupee, ClipboardList, Receipt, Wallet, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Target, Medal, IndianRupee, ClipboardList, Receipt, Wallet, LogOut } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
@@ -20,8 +20,8 @@ const navigationGroups = [
     label: 'PEOPLE',
     items: [
       { name: 'Members', href: '/members', icon: Users },
-      { name: 'Trainers', href: '/trainers', icon: Users2 },
-      { name: 'Leads', href: '/leads', icon: UserPlus },
+      { name: 'Trainers', href: '/trainers', icon: Medal },
+      { name: 'Leads', href: '/leads', icon: Target },
     ]
   },
   {

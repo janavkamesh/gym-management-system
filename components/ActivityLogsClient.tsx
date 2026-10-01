@@ -494,7 +494,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
               })()}
             </ul>
             {!isInitialLoading && data.length > 0 && (
-              <div ref={loadMoreRef} className="px-4 py-4 text-center border-t border-slate-200">
+              <div ref={loadMoreRef} className="px-4 py-4 text-center border-t border-slate-200 flex justify-center w-full">
                 {isLoading ? (
                   <div className="flex justify-center items-center gap-2 text-sm text-slate-500">
                     <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
@@ -508,7 +508,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
                     Load more
                   </button>
                 ) : (
-                  <p className="text-sm text-slate-500">End of activity log</p>
+                  <p className="text-sm text-slate-500 w-full text-center">End of activity log</p>
                 )}
               </div>
             )}
@@ -589,8 +589,8 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
               
               {/* Infinite scroll sentinel */}
               {!isInitialLoading && data.length > 0 && (
-                <tr ref={loadMoreRef}>
-                  <td colSpan={5} className="px-4 py-4 text-center">
+                <tr ref={loadMoreRef} className="w-full flex justify-center">
+                  <td colSpan={5} className="px-4 py-4 text-center w-full flex justify-center">
                     {isLoading ? (
                       <div className="flex justify-center items-center gap-2 text-sm text-slate-500">
                         <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
@@ -604,7 +604,7 @@ export default function ActivityLogsClient({ initialData, initialHasMore, initia
                         Load more
                       </button>
                     ) : (
-                      <p className="text-sm text-slate-500">End of activity log</p>
+                      <p className="text-sm text-slate-500 w-full text-center">End of activity log</p>
                     )}
                   </td>
                 </tr>

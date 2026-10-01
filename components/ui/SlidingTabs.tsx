@@ -13,7 +13,7 @@ export function SlidingTabs({
   options, 
   value, 
   onChange, 
-  activeColorClass = 'max-lg:bg-navy lg:bg-white shadow-sm max-lg:text-white lg:text-slate-900',
+  activeColorClass = 'bg-navy shadow-sm text-white',
   containerClassName = 'w-full lg:w-auto h-10 lg:h-auto overflow-x-auto hide-scrollbar touch-manipulation items-center',
   buttonClassName = 'flex-1 lg:flex-none px-4 h-full lg:h-auto lg:py-2'
 }: SlidingTabsProps) {
@@ -89,7 +89,7 @@ export function SlidingTabs({
             onClick={() => onChange(option)}
             className={`relative z-10 px-3 text-sm font-medium rounded-md whitespace-nowrap transition-colors flex items-center justify-center active:scale-95 touch-manipulation ${buttonClassName} ${
               isActive 
-                ? 'max-lg:text-white lg:text-slate-900' 
+                ? 'text-white' 
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
