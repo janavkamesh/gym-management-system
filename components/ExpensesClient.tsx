@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, ChevronDown, Filter, RotateCcw } from 'lucide-react';
+import { Plus, ChevronDown, Filter, RotateCcw, Bell } from 'lucide-react';
 import { BottomSheet } from './ui/BottomSheet';
 import { Dropdown } from './ui/Dropdown';
 import { DatePicker } from './DatePicker';
@@ -11,8 +11,10 @@ import Badge from './ui/Badge';
 import AddExpenseModal from './AddExpenseModal';
 import { FilterCard } from './FilterCard';
 import PageHeader from './PageHeader';
+import FilterButton, { getActiveFilterCount } from './FilterButton';
 
-import { getPeriodRange, getPeriodSubtitle, getMobileDayLabel } from '@/lib/utils/date';
+import { getPeriodRange, getPeriodSubtitle, getMobileDayLabel, getIndiaDateString } from '@/lib/utils/date';
+import { getDueRecurringExpenses } from '@/lib/utils/recurringDue';
 
 interface ExpensesClientProps {
   initialExpenses: any[] | null;
@@ -44,12 +46,34 @@ export default function ExpensesClient({
   const [expenses, setExpenses] = useState(initialExpenses || []);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'All Categories');
+  const [modalPrefill, setModalPrefill] = useState<{ category?: string, amount?: number, recurring?: boolean } | null>(null);
 
   useEffect(() => {
     if (initialAction === 'add') {
+      let amount: number | undefined;
+      let recurring = false;
+      if (initialCategory) {
+        const latest = (initialExpenses || [])
+          .filter(e => !e.is_voided && e.category === initialCategory && e.recurring_flag)
+          .sort((a, b) => b.date.localeCompare(a.date))[0];
+        if (latest) {
+          amount = Number(latest.amount);
+          recurring = true;
+        }
+      }
+      setModalPrefill({ category: initialCategory, amount, recurring });
       setIsAddModalOpen(true);
+      
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('action')) {
+          url.searchParams.delete('action');
+          url.searchParams.delete('category');
+          window.history.replaceState({}, '', url.toString());
+        }
+      }
     }
-  }, [initialAction]);
+  }, [initialAction, initialCategory, initialExpenses]);
 
   const [internalPeriod, setInternalPeriod] = useState('This Month');
   const [internalFrom, setInternalFrom] = useState('');
@@ -93,12 +117,15 @@ export default function ExpensesClient({
   });
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const activeFilterCount = (selectedCategory !== 'All Categories' ? 1 : 0) + (period !== 'This Month' ? 1 : 0);
+  const activeFilterCount = getActiveFilterCount({ period, defaultPeriod: 'This Month', category: selectedCategory });
 
   const handleClear = () => {
     setSelectedCategory('All Categories');
     handlePeriodChange('This Month');
   };
+
+  const todayIST = getIndiaDateString();
+  const dueItems = getDueRecurringExpenses(expenses, todayIST);
 
   return (
     <div className={hideHeader ? "w-full" : "px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto w-full"}>
@@ -118,20 +145,7 @@ export default function ExpensesClient({
             </p>
           </div>
           
-          <button 
-            onClick={() => setIsSheetOpen(true)}
-            className="flex items-center gap-1.5 min-h-12 px-4 rounded-lg bg-white border border-slate-200 shadow-sm font-medium text-slate-700 active:scale-95 transition-all touch-manipulation"
-          >
-            <div className="relative">
-              <Filter size={18} />
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-navy text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </div>
-            Filters
-          </button>
+          <FilterButton activeCount={activeFilterCount} onClick={() => setIsSheetOpen(true)} />
         </div>
       )}
 
@@ -175,16 +189,21 @@ export default function ExpensesClient({
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         title="Filters"
-        headerAction={
-          hasActiveFilters ? (
-            <button 
+        footer={
+          <div className="flex gap-3">
+            <button
               onClick={handleClear}
-              className="flex items-center gap-1.5 min-h-8 px-3 text-sm rounded-full bg-white border border-slate-200 shadow-sm font-semibold text-slate-900 active:scale-95 transition-all duration-120 touch-manipulation"
+              className="flex-1 min-h-[44px] bg-white border border-slate-200 text-slate-700 rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
             >
-              <RotateCcw size={14} />
               Reset
             </button>
-          ) : null
+            <button
+              onClick={() => setIsSheetOpen(false)}
+              className="flex-1 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
+            >
+              Done
+            </button>
+          </div>
         }
       >
         <div className="space-y-6">
@@ -240,11 +259,47 @@ export default function ExpensesClient({
         </div>
       </BottomSheet>
 
+        {dueItems.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 transition-opacity duration-300">
+            <div className="flex items-center gap-2 mb-3 text-amber-900 font-semibold">
+              <Bell size={18} className="text-amber-600" />
+              <h3>Due this month</h3>
+            </div>
+            <div className="flex flex-col gap-0 border border-amber-200 rounded-lg bg-white overflow-hidden shadow-sm">
+              {dueItems.map((item, index) => (
+                <div key={item.category} className={`flex items-center justify-between p-3 sm:p-4 ${index !== dueItems.length - 1 ? 'border-b border-amber-100' : ''}`}>
+                  <div className="flex flex-col min-w-0 pr-4">
+                    <span className="font-medium text-amber-950 truncate">{item.category}</span>
+                    <span className="text-xs text-amber-700/80 mb-1">Last: {formatCurrency(item.lastAmount)}</span>
+                    <div>
+                      <Badge className={item.daysOverdue === 0 ? "bg-amber-100 text-amber-800" : "bg-orange-100 text-orange-800"}>
+                        {item.daysOverdue === 0 ? "Due today" : `Overdue by ${item.daysOverdue} day${item.daysOverdue === 1 ? '' : 's'}`}
+                      </Badge>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setModalPrefill({ category: item.category, amount: item.lastAmount, recurring: true });
+                      setIsAddModalOpen(true);
+                    }}
+                    className="bg-blue-600 text-white rounded-lg text-sm font-medium px-4 min-h-[44px] sm:min-h-[36px] flex items-center justify-center shrink-0 active:scale-95 transition-transform"
+                  >
+                    Log
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
           <div className="p-4 border-b border-slate-200 flex justify-between items-center shrink-0">
             <h2 className="font-medium text-slate-900">Expense Log</h2>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setModalPrefill(null);
+                setIsAddModalOpen(true);
+              }}
               className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 min-h-11 lg:min-h-0 py-2 rounded-lg text-sm font-medium transition-colors active:scale-95 whitespace-nowrap"
             >
               <Plus size={16} />
@@ -368,7 +423,10 @@ export default function ExpensesClient({
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={handleExpenseAdded}
-        initialCategory={initialCategory}
+        initialCategory={modalPrefill?.category}
+        initialAmount={modalPrefill?.amount}
+        initialRecurring={modalPrefill?.recurring}
+        initialDate={todayIST}
       />
     </div>
   );

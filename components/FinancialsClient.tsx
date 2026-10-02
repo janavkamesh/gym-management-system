@@ -12,6 +12,7 @@ import { TrendChart } from './ui/TrendChart';
 import { ChartCard } from './ui/ChartCard';
 import { DonutChart } from './ui/DonutChart';
 import { SlidingTabs } from './ui/SlidingTabs';
+import FilterButton, { getActiveFilterCount } from './FilterButton';
 import TransactionsClient from './TransactionsClient';
 import ExpensesClient from './ExpensesClient';
 import { PinnedChartWrapper } from './ui/usePinnedPoint';
@@ -85,6 +86,7 @@ export default function FinancialsClient({
   const [toDate, setToDate] = useState(DEFAULT_TO);
   const dateError = !!(fromDate && toDate && fromDate > toDate);
   const hasActiveFilters = period !== DEFAULT_PERIOD || fromDate !== DEFAULT_FROM || toDate !== DEFAULT_TO;
+  const activeCount = getActiveFilterCount({ period, defaultPeriod: DEFAULT_PERIOD });
 
   // Local Data State for Filterable Widgets
   const [profitabilityData, setProfitabilityData] = useState(profitability);
@@ -461,18 +463,7 @@ export default function FinancialsClient({
               })()}
             </p>
           </div>
-          <button
-            type="button"
-            aria-label="Filters"
-            onClick={() => setIsFilterSheetOpen(true)}
-            className="flex items-center gap-2 min-h-12 px-4 rounded-lg bg-white border border-slate-200 shadow-sm text-sm font-medium text-slate-900 active:scale-95 transition-all duration-120 relative touch-manipulation"
-          >
-            <Filter size={20} className="text-slate-700" />
-            <span>Filters</span>
-            {hasActiveFilters && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-600 rounded-full border-2 border-white"></span>
-            )}
-          </button>
+          <FilterButton activeCount={activeCount} onClick={() => setIsFilterSheetOpen(true)} />
         </div>
 
       <div className="hidden lg:block mb-8">
@@ -689,26 +680,25 @@ export default function FinancialsClient({
         isOpen={isFilterSheetOpen}
         onClose={() => setIsFilterSheetOpen(false)}
         title="Filters"
-        headerAction={
-          <button
-            onClick={() => {
-              setPeriod(DEFAULT_PERIOD);
-              setFromDate(DEFAULT_FROM);
-              setToDate(DEFAULT_TO);
-            }}
-            className="flex items-center gap-1.5 min-h-8 px-3 text-sm rounded-full bg-white border border-slate-200 shadow-sm font-semibold text-slate-900 active:scale-95 transition-all duration-120 touch-manipulation"
-          >
-            <RotateCcw size={14} />
-            Reset
-          </button>
-        }
         footer={
-          <button
-            onClick={() => setIsFilterSheetOpen(false)}
-            className="w-full h-12 bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
-          >
-            Done
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setPeriod(DEFAULT_PERIOD);
+                setFromDate(DEFAULT_FROM);
+                setToDate(DEFAULT_TO);
+              }}
+              className="flex-1 min-h-[44px] bg-white border border-slate-200 text-slate-700 rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => setIsFilterSheetOpen(false)}
+              className="flex-1 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
+            >
+              Done
+            </button>
+          </div>
         }
       >
         <div className="-mx-4 -mt-4">

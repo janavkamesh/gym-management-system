@@ -8,18 +8,38 @@ import { X, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
+import { getIndiaDateString } from '@/lib/utils/date';
 
-export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCategory }: { isOpen: boolean; onClose: () => void; onSuccess: (expense: any) => void; initialCategory?: string }) {
+interface AddExpenseModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (expense: any) => void;
+  initialCategory?: string;
+  initialAmount?: number;
+  initialDate?: string;
+  initialRecurring?: boolean;
+}
+
+export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCategory, initialAmount, initialDate, initialRecurring }: AddExpenseModalProps) {
   const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
   
   useEffect(() => {
-    if (isOpen && initialCategory) {
-      // Find case-insensitive match for category to match predefined categories
-      const predefinedCategories = ['Rent', 'Electricity', 'Salaries', 'Maintenance', 'Equipment', 'Other'];
-      const matched = predefinedCategories.find(c => c.toLowerCase() === initialCategory.toLowerCase());
-      setCategory(matched || initialCategory);
+    if (isOpen) {
+      if (initialCategory) {
+        const predefinedCategories = ['Rent', 'Electricity', 'Salaries', 'Maintenance', 'Equipment', 'Other'];
+        const matched = predefinedCategories.find(c => c.toLowerCase() === initialCategory.toLowerCase());
+        setCategory(matched || initialCategory);
+      } else {
+        setCategory('');
+      }
+      setAmount(initialAmount ? initialAmount.toString() : '');
+      setDate(initialDate || getIndiaDateString());
+      setIsRecurring(initialRecurring || false);
     }
-  }, [isOpen, initialCategory]);
+  }, [isOpen, initialCategory, initialAmount, initialDate, initialRecurring]);
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -39,10 +59,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCat
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isRecurring, setIsRecurring] = useState(false);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -68,7 +85,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSuccess, initialCat
       // Reset
       setCategory('');
       setAmount('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(getIndiaDateString());
       setIsRecurring(false);
     } catch (error) {
       showToast('Failed to save. Check your connection.', 'error');

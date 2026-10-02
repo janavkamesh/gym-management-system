@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendPushToAllDevices } from './push';
+import { getDueRecurringExpenses } from './utils/recurringDue';
 
 export async function runDailyNotifications(envParams?: any) {
   const env = envParams || process.env;
@@ -187,35 +188,24 @@ export async function runDailyNotifications(envParams?: any) {
   }
 
   // 5. Recurring Expenses
-  const { data: expenses } = await supabase.from('expenses').select('id, user_id, category, amount, date').eq('recurring_flag', true).eq('is_voided', false);
+  const { data: expenses } = await supabase.from('expenses').select('id, user_id, category, amount, date, recurring_flag, is_voided').eq('is_voided', false);
   if (expenses && expenses.length > 0) {
-    const groupedByUserAndCategory: Record<string, Record<string, any[]>> = {};
+    const expensesByUser: Record<string, any[]> = {};
     expenses.forEach(e => {
-      if (!groupedByUserAndCategory[e.user_id]) groupedByUserAndCategory[e.user_id] = {};
-      if (!groupedByUserAndCategory[e.user_id][e.category]) groupedByUserAndCategory[e.user_id][e.category] = [];
-      groupedByUserAndCategory[e.user_id][e.category].push(e);
+      if (!expensesByUser[e.user_id]) expensesByUser[e.user_id] = [];
+      expensesByUser[e.user_id].push(e);
     });
     
-    Object.entries(groupedByUserAndCategory).forEach(([userId, userCategories]) => {
-      Object.keys(userCategories).forEach(category => {
-        const cats = userCategories[category].sort((a, b) => b.date.localeCompare(a.date));
-        const latest = cats[0];
-        if (latest.date.substring(0, 7) !== currentMonth && todayIST > latest.date) {
-          const anchorDay = parseInt(latest.date.split('-')[2]);
-          let targetDate = new Date(`${currentMonth}-01T00:00:00+05:30`);
-          targetDate.setMonth(targetDate.getMonth() + 1);
-          targetDate.setDate(0);
-          const dueDay = Math.min(anchorDay, targetDate.getDate());
-          const dueDateStr = `${currentMonth}-${dueDay.toString().padStart(2, '0')}`;
-          
-          if (todayIST === dueDateStr) {
-            addNotification(userId, {
-              title: `💳 Recurring Expense Due: ${latest.category}`,
-              body: `Pay your recurring ${latest.category} (₹${Number(latest.amount).toLocaleString('en-IN')}) today. Tap to log expense.`,
-              url: `/expenses?action=add&category=${encodeURIComponent(latest.category)}`,
-              tag: `recurring-expense-${latest.category}`
-            });
-          }
+    Object.entries(expensesByUser).forEach(([userId, userExpenses]) => {
+      const dueItems = getDueRecurringExpenses(userExpenses, todayIST);
+      dueItems.forEach(item => {
+        if (item.daysOverdue === 0) {
+          addNotification(userId, {
+            title: `💳 Recurring Expense Due: ${item.category}`,
+            body: `Pay your recurring ${item.category} (₹${item.lastAmount.toLocaleString('en-IN')}) today. Tap to log expense.`,
+            url: `/expenses?action=add&category=${encodeURIComponent(item.category)}`,
+            tag: `recurring-expense-${item.category}`
+          });
         }
       });
     });

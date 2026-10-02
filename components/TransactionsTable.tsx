@@ -11,6 +11,7 @@ import { FilterCard } from './FilterCard';
 import Badge from './ui/Badge';
 import { StatCard } from './ui/StatCard';
 import { BottomSheet } from './ui/BottomSheet';
+import FilterButton, { getActiveFilterCount } from './FilterButton';
 
 import { getPeriodRange, getPeriodSubtitle } from '@/lib/utils/date';
 
@@ -163,7 +164,7 @@ export default function TransactionsTable({
   };
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const activeFilterCount = (search ? 1 : 0) + (category !== 'All' ? 1 : 0) + (direction !== 'all' ? 1 : 0) + (period !== 'This Month' ? 1 : 0);
+  const activeFilterCount = getActiveFilterCount({ period, defaultPeriod: 'This Month', category, direction });
 
   return (
     <div>
@@ -176,20 +177,7 @@ export default function TransactionsTable({
             </p>
           </div>
           
-          <button 
-            onClick={() => setIsSheetOpen(true)}
-            className="flex items-center gap-1.5 min-h-12 px-4 rounded-lg bg-white border border-slate-200 shadow-sm font-medium text-slate-700 active:scale-95 transition-all touch-manipulation"
-          >
-            <div className="relative">
-              <Filter size={18} />
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-navy text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </div>
-            Filters
-          </button>
+          <FilterButton activeCount={activeFilterCount} onClick={() => setIsSheetOpen(true)} />
         </div>
       )}
 
@@ -260,16 +248,21 @@ export default function TransactionsTable({
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}
         title="Filters"
-        headerAction={
-          hasActiveFilters ? (
-            <button 
+        footer={
+          <div className="flex gap-3">
+            <button
               onClick={handleClear}
-              className="flex items-center gap-1.5 min-h-8 px-3 text-sm rounded-full bg-white border border-slate-200 shadow-sm font-semibold text-slate-900 active:scale-95 transition-all duration-120 touch-manipulation"
+              className="flex-1 min-h-[44px] bg-white border border-slate-200 text-slate-700 rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
             >
-              <RotateCcw size={14} />
               Reset
             </button>
-          ) : null
+            <button
+              onClick={() => setIsSheetOpen(false)}
+              className="flex-1 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium active:scale-95 transition-all touch-manipulation shadow-sm"
+            >
+              Done
+            </button>
+          </div>
         }
       >
         <div className="space-y-6">
