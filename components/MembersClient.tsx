@@ -175,7 +175,7 @@ export default function MembersClient({
           }}
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium text-slate-900">Archived Members ({archivedCount})</h3>
+            <h3 className="text-lg font-medium text-slate-900">Removed Members ({archivedCount})</h3>
             {isArchivedExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
           </div>
           
@@ -185,7 +185,7 @@ export default function MembersClient({
             </div>
             <input
               type="text"
-              placeholder="Search archived..."
+              placeholder="Search removed..."
               value={archivedSearchQuery}
               onChange={(e) => setArchivedSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
@@ -207,14 +207,14 @@ export default function MembersClient({
               </div>
             ) : filteredArchivedMembers.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
-                No archived members found.
+                No removed members found.
               </div>
             ) : (
               <MemberList
                 members={filteredArchivedMembers}
                 trainers={trainers}
                 searchQuery={archivedSearchQuery}
-                emptyTitle="No archived members found"
+                emptyTitle="No removed members found"
                 emptySubtitle="No members match your search."
                 onEdit={() => {}}
                 onDeleted={() => {}}

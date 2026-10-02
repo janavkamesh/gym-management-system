@@ -14,6 +14,7 @@ import TrainerProfileModal from './TrainerProfileModal';
 import { fetchTrainerSalaryPayments } from '@/lib/actions/payments';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
+import RestoreButton from './RestoreButton';
 
 interface TrainerRowProps {
   trainer: any;
@@ -385,11 +386,11 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
               setShowProfileModal(true);
             }
           }}
-          className={`mobile-member-grid mobile-table-row ${!isArchived ? 'active:bg-slate-50 cursor-pointer' : 'opacity-50'} ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
+          className={isArchived ? `grid grid-cols-[1fr_auto] px-4 py-3 gap-4 items-center border-b border-slate-100 bg-white ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}` : `mobile-member-grid mobile-table-row active:bg-slate-50 cursor-pointer ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
         >
           <div className="flex flex-col min-w-0 pr-2">
-            <span className="mobile-table-name">{trainer.name}</span>
-            <span className="mobile-table-sub">{trainer.phone}</span>
+            <span className={`mobile-table-name ${isArchived ? 'text-slate-500' : ''}`}>{trainer.name}</span>
+            <span className={`mobile-table-sub ${isArchived ? 'text-slate-500' : ''}`}>{trainer.phone}</span>
           </div>
 
           {!isArchived ? (
@@ -405,15 +406,8 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
               </div>
             </>
           ) : (
-            <div className="col-start-4 text-center justify-self-center">
-              <button
-                onClick={handleRestore}
-                disabled={isRestoring}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded transition-all active:scale-95 disabled:opacity-50"
-              >
-                <Undo2 size={14} className={isRestoring ? 'animate-spin' : ''} />
-                Restore
-              </button>
+            <div className="text-right justify-self-end">
+              <RestoreButton onClick={(e) => { e.stopPropagation(); handleRestore(e as any); }} isRestoring={isRestoring} />
             </div>
           )}
         </div>
@@ -429,16 +423,16 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
         onClick={() => { if (!isArchived) setShowProfileModal(true); }}
         className={`transition-colors hover:bg-slate-50 ${!isArchived ? 'cursor-pointer' : ''} ${isTarget ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
       >
-        <td className={`px-4 md:px-6 py-4 md:py-3 text-sm font-medium text-left whitespace-nowrap overflow-hidden text-ellipsis max-w-37.5 text-slate-900 ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`px-4 md:px-6 py-4 md:py-3 text-sm font-medium text-left whitespace-nowrap overflow-hidden text-ellipsis max-w-37.5 ${isArchived ? 'text-slate-500' : 'text-slate-900'}`}>
           {trainer.name}
         </td>
-        <td className={`px-4 md:px-6 py-4 md:py-3 text-sm text-left text-slate-500 whitespace-nowrap ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`px-4 md:px-6 py-4 md:py-3 text-sm text-left whitespace-nowrap ${isArchived ? 'text-slate-500' : 'text-slate-500'}`}>
           {trainer.phone}
         </td>
-        <td className={`hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-right text-slate-900 font-medium ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-right font-medium ${isArchived ? 'text-slate-500' : 'text-slate-900'}`}>
           {formatCurrency(Number(trainer.base_salary))}
         </td>
-        <td className={`hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-left text-slate-500 ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`hidden md:table-cell px-6 py-3 whitespace-nowrap text-sm text-left pl-[40px] ${isArchived ? 'text-slate-500' : 'text-slate-500'}`}>
           {new Date(trainer.join_date).toLocaleDateString('en-GB')}
         </td>
         
@@ -458,15 +452,8 @@ export default function TrainerRow({ trainer, members, onDeleted, onRestore, isT
             </td>
           </>
         ) : (
-          <td colSpan={2} className="px-4 md:px-6 py-4 md:py-3 text-right md:text-center">
-            <button
-              onClick={handleRestore}
-              disabled={isRestoring}
-              className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 rounded-lg transition-all duration-120 active:scale-95 disabled:opacity-50"
-            >
-              <Undo2 size={16} className={isRestoring ? 'animate-spin' : ''} />
-              {isRestoring ? 'Restoring...' : 'Restore'}
-            </button>
+          <td className="px-4 md:px-6 py-4 md:py-3 text-center">
+            <RestoreButton onClick={(e) => { e.stopPropagation(); handleRestore(e as any); }} isRestoring={isRestoring} />
           </td>
         )}
       </tr>

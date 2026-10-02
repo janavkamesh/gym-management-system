@@ -16,6 +16,7 @@ import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
 import Badge from './ui/Badge';
 import { getMobileStatusDisplay } from '@/lib/memberStatus';
+import RestoreButton from './RestoreButton';
 
 interface MemberRowProps {
   member: any;
@@ -196,11 +197,11 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
               setShowProfileModal(true);
             }
           }}
-          className={`mobile-member-grid mobile-table-row ${!isArchived ? 'active:bg-slate-50 cursor-pointer' : 'opacity-50'} ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
+          className={isArchived ? `grid grid-cols-[1fr_auto_auto] gap-2 items-center px-4 py-3 border-b border-slate-100 bg-white ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}` : `mobile-member-grid mobile-table-row active:bg-slate-50 cursor-pointer ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
         >
           <div className="flex flex-col min-w-0 pr-2">
-            <span className="mobile-table-name">{member.name}</span>
-            <span className="mobile-table-sub">{member.uid || '-'}</span>
+            <span className={`mobile-table-name ${isArchived ? 'text-slate-500' : ''}`}>{member.name}</span>
+            <span className={`mobile-table-sub ${isArchived ? 'text-slate-500' : ''}`}>{member.uid || '-'}</span>
           </div>
 
           <div className="text-center justify-self-center min-w-0 flex items-center justify-center" style={{ transform: 'translateX(var(--status-shift))' }}>
@@ -210,17 +211,8 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
           </div>
 
           {isArchived ? (
-            <div className="col-start-4 text-center justify-self-center">
-              <button
-                onClick={handleRestore}
-                disabled={isRestoring}
-                className="inline-flex items-center justify-center px-3 py-1.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded text-xs font-medium transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
-              >
-                {isRestoring ? (
-                  <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-1" />
-                ) : null}
-                Restore
-              </button>
+            <div className="text-right justify-self-end">
+              <RestoreButton onClick={(e) => { e.stopPropagation(); handleRestore(); }} isRestoring={isRestoring} />
             </div>
           ) : (
             <>
@@ -269,29 +261,29 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
       <tr
         ref={rowRef as any}
         onClick={() => { if (!isArchived) setShowProfileModal(true); }}
-        className={`hover:bg-slate-50 transition-all duration-300 ${!isArchived ? 'cursor-pointer' : ''} ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
+        className={`transition-colors duration-300 hover:bg-slate-50 ${!isArchived ? 'cursor-pointer' : ''} ${isHighlighted ? 'bg-blue-50/80 outline outline-2 outline-blue-400' : ''}`}
       >
-        <td className={`relative px-4 md:px-6 py-3.5 md:py-3 font-medium text-left whitespace-nowrap max-w-50 overflow-hidden text-ellipsis ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`relative px-4 md:px-6 py-3.5 md:py-3 font-medium text-left whitespace-nowrap max-w-50 overflow-hidden text-ellipsis ${isArchived ? 'text-slate-500' : ''}`}>
           {hasActivePt && (
             <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-blue-600" />
           )}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold text-white shrink-0 uppercase">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0 uppercase ${isArchived ? 'bg-slate-400' : 'bg-slate-700'}`}>
               {member.name.charAt(0)}
             </div>
             <div className="flex flex-col">
-              <span className="text-slate-900">{member.name}</span>
-              <span className="text-xs text-slate-400 font-normal">{member.uid || '-'}</span>
+              <span className={isArchived ? 'text-slate-500' : 'text-slate-900'}>{member.name}</span>
+              <span className={`text-xs font-normal ${isArchived ? 'text-slate-500' : 'text-slate-400'}`}>{member.uid || '-'}</span>
             </div>
           </div>
         </td>
-        <td className={`px-4 md:px-6 py-3.5 md:py-3 text-left text-slate-500 whitespace-nowrap text-sm ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`px-4 md:px-6 py-3.5 md:py-3 text-left whitespace-nowrap text-sm ${isArchived ? 'text-slate-500' : 'text-slate-500'}`}>
           {member.plans?.plan_name || '-'}
         </td>
-        <td className={`px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left text-sm text-slate-500 ${isArchived ? 'opacity-50' : ''}`}>
+        <td className={`px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left text-sm ${isArchived ? 'text-slate-500' : 'text-slate-500'}`}>
           {getDaysLeft()}
         </td>
-        <td className={`px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left ${isArchived ? 'opacity-50' : ''}`}>
+        <td className="px-4 md:px-6 py-3.5 md:py-3 whitespace-nowrap text-left">
           <div className="flex flex-col items-start gap-1.5">
             <Badge className={status.badge}>
               {status.text}
@@ -308,17 +300,8 @@ export default function MemberRow({ member, onDeleted, onEdit, isArchived, onRes
           </div>
         </td>
         {isArchived ? (
-          <td className="px-4 md:px-6 py-3.5 md:py-3 text-right" colSpan={3}>
-            <button
-              onClick={handleRestore}
-              disabled={isRestoring}
-              className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium transition-all active:scale-95 disabled:opacity-50 touch-manipulation"
-            >
-              {isRestoring ? (
-                <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin mr-2" />
-              ) : null}
-              Restore
-            </button>
+          <td className="px-4 md:px-6 py-3.5 md:py-3 text-center">
+            <RestoreButton onClick={(e) => { e.stopPropagation(); handleRestore(); }} isRestoring={isRestoring} />
           </td>
         ) : (
           <>

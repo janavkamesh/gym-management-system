@@ -82,9 +82,9 @@ export default function TrainersClient({ initialTrainers, members, initialArchiv
   };
 
   const activeStr = `${trainers.length} active`;
-  const archivedStr = `${archivedCount} archived`;
+  const archivedStr = `${archivedCount} removed`;
   const subtextItems = [activeStr, archivedStr];
-  const staticSubtext = `${trainers.length} active · ${archivedCount} archived`;
+  const staticSubtext = `${trainers.length} active · ${archivedCount} removed`;
 
   return (
     <div className="px-4 pt-5 pb-4 lg:p-8 max-w-7xl mx-auto max-lg:space-y-section lg:space-y-6">
@@ -188,7 +188,7 @@ export default function TrainersClient({ initialTrainers, members, initialArchiv
           }}
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-medium text-slate-900">Archived Trainers ({archivedCount})</h3>
+            <h3 className="text-lg font-medium text-slate-900">Removed Trainers ({archivedCount})</h3>
             {isArchivedExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
           </div>
           
@@ -199,7 +199,7 @@ export default function TrainersClient({ initialTrainers, members, initialArchiv
               </div>
               <input
                 type="text"
-                placeholder="Search archived..."
+                placeholder="Search removed..."
                 value={archivedSearchQuery}
                 onChange={(e) => setArchivedSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 min-h-12 md:min-h-0 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all placeholder-slate-400"
@@ -222,19 +222,26 @@ export default function TrainersClient({ initialTrainers, members, initialArchiv
               </div>
             ) : filteredArchivedTrainers.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-sm">
-                No archived trainers found.
+                No removed trainers found.
               </div>
             ) : (
               <>
                 <div className="hidden lg:block overflow-hidden">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse table-fixed">
+                    <colgroup>
+                      <col style={{ width: '25%' }} />
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '18%' }} />
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '17%' }} />
+                    </colgroup>
                     <thead className="table-header-dark border-b border-slate-200 text-slate-100 text-sm">
                       <tr>
                         <th className="px-4 md:px-6 font-medium text-left rounded-tl-2xl">Name</th>
                         <th className="px-4 md:px-6 font-medium text-left">Phone</th>
                         <th className="px-4 md:px-6 font-medium text-right">Base Salary</th>
-                        <th className="px-4 md:px-6 font-medium text-left">Join Date</th>
-                        <th className="px-4 md:px-6 font-medium text-right" colSpan={2}>Action</th>
+                        <th className="px-4 md:px-6 font-medium text-left pl-[40px]">Join Date</th>
+                        <th className="px-4 md:px-6 font-medium text-center rounded-tr-2xl">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100/80">
@@ -252,9 +259,9 @@ export default function TrainersClient({ initialTrainers, members, initialArchiv
                   </table>
                 </div>
                 <div className="block lg:hidden flex flex-col w-full">
-                  <div className="table-header-dark mobile-member-grid mobile-table-header">
-                    <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
-                    <div className="col-start-4 text-center justify-self-center whitespace-nowrap min-w-0">Restore</div>
+                  <div className="table-header-dark grid grid-cols-[1fr_auto] px-4 py-3 gap-4">
+                    <div className="text-left whitespace-nowrap min-w-0 font-medium text-sm text-slate-100">Name</div>
+                    <div className="text-right whitespace-nowrap min-w-0 font-medium text-sm text-slate-100 pr-2">Action</div>
                   </div>
                   <div className="flex flex-col">
                     {filteredArchivedTrainers.map((trainer) => (

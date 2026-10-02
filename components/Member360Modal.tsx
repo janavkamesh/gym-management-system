@@ -6,6 +6,8 @@ import { computeStatusColor } from '@/lib/utils/status';
 import { formatINR } from '@/lib/utils/formatters';
 import { cleanPhone } from '@/lib/utils/whatsapp';
 import { fetchMemberPayments } from '@/lib/actions/payments';
+import { isReviewButtonVisible, isReminderButtonVisible, isWelcomeButtonVisible } from '@/lib/utils/members';
+import { computeAmountDue } from '@/lib/utils/amountDue';
 import { PaymentHistoryContent } from './PaymentHistoryModal';
 import { GOOGLE_REVIEW_LINK } from '@/lib/constants';
 import Badge from './ui/Badge';
@@ -27,6 +29,7 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
   const [activeTab, setActiveTab] = useState<'overview' | 'membership' | 'personal training' | 'payments'>('overview');
   const [payments, setPayments] = useState<any[]>([]);
   const [lifetimePaid, setLifetimePaid] = useState(0);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
 
 
 
@@ -35,12 +38,18 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
   useEffect(() => {
     if (!isOpen) return;
     
+    let mounted = true;
+    setIsLoadingPayments(true);
     fetchMemberPayments(member.id).then((data) => {
-      const validPayments = (data || []).filter(p => !p.is_voided);
-      const total = validPayments.reduce((sum, p) => sum + p.amount, 0);
-      setPayments(validPayments);
-      setLifetimePaid(total);
+      if (mounted) {
+        const validPayments = (data || []).filter(p => !p.is_voided);
+        const total = validPayments.reduce((sum, p) => sum + p.amount, 0);
+        setPayments(validPayments);
+        setLifetimePaid(total);
+        setIsLoadingPayments(false);
+      }
     });
+    return () => { mounted = false; };
   }, [member.id, isOpen]);
 
   const statusColor = computeStatusColor(member.expiry_date);
@@ -60,18 +69,12 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
   const daysLeft = getDaysLeft();
   const isExpired = statusColor === 'Red';
   
-  const cycleTargetAmount = member.amount || member.plans?.price || 0;
-  const currentCyclePayments = payments
-    .filter(p => p.payment_type === 'Membership' && p.period_end === member.expiry_date)
-    .reduce((sum, p) => sum + p.amount, 0);
-  const amountDue = Math.max(0, cycleTargetAmount - currentCyclePayments);
+  const amountDue = computeAmountDue(member.amount, member.plans?.price || 0, member.expiry_date, payments);
 
   // Review request logic (Phase 1)
-  const joinDate = new Date(member.join_date);
-  const now = new Date();
-  const daysSinceJoin = Math.floor((now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
-  const isEligibleForReview = daysSinceJoin >= 30 && !member.review_requested_at;
-  const isEligibleForWelcome = daysSinceJoin <= 5;
+  const isEligibleForReview = isReviewButtonVisible(member.join_date) && !member.review_requested_at;
+  const isEligibleForWelcome = isWelcomeButtonVisible(member.join_date);
+  const showReminder = isReminderButtonVisible(member.expiry_date);
 
   const handleWaAction = async (action: 'welcome' | 'expiry' | 'review') => {
     let message = '';
@@ -111,12 +114,12 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
         <div className="profile-section-spacing pt-4 shrink-0">
           {/* Gap background and Info Card */}
         <div className="px-4 md:px-6 shrink-0 bg-white z-10">
-          <div className="profile-header-card">
-            <div className="w-[44px] h-[44px] lg:w-14 lg:h-14 rounded-full bg-slate-700 flex items-center justify-center text-xl lg:text-2xl font-bold text-white shrink-0 uppercase shadow-inner">
+          <div className="profile-header-card !py-6 lg:!py-5 items-center">
+            <div className="w-[50px] h-[50px] lg:w-[64px] lg:h-[64px] rounded-full bg-slate-700 flex items-center justify-center text-xl lg:text-2xl font-bold text-white shrink-0 uppercase shadow-inner">
               {member.name.charAt(0)}
             </div>
 
-            <div className="flex flex-col gap-1 flex-1 min-w-0 justify-center h-[44px] lg:h-auto lg:pr-[240px]">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-1 lg:gap-2 flex-1 min-w-0 justify-center lg:pr-[240px]">
               {/* Row 1 */}
               <div className="flex items-center gap-2 flex-nowrap">
                 <h2 className="text-lg font-semibold text-white truncate leading-tight">{member.name}</h2>
@@ -132,32 +135,32 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
             </div>
 
             {/* Action Icons in Top Right */}
-            <div className="flex items-start justify-end gap-2 lg:absolute lg:top-4 lg:right-5 lg:bottom-4 lg:items-stretch lg:gap-2.5">
-              {isEligibleForWelcome && (
-                <button onClick={() => handleWaAction('welcome')} className="group profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
-                  <div className="profile-action-circle">
-                    <div className="lg:hidden"><WhatsAppIcon size={22} /></div>
-                    <div className="hidden lg:block"><WhatsAppIcon size={28} /></div>
-                  </div>
-                  <span className="profile-action-btn-text">Welcome</span>
-                </button>
-              )}
-              {(statusColor === 'Yellow' || statusColor === 'Red') && (
-                <button onClick={() => handleWaAction('expiry')} className="group profile-action-btn text-yellow-400" title="Expiry Reminder" aria-label="Expiry Reminder">
-                  <div className="profile-action-circle">
+            <div className="flex items-center justify-end gap-2 lg:absolute lg:top-0 lg:bottom-0 lg:right-5 lg:gap-2.5">
+              {showReminder && (
+                <button onClick={() => handleWaAction('expiry')} className="group profile-action-btn text-yellow-400 !lg:w-[64px] !lg:h-[64px] !lg:min-w-0 !lg:p-0 !lg:justify-center" title="Expiry Reminder" aria-label="Expiry Reminder">
+                  <div className="profile-action-circle !w-[50px] !h-[50px]">
                     <Bell size={22} className="lg:hidden" />
                     <Bell size={28} className="hidden lg:block" />
                   </div>
-                  <span className="profile-action-btn-text">Reminder</span>
+                  <span className="profile-action-btn-text lg:mt-1 absolute top-full mt-1 left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">Reminder</span>
                 </button>
               )}
               {isEligibleForReview && (
-                <button onClick={() => handleWaAction('review')} className="group profile-action-btn text-blue-400" title="Request Review" aria-label="Request Review">
-                  <div className="profile-action-circle">
+                <button onClick={() => handleWaAction('review')} className="group profile-action-btn text-blue-400 !lg:w-[64px] !lg:h-[64px] !lg:min-w-0 !lg:p-0 !lg:justify-center" title="Request Review" aria-label="Request Review">
+                  <div className="profile-action-circle !w-[50px] !h-[50px]">
                     <Star size={22} className="lg:hidden" />
                     <Star size={28} className="hidden lg:block" />
                   </div>
-                  <span className="profile-action-btn-text">Review</span>
+                  <span className="profile-action-btn-text lg:mt-1 absolute top-full mt-1 left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">Review</span>
+                </button>
+              )}
+              {isEligibleForWelcome && (
+                <button onClick={() => handleWaAction('welcome')} className="group profile-action-btn text-green-400 !lg:w-[64px] !lg:h-[64px] !lg:min-w-0 !lg:p-0 !lg:justify-center" title="Welcome Msg" aria-label="Welcome Msg">
+                  <div className="profile-action-circle !w-[50px] !h-[50px]">
+                    <div className="lg:hidden"><WhatsAppIcon size={22} /></div>
+                    <div className="hidden lg:block"><WhatsAppIcon size={28} /></div>
+                  </div>
+                  <span className="profile-action-btn-text lg:mt-1 absolute top-full mt-1 left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">Welcome</span>
                 </button>
               )}
             </div>
@@ -192,7 +195,11 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
             </div>
             <div className="min-w-0">
               <div className="text-[11px] text-slate-500 font-medium mb-0.5 capitalize">Lifetime Paid</div>
-              <div className="text-sm font-semibold text-slate-900">{formatINR(lifetimePaid)}</div>
+              {isLoadingPayments ? (
+                <div className="h-5 w-16 bg-slate-200 rounded animate-pulse"></div>
+              ) : (
+                <div className="text-sm font-semibold text-slate-900">{formatINR(lifetimePaid)}</div>
+              )}
             </div>
           </div>
           <div className="profile-card rounded-xl p-3 flex items-center gap-3 last:odd:col-span-2 md:last:odd:col-span-1">
@@ -201,9 +208,13 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
             </div>
             <div className="min-w-0">
               <div className="text-[11px] text-slate-500 font-medium mb-0.5 capitalize">Amount Due</div>
-              <div className={`text-sm font-semibold ${amountDue > 0 ? 'text-rose-600' : 'text-green-600'} capitalize`}>
-                {amountDue > 0 ? formatINR(amountDue) : 'Paid'}
-              </div>
+              {isLoadingPayments ? (
+                <div className="h-5 w-16 bg-slate-200 rounded animate-pulse"></div>
+              ) : (
+                <div className={`text-sm font-semibold ${amountDue > 0 ? 'text-rose-600' : 'text-green-600'} capitalize`}>
+                  {amountDue > 0 ? formatINR(amountDue) : 'Paid'}
+                </div>
+              )}
             </div>
           </div>
           {activePtAssignment && (
@@ -254,29 +265,26 @@ export default function Member360Modal({ isOpen, member, trainers, onClose, onEd
                   <h3 className="font-medium text-slate-700 text-sm">Identity</h3>
                 </div>
                 
-                <div className="p-4 flex flex-col gap-3 rounded-b-2xl">
-                  <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
-                    <Phone size={16} className="text-slate-400" />
-                    <div>
-                      <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Phone Number</div>
-                      <div className="text-sm text-slate-900 font-medium">{member.phone}</div>
+                {(() => {
+                  const identityTiles = [
+                    { id: 'phone', icon: Phone, label: 'Phone Number', value: member.phone },
+                    { id: 'gender', icon: PersonStanding, label: 'Gender', value: member.gender || 'Not specified', isCapitalize: true },
+                    { id: 'since', icon: Calendar, label: 'Member Since', value: new Date(member.join_date).toLocaleDateString('en-GB', { dateStyle: 'medium' }) }
+                  ];
+                  return (
+                    <div className={`p-4 flex flex-col lg:grid ${identityTiles.length === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-3 rounded-b-2xl`}>
+                      {identityTiles.map(tile => (
+                        <div key={tile.id} className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3 min-w-0">
+                          <tile.icon size={16} className="text-slate-400 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">{tile.label}</div>
+                            <div className={`text-sm text-slate-900 font-medium truncate ${tile.isCapitalize ? 'capitalize' : ''}`}>{tile.value}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
-                    <PersonStanding size={16} className="text-slate-400" />
-                    <div>
-                      <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Gender</div>
-                      <div className="text-sm text-slate-900 font-medium capitalize">{member.gender || 'Not specified'}</div>
-                    </div>
-                  </div>
-                  <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
-                    <Calendar size={16} className="text-slate-400" />
-                    <div>
-                      <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Member Since</div>
-                      <div className="text-sm text-slate-900 font-medium">{new Date(member.join_date).toLocaleDateString('en-GB', { dateStyle: 'medium' })}</div>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             </div>
           )}

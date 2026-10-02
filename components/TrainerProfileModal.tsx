@@ -78,17 +78,14 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
         <div className="profile-section-spacing pt-4 shrink-0">
           {/* Gap background and Info Card */}
         <div className="px-4 md:px-6 shrink-0 bg-white z-10">
-          <div className="profile-header-card">
-            <div className="w-[44px] h-[44px] lg:w-14 lg:h-14 rounded-full bg-slate-700 flex items-center justify-center text-xl lg:text-2xl font-bold text-white shrink-0 uppercase shadow-inner">
+          <div className="profile-header-card !py-6 lg:!py-5 items-center">
+            <div className="w-[50px] h-[50px] lg:w-[64px] lg:h-[64px] rounded-full bg-slate-700 flex items-center justify-center text-xl lg:text-2xl font-bold text-white shrink-0 uppercase shadow-inner">
               {trainer.name.charAt(0)}
             </div>
-            <div className="flex flex-col gap-1 flex-1 min-w-0 justify-center h-[44px] lg:h-auto lg:pr-[120px]">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-1 lg:gap-2 flex-1 min-w-0 justify-center lg:pr-[120px]">
               {/* Row 1 */}
               <div className="flex items-center gap-2 flex-nowrap">
                 <h2 className="text-lg font-semibold text-white truncate leading-tight">{trainer.name}</h2>
-              </div>
-              {/* Row 2 */}
-              <div className="flex items-center">
                 <div className="shrink-0 px-1 py-[2px] bg-slate-800 text-slate-300 text-[9px] font-medium rounded border border-slate-700 leading-none">
                   {trainer.uid || 'No UID'}
                 </div>
@@ -96,13 +93,13 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
             </div>
 
             {/* Action Icons in Top Right */}
-            <div className="flex items-start justify-end gap-2 lg:absolute lg:top-4 lg:right-5 lg:bottom-4 lg:items-stretch lg:gap-2.5">
-              <button onClick={handleWaAction} className="group profile-action-btn text-green-400" title="Welcome Msg" aria-label="Welcome Msg">
-                <div className="profile-action-circle">
+            <div className="flex items-center justify-end gap-2 lg:absolute lg:top-0 lg:bottom-0 lg:right-5 lg:gap-2.5">
+              <button onClick={handleWaAction} className="group profile-action-btn text-green-400 !lg:w-[64px] !lg:h-[64px] !lg:min-w-0 !lg:p-0 !lg:justify-center" title="Welcome Msg" aria-label="Welcome Msg">
+                <div className="profile-action-circle !w-[50px] !h-[50px]">
                   <div className="lg:hidden"><WhatsAppIcon size={22} /></div>
                   <div className="hidden lg:block"><WhatsAppIcon size={28} /></div>
                 </div>
-                <span className="profile-action-btn-text">Welcome</span>
+                <span className="profile-action-btn-text lg:mt-1 absolute top-full mt-1 left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">Welcome</span>
               </button>
             </div>
           </div>
@@ -205,39 +202,26 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
                       <h3 className="font-medium text-slate-700 text-sm">Identity</h3>
                     </div>
                     
-                    <div className="p-4 flex flex-col gap-3 rounded-b-2xl">
-                      <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
-                        <Phone size={16} className="text-slate-400" />
-                        <div>
-                          <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Phone Number</div>
-                          <div className="text-sm text-slate-900 font-medium">{trainer.phone}</div>
+                    {(() => {
+                      const identityTiles = [
+                        { id: 'phone', icon: Phone, label: 'Phone Number', value: trainer.phone },
+                        { id: 'joined', icon: Calendar, label: 'Joined Date', value: new Date(trainer.join_date).toLocaleDateString('en-GB', { dateStyle: 'medium' }) }
+                      ];
+                      return (
+                        <div className={`p-4 flex flex-col lg:grid ${identityTiles.length === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-3 rounded-b-2xl`}>
+                          {identityTiles.map(tile => (
+                            <div key={tile.id} className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3 min-w-0">
+                              <tile.icon size={16} className="text-slate-400 shrink-0" />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">{tile.label}</div>
+                                <div className="text-sm text-slate-900 font-medium truncate">{tile.value}</div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div className="profile-card shadow-none p-3 rounded-lg flex items-center gap-3">
-                        <Calendar size={16} className="text-slate-400" />
-                        <div>
-                          <div className="text-[11px] text-slate-500 font-medium capitalize mb-0.5">Joined Date</div>
-                          <div className="text-sm text-slate-900 font-medium">{new Date(trainer.join_date).toLocaleDateString('en-GB', { dateStyle: 'medium' })}</div>
-                        </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
-
-                  {/* Danger Zone */}
-                  {onRemove && (
-                    <div className="mt-6 lg:hidden">
-                      <button
-                        onClick={() => {
-                          onClose();
-                          onRemove();
-                        }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 rounded-xl font-medium transition-all duration-200 active:scale-95 touch-manipulation"
-                      >
-                        <Trash2 size={18} />
-                        Remove Trainer
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -252,6 +236,22 @@ export default function TrainerProfileModal({ isOpen, trainer, onClose, onRemove
           )}
         </div>
       </div>
+        
+        {/* Mobile Footer Actions */}
+        {onRemove && (
+          <div className="shrink-0 border-t border-slate-200 bg-white p-4 pb-safe flex gap-3 lg:hidden">
+            <button
+              onClick={() => {
+                onClose();
+                onRemove();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 hover:border-red-200 rounded-xl font-medium transition-all duration-200 active:scale-95 touch-manipulation"
+            >
+              <Trash2 size={18} />
+              Remove Trainer
+            </button>
+          </div>
+        )}
       </ModalTransition>
   );
 }

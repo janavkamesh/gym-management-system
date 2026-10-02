@@ -56,17 +56,38 @@ export default function MemberList({
       ) : (
         <>
           <div className="hidden lg:block overflow-x-auto hide-scrollbar">
-            <table className="w-full text-left text-sm text-slate-900 min-w-200">
+            <table className={`w-full text-left text-sm text-slate-900 min-w-200 ${isArchived ? 'table-fixed' : ''}`}>
+              {isArchived && (
+                <colgroup>
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '15%' }} />
+                </colgroup>
+              )}
               <thead className="table-header-dark border-b border-slate-200 text-slate-100">
                 <tr>
-                  <th className="px-4 md:px-6 font-medium text-left">Name</th>
-                  <th className="px-4 md:px-6 font-medium text-left">Plan</th>
-                  <th className="px-4 md:px-6 font-medium text-left">Days left</th>
-                  <th className="px-4 md:px-6 font-medium text-left">Status</th>
-                  <th className="px-4 md:px-6 font-medium text-center">Amount Collected</th>
-                  <th className="px-4 md:px-6 font-medium text-center">Send Reminder</th>
-                  <th className="px-4 md:px-6 font-medium text-center">View</th>
-                  <th className="px-4 md:px-6 font-medium text-center w-14">Menu</th>
+                  {isArchived ? (
+                    <>
+                      <th className="px-4 md:px-6 font-medium text-left">Name</th>
+                      <th className="px-4 md:px-6 font-medium text-left">Plan</th>
+                      <th className="px-4 md:px-6 font-medium text-left">Days left</th>
+                      <th className="px-4 md:px-6 font-medium text-left">Status</th>
+                      <th className="px-4 md:px-6 font-medium text-center">Action</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-4 md:px-6 font-medium text-left">Name</th>
+                      <th className="px-4 md:px-6 font-medium text-left">Plan</th>
+                      <th className="px-4 md:px-6 font-medium text-left">Days left</th>
+                      <th className="px-4 md:px-6 font-medium text-left">Status</th>
+                      <th className="px-4 md:px-6 font-medium text-center">Amount Collected</th>
+                      <th className="px-4 md:px-6 font-medium text-center">Send Reminder</th>
+                      <th className="px-4 md:px-6 font-medium text-center">View</th>
+                      <th className="px-4 md:px-6 font-medium text-center w-14">Menu</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -90,11 +111,21 @@ export default function MemberList({
             </table>
           </div>
           <div className="block lg:hidden flex flex-col w-full">
-            <div className="table-header-dark mobile-member-grid mobile-table-header">
-              <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
-              <div className="text-center justify-self-center whitespace-nowrap min-w-0" style={{ transform: 'translateX(var(--status-shift))' }}>Status</div>
-              <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Reminder</div>
-              <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Collected</div>
+            <div className={isArchived ? "table-header-dark grid grid-cols-[1fr_auto_auto] items-center px-4 py-3 gap-2 text-sm font-medium text-slate-100" : "table-header-dark mobile-member-grid mobile-table-header"}>
+              {isArchived ? (
+                <>
+                  <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
+                  <div className="text-center justify-self-center whitespace-nowrap min-w-0" style={{ transform: 'translateX(var(--status-shift))' }}>Status</div>
+                  <div className="text-right justify-self-end whitespace-nowrap min-w-0 pr-2">Action</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-left whitespace-nowrap min-w-0 pr-2">Name</div>
+                  <div className="text-center justify-self-center whitespace-nowrap min-w-0" style={{ transform: 'translateX(var(--status-shift))' }}>Status</div>
+                  <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Reminder</div>
+                  <div className="text-center justify-self-center whitespace-nowrap leading-none min-w-0">Collected</div>
+                </>
+              )}
             </div>
             <div 
               className={`flex flex-col ${animationClass || ''}`}

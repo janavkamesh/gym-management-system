@@ -6,11 +6,11 @@ import { PLACEHOLDER_USER_ID } from '@/lib/constants'
 import { logActivity } from '@/lib/activity-log'
 import { formatINR, formatDate } from '@/lib/utils/formatters'
 import { generateNextUid, getMaxUidNumber, getUidPrefix, formatUid } from '@/lib/utils/uid'
-import { toLocalISOString } from '@/lib/utils/date'
+import { toLocalISOString, getIndiaDateString } from '@/lib/utils/date'
 
 function isFutureDate(dateStr: string) {
   if (!dateStr) return false;
-  const todayStr = toLocalISOString(new Date());
+  const todayStr = getIndiaDateString();
   return dateStr > todayStr;
 }
 
@@ -47,29 +47,26 @@ export async function createMember(data: {
   gender?: string;
   pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number; ptStartDate?: string };
 }) {
-  if (data.payment_amount && data.payment_amount > 0 && isFutureDate(data.join_date)) {
-    throw new Error('Payment date cannot be in the future.');
+  if (isFutureDate(data.join_date)) {
+    throw new Error('Join date cannot be in the future.');
   }
 
   const supabase = await createClient()
   const userId = await getUserId(supabase)
 
-  let finalExpiryDate = data.expiry_date;
-  if (!finalExpiryDate) {
-    // Fetch plan duration to calculate expiry_date
-    const { data: plan, error: planError } = await supabase
-      .from('plans')
-      .select('duration_days')
-      .eq('id', data.plan_id)
-      .single()
+  // Fetch plan duration to calculate expiry_date
+  const { data: plan, error: planError } = await supabase
+    .from('plans')
+    .select('duration_days')
+    .eq('id', data.plan_id)
+    .single()
 
-    if (planError || !plan) throw new Error('Plan not found')
+  if (planError || !plan) throw new Error('Plan not found')
 
-    const joinDate = new Date(data.join_date)
-    const expiryDate = new Date(joinDate)
-    expiryDate.setDate(expiryDate.getDate() + plan.duration_days)
-    finalExpiryDate = toLocalISOString(expiryDate)
-  }
+  const joinDate = new Date(data.join_date)
+  const expiryDate = new Date(joinDate)
+  expiryDate.setDate(expiryDate.getDate() + plan.duration_days)
+  const finalExpiryDate = toLocalISOString(expiryDate)
 
     // Prepare PT data
     let hasPt = false;
@@ -142,22 +139,28 @@ export async function createMember(data: {
  * Updates editable fields. Recalculates expiry_date if plan_id or join_date changes.
  */
 export async function updateMember(memberId: string, data: { name?: string; phone?: string; plan_id?: string; join_date?: string; expiry_date?: string; gender?: string; pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number }; payment?: { id?: string; amount?: number } }) {
+  if (data.join_date && isFutureDate(data.join_date)) {
+    throw new Error('Join date cannot be in the future.');
+  }
+
   const supabase = await createClient()
   const userId = await getUserId(supabase)
   
   const updates: Record<string, any> = { ...data }
 
-  // Only auto-calculate expiry_date if plan_id or join_date changes AND expiry_date wasn't explicitly provided
-  if (!data.expiry_date && (data.plan_id || data.join_date)) {
-    const { data: currentMember, error: memberError } = await supabase
-      .from('members')
-      .select('plan_id, join_date')
-      .eq('id', memberId)
-      .eq('user_id', userId)
-      .single()
+  const { data: currentMember, error: memberError } = await supabase
+    .from('members')
+    .select('plan_id, join_date, expiry_date')
+    .eq('id', memberId)
+    .eq('user_id', userId)
+    .single()
 
-    if (memberError || !currentMember) throw new Error('Member not found')
+  if (memberError || !currentMember) throw new Error('Member not found')
 
+  const planChanged = data.plan_id && data.plan_id !== currentMember.plan_id;
+  const joinDateChanged = data.join_date && data.join_date !== currentMember.join_date;
+
+  if (planChanged || joinDateChanged) {
     const newPlanId = data.plan_id || currentMember.plan_id
     const newJoinDateStr = data.join_date || currentMember.join_date
 
@@ -174,6 +177,8 @@ export async function updateMember(memberId: string, data: { name?: string; phon
     expiryDate.setDate(expiryDate.getDate() + plan.duration_days)
 
     updates.expiry_date = toLocalISOString(expiryDate)
+  } else {
+    updates.expiry_date = currentMember.expiry_date;
   }
 
   const { data: updated, error } = await supabase
@@ -402,12 +407,12 @@ export async function previewMembersCSV(rows: any[]) {
     const phone = row.phone?.toString().trim()
     const plan_name = row.plan_name?.toString().trim()
     const join_date = row.join_date?.toString().trim()
-    const expiry_date = row.expiry_date?.toString().trim()
+    let expiry_date = row.expiry_date?.toString().trim()
     const amountStr = row.amount?.toString().trim()
     const gender = row.gender?.toString().trim()
     let uid = row.uid?.toString().trim()
     
-    if (!name || !phone || !plan_name || !join_date || !expiry_date || !amountStr) {
+    if (!name || !phone || !plan_name || !join_date || !amountStr) {
       results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Missing required fields' })
       continue
     }
@@ -434,6 +439,19 @@ export async function previewMembersCSV(rows: any[]) {
       continue
     }
 
+    const plan = plans?.find(p => p.id === planId)
+    const planDuration = plan?.duration_days || 0
+    if (!expiry_date) {
+      if (!isNaN(new Date(join_date).getTime())) {
+        const jDate = new Date(join_date);
+        jDate.setDate(jDate.getDate() + planDuration);
+        expiry_date = toLocalISOString(jDate);
+      } else {
+        results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Invalid date format' })
+        continue
+      }
+    }
+
     if (existingPhones.has(phone)) {
       results.push({ row: i + 1, data: row, status: 'Skipped', reason: 'Phone number already exists' })
       continue
@@ -445,9 +463,26 @@ export async function previewMembersCSV(rows: any[]) {
     }
 
     const formattedJoinDate = new Date(join_date).toISOString().split('T')[0];
-    if (amount > 0 && isFutureDate(formattedJoinDate)) {
-      results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Payment date cannot be in the future.' })
+    const formattedExpiryDate = new Date(expiry_date).toISOString().split('T')[0];
+    
+    if (isFutureDate(formattedJoinDate)) {
+      results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Join date cannot be in the future.' })
       continue
+    }
+
+    if (formattedExpiryDate < formattedJoinDate) {
+      results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Expiry date cannot be before join date.' })
+      continue
+    }
+
+    let warning = '';
+    const jDate = new Date(formattedJoinDate);
+    const eDate = new Date(formattedExpiryDate);
+    const diffTime = eDate.getTime() - jDate.getTime();
+    const spanDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (spanDays > planDuration) {
+      warning = 'Expiry span exceeds plan duration';
     }
 
     existingPhones.add(phone) // prevent duplicate phone in same csv batch
@@ -457,7 +492,8 @@ export async function previewMembersCSV(rows: any[]) {
       row: i + 1, 
       data: row, 
       status: 'Pass', 
-      reason: '',
+      reason: warning,
+      warning: warning ? true : false,
       validatedData: {
         user_id: userId,
         uid: uid,

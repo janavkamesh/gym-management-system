@@ -12,6 +12,15 @@ export function toLocalISOString(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+export function getIndiaDateString(): string {
+  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' } as const;
+  const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(new Date());
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  return `${year}-${month}-${day}`;
+}
+
 export function getPeriodRange(period: string, customFrom?: string | null, customTo?: string | null) {
   const today = new Date();
   let start: Date | null = null;

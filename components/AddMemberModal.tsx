@@ -7,7 +7,7 @@ import { useToast } from './ToastProvider';
 import { X, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 import { Dropdown } from './ui/Dropdown';
-import { toLocalISOString } from '@/lib/utils/date';
+import { toLocalISOString, getIndiaDateString } from '@/lib/utils/date';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
 
@@ -38,9 +38,10 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
   const ptDurationDropdownRef = useRef<HTMLDivElement>(null);
   const [isPtDurationDropdownOpen, setIsPtDurationDropdownOpen] = useState(false);
 
-  const [joinDate, setJoinDate] = useState(memberToEdit?.join_date || new Date().toISOString().split('T')[0]);
+  const [initialPlanId] = useState(memberToEdit?.plan_id || '');
+  const [initialJoinDate] = useState(memberToEdit?.join_date || '');
+  const [joinDate, setJoinDate] = useState(memberToEdit?.join_date || getIndiaDateString());
   const [expiryDate, setExpiryDate] = useState(memberToEdit?.expiry_date || '');
-  const [isExpiryManuallyEdited, setIsExpiryManuallyEdited] = useState(!!memberToEdit);
   
   const firstPayment = memberToEdit?.payments?.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
   const [amount, setAmount] = useState(firstPayment ? firstPayment.amount.toString() : '');
@@ -83,14 +84,16 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
 
   // Auto-calculate expiry date
   useEffect(() => {
-    if (isExpiryManuallyEdited) return; // Do not overwrite manual edits
+    if (memberToEdit && planId === initialPlanId && joinDate === initialJoinDate) {
+      setExpiryDate(memberToEdit.expiry_date || '');
+      return;
+    }
 
     if (planId && joinDate) {
       const selectedPlan = plans.find(p => p.id === planId);
       if (selectedPlan) {
         if (typeof selectedPlan.duration_days !== 'number' || selectedPlan.duration_days <= 0) {
           setExpiryDate('');
-          showToast('Plan duration missing', 'error');
           return;
         }
         const join = new Date(joinDate);
@@ -99,19 +102,16 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
           setExpiryDate(toLocalISOString(join));
         }
       }
+    } else {
+      setExpiryDate('');
     }
-  }, [planId, joinDate, plans, isExpiryManuallyEdited, showToast]);
+  }, [planId, joinDate, plans, memberToEdit, initialPlanId, initialJoinDate]);
 
   // Validation
   const isValidPhone = /^\d{10}$/.test(phone);
   const isPtValid = !hasPt || (hasPt && trainerId !== '' && ptFee.trim() !== '' && trainerShare.trim() !== '' && ptDurationDays !== '');
   const isAmountValid = amount.trim() !== '';
   const isValid = name.trim() !== '' && isValidPhone && planId !== '' && joinDate !== '' && isPtValid && isAmountValid;
-
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setExpiryDate(e.target.value);
-    setIsExpiryManuallyEdited(true); // Lock auto-calculation
-  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Only allow digits
@@ -189,7 +189,7 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
           <div className="px-6 pt-3 pb-3 overflow-y-auto flex-1">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-x-6 md:gap-y-5">
               {/* Name */}
-              <div className="col-span-1 md:col-start-1 md:row-start-1 min-w-0">
+              <div className="col-span-1 md:col-start-1 md:row-start-1 order-1 md:order-none min-w-0">
                 <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
@@ -200,35 +200,8 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                 />
               </div>
 
-              {/* UID */}
-              <div className="col-span-1 md:col-start-1 md:row-start-2 min-w-0">
-                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">UID</label>
-                <input
-                  type="text"
-                  value={uidPreview}
-                  disabled
-                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed truncate"
-                />
-              </div>
-
-              {/* Phone */}
-              <div className="col-span-1 md:col-start-1 md:row-start-3 min-w-0">
-                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">
-                  Phone <span className="text-red-500">*</span> 
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={handlePhoneChange}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate ${
-                    phone.length > 0 && !isValidPhone ? 'border-red-300 bg-red-50' : 'border-slate-300'
-                  }`}
-                  placeholder="9876543210"
-                />
-              </div>
-
               {/* Plan */}
-              <div className="col-span-1 md:col-start-2 md:row-start-1 min-w-0">
+              <div className="col-span-1 md:col-start-2 md:row-start-1 order-4 md:order-none min-w-0">
                 <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Plan <span className="text-red-500">*</span></label>
                 <Dropdown
                   value={planId}
@@ -246,45 +219,8 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                 />
               </div>
 
-              {/* Phone Validation Error */}
-              {phone.length > 0 && !isValidPhone && (
-                <div className="col-span-2 md:col-span-1 md:col-start-1 md:row-start-4 text-red-500 text-xs mt-[-16px]">
-                  (10 digits required)
-                </div>
-              )}
-
-              {/* Join Date */}
-              <div className="col-span-1 md:col-start-2 md:row-start-2 min-w-0">
-                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Join Date <span className="text-red-500">*</span></label>
-                <DatePicker
-                  value={joinDate}
-                  max={toLocalISOString(new Date())}
-                  onChange={(date) => {
-                    setJoinDate(date);
-                    setIsExpiryManuallyEdited(false);
-                  }}
-                />
-              </div>
-
-              {/* Expiry Date */}
-              <div className="col-span-1 md:col-start-2 md:row-start-3 min-w-0">
-                <div className="flex justify-between items-end mb-1">
-                  <label className="block text-sm font-medium text-slate-700 truncate">
-                    Expiry Date
-                  </label>
-                </div>
-                <DatePicker
-                  value={expiryDate}
-                  onChange={(date) => {
-                    setExpiryDate(date);
-                    setIsExpiryManuallyEdited(true);
-                  }}
-                  placeholder="Pick date (Editable)"
-                />
-              </div>
-
               {/* Amount */}
-              <div className="col-span-1 md:col-start-3 md:row-start-1 min-w-0">
+              <div className="col-span-1 md:col-start-3 md:row-start-1 order-8 md:order-none min-w-0">
                 <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Amount <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -301,8 +237,69 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                 </div>
               </div>
 
+              {/* UID */}
+              <div className="col-span-1 md:col-start-1 md:row-start-2 order-2 md:order-none min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">UID</label>
+                <input
+                  type="text"
+                  value={uidPreview}
+                  disabled
+                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed truncate"
+                />
+              </div>
+
+              {/* Join Date */}
+              <div className="col-span-1 md:col-start-2 md:row-start-2 order-6 md:order-none min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Join Date <span className="text-red-500">*</span></label>
+                <DatePicker
+                  value={joinDate}
+                  max={getIndiaDateString()}
+                  onChange={(date) => setJoinDate(date)}
+                />
+              </div>
+
+              {/* Expiry Date */}
+              <div className="col-span-1 md:col-start-3 md:row-start-2 order-7 md:order-none min-w-0">
+                <div className="flex justify-between items-end mb-1">
+                  <label className="block text-sm font-medium text-slate-700 truncate">
+                    Expiry Date
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  value={expiryDate || ''}
+                  disabled
+                  placeholder="Select a plan"
+                  className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-50 text-slate-500 rounded-lg min-h-12 md:min-h-0 cursor-not-allowed truncate"
+                />
+                <p className="text-xs text-slate-500 mt-1">Auto-calculated from plan</p>
+              </div>
+
+              {/* Phone */}
+              <div className="col-span-1 md:col-start-1 md:row-start-3 order-3 md:order-none min-w-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1 truncate">
+                  Phone <span className="text-red-500">*</span> 
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg min-h-12 md:min-h-0 focus:outline-none focus:ring-2 focus:ring-blue-600 truncate ${
+                    phone.length > 0 && !isValidPhone ? 'border-red-300 bg-red-50' : 'border-slate-300'
+                  }`}
+                  placeholder="9876543210"
+                />
+              </div>
+
+              {/* Phone Validation Error */}
+              {phone.length > 0 && !isValidPhone && (
+                <div className="col-span-2 md:col-span-1 md:col-start-1 md:row-start-4 order-5 md:order-none text-red-500 text-xs mt-[-16px]">
+                  (10 digits required)
+                </div>
+              )}
+
               {/* Gender */}
-              <div className="col-span-1 md:col-start-3 md:row-start-2 min-w-0">
+              <div className="col-span-1 md:col-start-2 md:row-start-3 order-9 md:order-none min-w-0">
                 <label className="block text-sm font-medium text-slate-700 mb-1 truncate">
                   Gender
                 </label>
@@ -320,7 +317,7 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
               </div>
 
               {/* PT Toggle */}
-              <div className="col-span-2 md:col-span-1 md:col-start-3 md:row-start-3 flex items-center justify-between pt-1 min-w-0">
+              <div className="col-span-2 md:col-span-1 md:col-start-3 md:row-start-3 order-10 md:order-none flex items-center justify-between pt-1 min-w-0">
                 <label className="block text-sm font-medium text-slate-700 truncate">Personal Training</label>
                 <button
                   type="button"

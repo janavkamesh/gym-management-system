@@ -1,3 +1,5 @@
+import { getIndiaDateString } from './date';
+
 export function getPtStatusText(ptEndDate: string | null): 'Active' | 'Expiring' | 'Expired' | null {
   if (!ptEndDate) return null;
   const expiry = new Date(ptEndDate);
@@ -24,12 +26,35 @@ export function getPtStatusColor(ptEndDate: string | null): 'Red' | 'Yellow' | '
   else return 'Green';
 }
 
+export function isReviewButtonVisible(joinDate: string): boolean {
+  if (!joinDate) return false;
+  const join = new Date(joinDate + 'T00:00:00+05:30');
+  const today = new Date(getIndiaDateString() + 'T00:00:00+05:30');
+  const daysSinceJoin = Math.floor((today.getTime() - join.getTime()) / (1000 * 60 * 60 * 24));
+  return daysSinceJoin >= 30 && daysSinceJoin <= 37;
+}
+
+export function isReminderButtonVisible(expiryDate: string): boolean {
+  if (!expiryDate) return false;
+  const expiry = new Date(expiryDate + 'T00:00:00+05:30');
+  const today = new Date(getIndiaDateString() + 'T00:00:00+05:30');
+  const daysLeft = Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return daysLeft <= 3; // Expiring (0 to 3 days) or Expired (< 0)
+}
+
+export function isWelcomeButtonVisible(joinDate: string): boolean {
+  if (!joinDate) return false;
+  const join = new Date(joinDate + 'T00:00:00+05:30');
+  const today = new Date(getIndiaDateString() + 'T00:00:00+05:30');
+  const daysSinceJoin = Math.floor((today.getTime() - join.getTime()) / (1000 * 60 * 60 * 24));
+  return daysSinceJoin >= 0 && daysSinceJoin <= 7;
+}
+
+import { computeAmountDue } from './amountDue';
+
 export function mapMemberData(member: any) {
   const planPrice = member.plans?.price || 0;
-  const totalPaid = (member.payments || [])
-    .filter((p: any) => !p.is_voided && p.period_end === member.expiry_date && p.payment_type === 'Membership')
-    .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
-  const pendingAmount = Math.max(0, planPrice - totalPaid);
+  const pendingAmount = computeAmountDue(member.amount, planPrice, member.expiry_date, member.payments || []);
   
   // PT computations
   const activePt = (member.pt_assignments || []).find((pt: any) => pt.is_active);

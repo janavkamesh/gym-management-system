@@ -91,7 +91,11 @@ export default function ImportCSVModal({ isOpen, onClose, onSuccess }: { isOpen:
         timeoutPromise
       ]);
       
-      showToast(`Successfully imported ${count} members`, 'success');
+      const warningCount = previewData.filter(row => row.status === 'Pass' && row.warning).length;
+      const msg = warningCount > 0 
+        ? `Successfully imported ${count} members (${warningCount} warnings)`
+        : `Successfully imported ${count} members`;
+      showToast(msg, 'success');
       onSuccess();
       onClose();
     } catch (error: any) {
