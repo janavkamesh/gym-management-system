@@ -40,6 +40,19 @@ export function getPeriodRange(period: string, customFrom?: string | null, custo
   return { from, to, start, end };
 }
 
+export function getExclusivePeriodRange(period: string, customFrom?: string | null, customTo?: string | null) {
+  const { from, to, start, end } = getPeriodRange(period, customFrom, customTo);
+  
+  let toExclusive = '';
+  if (end) {
+    const nextDay = new Date(end);
+    nextDay.setDate(nextDay.getDate() + 1);
+    toExclusive = toLocalISOString(nextDay);
+  }
+  
+  return { from, to, toExclusive, start, end };
+}
+
 export function getPeriodSubtitle(period: string, fromDate?: string | null, toDate?: string | null): string {
   if (period === 'Overall' || (!period && !fromDate && !toDate)) {
     return 'Overall';

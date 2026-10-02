@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { logActivity } from '@/lib/activity-log'
 import { formatINR } from '@/lib/utils/formatters'
+import { toLocalISOString } from '@/lib/utils/date'
+
+function isFutureDate(dateStr: string) {
+  if (!dateStr) return false;
+  const todayStr = toLocalISOString(new Date());
+  return dateStr > todayStr;
+}
 
 export async function recalculateMemberExpiry(memberId: string) {
   const supabase = await createClient()
@@ -88,6 +95,8 @@ export async function recalculatePtDueDate(assignmentId: string) {
  * Does not change expiry_date directly as that's handled by renewal/creation.
  */
 export async function logPayment(memberId: string, amount: number, method: string, date: string) {
+  if (isFutureDate(date)) throw new Error('Payment date cannot be in the future.');
+
   const supabase = await createClient()
   
   const { data: memberData } = await supabase.from('members').select('name, expiry_date, plan_id').eq('id', memberId).single()
@@ -159,11 +168,13 @@ export async function collectPaymentAmount(memberId: string, amount: number, met
   const newExpiryDate = new Date(oldExpiryDate)
   newExpiryDate.setDate(newExpiryDate.getDate() + plan.duration_days)
   
-  const oldExpiryStr = oldExpiryDate.toISOString().split('T')[0]
-  const newExpiryStr = newExpiryDate.toISOString().split('T')[0]
+  const oldExpiryStr = toLocalISOString(oldExpiryDate)
+  const newExpiryStr = toLocalISOString(newExpiryDate)
 
   // 4. Insert payment with date = today (or customDate), period_start = oldExpiryStr, period_end = newExpiryStr
   const todayStr = customDate || new Date().toISOString().split('T')[0]
+  if (isFutureDate(todayStr)) throw new Error('Payment date cannot be in the future.');
+
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
@@ -230,10 +241,12 @@ export async function collectPtPayment(assignmentId: string, amount: number, met
   const duration = assignment.duration_days || 30 // fallback to 30 if null
   newDueDate.setDate(newDueDate.getDate() + duration)
   
-  const newDueStr = newDueDate.toISOString().split('T')[0]
+  const newDueStr = toLocalISOString(newDueDate)
 
   // 3. Insert payment with date = today (or customDate), period_start = oldDueStr, period_end = newDueStr
   const todayStr = customDate || new Date().toISOString().split('T')[0]
+  if (isFutureDate(todayStr)) throw new Error('Payment date cannot be in the future.');
+
   const { data: payment, error: paymentError } = await supabase
     .from('payments')
     .insert({
@@ -278,6 +291,8 @@ export async function collectPtPayment(assignmentId: string, amount: number, met
 }
 
 export async function editPayment(paymentId: string, data: { amount?: number; method?: string; date?: string; note?: string }) {
+  if (data.date && isFutureDate(data.date)) throw new Error('Payment date cannot be in the future.');
+
   const supabase = await createClient()
 
   const { data: oldPayment } = await supabase.from('payments').select('*, members(name)').eq('id', paymentId).single()

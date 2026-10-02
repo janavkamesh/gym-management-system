@@ -7,6 +7,7 @@ import { useToast } from './ToastProvider';
 import { X, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 import { Dropdown } from './ui/Dropdown';
+import { toLocalISOString } from '@/lib/utils/date';
 import { ModalTransition } from './ui/ModalTransition';
 import { ModalHeader } from './ui/ModalHeader';
 
@@ -87,14 +88,19 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
     if (planId && joinDate) {
       const selectedPlan = plans.find(p => p.id === planId);
       if (selectedPlan) {
+        if (typeof selectedPlan.duration_days !== 'number' || selectedPlan.duration_days <= 0) {
+          setExpiryDate('');
+          showToast('Plan duration missing', 'error');
+          return;
+        }
         const join = new Date(joinDate);
         if (!isNaN(join.getTime())) {
-          join.setDate(join.getDate() + Number(selectedPlan.duration_days));
-          setExpiryDate(join.toISOString().split('T')[0]);
+          join.setDate(join.getDate() + selectedPlan.duration_days);
+          setExpiryDate(toLocalISOString(join));
         }
       }
     }
-  }, [planId, joinDate, plans, isExpiryManuallyEdited]);
+  }, [planId, joinDate, plans, isExpiryManuallyEdited, showToast]);
 
   // Validation
   const isValidPhone = /^\d{10}$/.test(phone);
@@ -161,8 +167,8 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
         showToast('Member added successfully', 'success');
         onClose();
       }
-    } catch (error) {
-      showToast('Failed to save. Check your connection.', 'error');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to save. Check your connection.', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -252,6 +258,7 @@ export default function AddMemberModal({ isOpen, plans, trainers = [], onClose, 
                 <label className="block text-sm font-medium text-slate-700 mb-1 truncate">Join Date <span className="text-red-500">*</span></label>
                 <DatePicker
                   value={joinDate}
+                  max={toLocalISOString(new Date())}
                   onChange={(date) => {
                     setJoinDate(date);
                     setIsExpiryManuallyEdited(false);

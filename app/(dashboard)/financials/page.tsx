@@ -14,6 +14,7 @@ import { getDistinctCategories } from '@/lib/queries/transactions';
 import FinancialsClient from '@/components/FinancialsClient';
 import FirstLoadSuspense from '@/components/FirstLoadSuspense';
 import Skeleton from './Skeleton';
+import { getExclusivePeriodRange } from '@/lib/utils/date';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,22 +41,20 @@ async function FinancialsContent() {
   let distinctCategories: string[] = [];
   let initialError: string | undefined;
 
-  const now = new Date();
-  const initialStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-  const initialEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+  const { from: initialStart, toExclusive: initialEndExclusive, to: initialEnd } = getExclusivePeriodRange('This Month');
 
   try {
     const results = await Promise.allSettled([
       getExpenses(),
-      getProfitability(),
+      getProfitability(initialStart, initialEndExclusive),
       getProjectedRevenue(),
-      getRevenueSplit(),
-      getPaymentMethodSplit(),
-      getTrendPayments(initialStart, initialEnd),
+      getRevenueSplit(initialStart, initialEndExclusive),
+      getPaymentMethodSplit(initialStart, initialEndExclusive),
+      getTrendPayments(initialStart, initialEndExclusive),
       getDistinctCategories(),
       getSixMonthRevenueAndExpenses(),
-      getPlanBreakdown(initialEnd),
-      getNewVsLostMembers(initialStart, initialEnd)
+      getPlanBreakdown(initialEndExclusive),
+      getNewVsLostMembers(initialStart, initialEndExclusive)
     ]);
 
     // Check if ANY of them failed to trigger the global toast

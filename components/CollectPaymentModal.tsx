@@ -86,8 +86,8 @@ export default function CollectPaymentModal({ isOpen, member, onClose }: Collect
       }
       showToast('Payment collected successfully', 'success');
       onClose();
-    } catch (error) {
-      showToast('Failed to collect payment. Check your connection.', 'error');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to collect payment. Check your connection.', 'error');
       setIsSubmitting(false);
       setShowConfirmation(false);
     }

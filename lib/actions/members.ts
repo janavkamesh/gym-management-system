@@ -6,6 +6,13 @@ import { PLACEHOLDER_USER_ID } from '@/lib/constants'
 import { logActivity } from '@/lib/activity-log'
 import { formatINR, formatDate } from '@/lib/utils/formatters'
 import { generateNextUid, getMaxUidNumber, getUidPrefix, formatUid } from '@/lib/utils/uid'
+import { toLocalISOString } from '@/lib/utils/date'
+
+function isFutureDate(dateStr: string) {
+  if (!dateStr) return false;
+  const todayStr = toLocalISOString(new Date());
+  return dateStr > todayStr;
+}
 
 /**
  * Helper: get the current user ID.
@@ -40,6 +47,10 @@ export async function createMember(data: {
   gender?: string;
   pt?: { hasPt: boolean; trainerId: string; ptFee?: number; trainerShare?: number; ptDurationDays?: number; ptStartDate?: string };
 }) {
+  if (data.payment_amount && data.payment_amount > 0 && isFutureDate(data.join_date)) {
+    throw new Error('Payment date cannot be in the future.');
+  }
+
   const supabase = await createClient()
   const userId = await getUserId(supabase)
 
@@ -57,7 +68,7 @@ export async function createMember(data: {
     const joinDate = new Date(data.join_date)
     const expiryDate = new Date(joinDate)
     expiryDate.setDate(expiryDate.getDate() + plan.duration_days)
-    finalExpiryDate = expiryDate.toISOString().split('T')[0]
+    finalExpiryDate = toLocalISOString(expiryDate)
   }
 
     // Prepare PT data
@@ -162,7 +173,7 @@ export async function updateMember(memberId: string, data: { name?: string; phon
     const expiryDate = new Date(joinDate)
     expiryDate.setDate(expiryDate.getDate() + plan.duration_days)
 
-    updates.expiry_date = expiryDate.toISOString().split('T')[0]
+    updates.expiry_date = toLocalISOString(expiryDate)
   }
 
   const { data: updated, error } = await supabase
@@ -370,7 +381,7 @@ export async function previewMembersCSV(rows: any[]) {
   const supabase = await createClient()
   const userId = await getUserId(supabase)
 
-  const { data: plans } = await supabase.from('plans').select('id, plan_name').eq('user_id', userId)
+  const { data: plans } = await supabase.from('plans').select('id, plan_name, price, duration_days, is_active').eq('user_id', userId)
   const planMap = new Map((plans || []).map(p => [p.plan_name.trim().toLowerCase(), p.id]))
 
   const { data: existingMembers } = await supabase.from('members').select('phone, uid').eq('user_id', userId)
@@ -430,6 +441,12 @@ export async function previewMembersCSV(rows: any[]) {
     
     if (isNaN(new Date(join_date).getTime()) || isNaN(new Date(expiry_date).getTime())) {
       results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Invalid date format' })
+      continue
+    }
+
+    const formattedJoinDate = new Date(join_date).toISOString().split('T')[0];
+    if (amount > 0 && isFutureDate(formattedJoinDate)) {
+      results.push({ row: i + 1, data: row, status: 'Failed', reason: 'Payment date cannot be in the future.' })
       continue
     }
 

@@ -15,7 +15,7 @@ import { SlidingTabs } from './ui/SlidingTabs';
 import TransactionsClient from './TransactionsClient';
 import ExpensesClient from './ExpensesClient';
 import { PinnedChartWrapper } from './ui/usePinnedPoint';
-import { isSingleMonth, toLocalISOString } from '@/lib/utils/date';
+import { isSingleMonth, toLocalISOString, getExclusivePeriodRange } from '@/lib/utils/date';
 import { formatCompactINR } from '@/lib/utils/formatters';
 import PageHeader from './PageHeader';
 import { Users, CreditCard, Activity, PieChart as PieChartIcon } from 'lucide-react';
@@ -74,9 +74,7 @@ export default function FinancialsClient({
   };
   
   // FilterCard State
-  const now = new Date();
-  const initialStart = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), 1));
-  const initialEnd = toLocalISOString(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const { from: initialStart, to: initialEnd } = getExclusivePeriodRange('This Month');
   
   const DEFAULT_PERIOD = 'This Month';
   const DEFAULT_FROM = initialStart;
@@ -118,8 +116,7 @@ export default function FinancialsClient({
   const fetchFilteredData = async () => {
     if (dateError) return;
 
-    let fetchFrom = fromDate;
-    let fetchTo = toDate;
+    const { from: fetchFrom, toExclusive: fetchTo } = getExclusivePeriodRange(period, fromDate, toDate);
     
     currentRequestId.current += 1;
     const reqId = currentRequestId.current;
@@ -484,30 +481,9 @@ export default function FinancialsClient({
           period={period}
           onPeriodChange={(newPeriod) => {
             setPeriod(newPeriod);
-            const today = new Date();
-            let start: Date;
-            let end: Date = new Date();
-            if (newPeriod === 'Overall') {
-              setFromDate('');
-              setToDate('');
-              return;
-            } else if (newPeriod === 'This Month') {
-              start = new Date(today.getFullYear(), today.getMonth(), 1);
-              end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            } else if (newPeriod === 'Last 3 Months') {
-              start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-              end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            } else if (newPeriod === 'Last 6 Months') {
-              start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-              end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-            } else if (newPeriod === 'This Year') {
-              start = new Date(today.getFullYear(), 0, 1);
-              end = new Date(today.getFullYear(), 11, 31);
-            } else {
-              return;
-            }
-            setFromDate(toLocalISOString(start));
-            setToDate(toLocalISOString(end));
+            const { from, to } = getExclusivePeriodRange(newPeriod);
+            setFromDate(from);
+            setToDate(to);
           }}
           periodOptions={[
             { value: 'Overall', label: 'Overall' },
@@ -742,30 +718,9 @@ export default function FinancialsClient({
             period={period}
             onPeriodChange={(newPeriod) => {
               setPeriod(newPeriod);
-              const today = new Date();
-              let start: Date;
-              let end: Date = new Date();
-              if (newPeriod === 'Overall') {
-                setFromDate('');
-                setToDate('');
-                return;
-              } else if (newPeriod === 'This Month') {
-                start = new Date(today.getFullYear(), today.getMonth(), 1);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              } else if (newPeriod === 'Last 3 Months') {
-                start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              } else if (newPeriod === 'Last 6 Months') {
-                start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-              } else if (newPeriod === 'This Year') {
-                start = new Date(today.getFullYear(), 0, 1);
-                end = new Date(today.getFullYear(), 11, 31);
-              } else {
-                return;
-              }
-              setFromDate(toLocalISOString(start));
-              setToDate(toLocalISOString(end));
+              const { from, to } = getExclusivePeriodRange(newPeriod);
+              setFromDate(from);
+              setToDate(to);
             }}
             periodOptions={[
               { value: 'Overall', label: 'Overall' },

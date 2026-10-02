@@ -20,21 +20,14 @@ export async function getProfitability(fromDate?: string, toDate?: string) {
   let expQuery = supabase.from('expenses').select('amount').is('is_voided', false)
   let payQuery = supabase.from('payments').select('amount').is('is_voided', false)
 
-  if (fromDate !== undefined) {
-    if (fromDate !== '') {
-      expQuery = expQuery.gte('date', fromDate)
-      payQuery = payQuery.gte('date', fromDate)
-    }
-  } else {
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    expQuery = expQuery.gte('date', firstDayOfMonth)
-    payQuery = payQuery.gte('date', firstDayOfMonth)
+  if (fromDate && fromDate !== '') {
+    expQuery = expQuery.gte('date', fromDate)
+    payQuery = payQuery.gte('date', fromDate)
   }
 
-  if (toDate) {
-    expQuery = expQuery.lte('date', toDate)
-    payQuery = payQuery.lte('date', toDate)
+  if (toDate && toDate !== '') {
+    expQuery = expQuery.lt('date', toDate)
+    payQuery = payQuery.lt('date', toDate)
   }
 
   const { data: expenses, error: expError } = await expQuery
@@ -88,18 +81,12 @@ export async function getRevenueSplit(fromDate?: string, toDate?: string) {
     .select('amount, date, member_id, members!inner(join_date)')
     .is('is_voided', false)
 
-  if (fromDate !== undefined) {
-    if (fromDate !== '') {
-      query = query.gte('date', fromDate)
-    }
-  } else {
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    query = query.gte('date', firstDayOfMonth)
+  if (fromDate && fromDate !== '') {
+    query = query.gte('date', fromDate)
   }
 
-  if (toDate) {
-    query = query.lte('date', toDate)
+  if (toDate && toDate !== '') {
+    query = query.lt('date', toDate)
   }
 
   const { data: payments, error } = await query
@@ -134,18 +121,12 @@ export async function getPaymentMethodSplit(fromDate?: string, toDate?: string) 
     .select('amount, method')
     .is('is_voided', false)
 
-  if (fromDate !== undefined) {
-    if (fromDate !== '') {
-      query = query.gte('date', fromDate)
-    }
-  } else {
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    query = query.gte('date', firstDayOfMonth)
+  if (fromDate && fromDate !== '') {
+    query = query.gte('date', fromDate)
   }
 
-  if (toDate) {
-    query = query.lte('date', toDate)
+  if (toDate && toDate !== '') {
+    query = query.lt('date', toDate)
   }
 
   const { data: payments, error } = await query
@@ -211,7 +192,7 @@ export async function getTrendPayments(fromDate?: string, toDate?: string) {
   let query = supabase.from('payments').select('amount, date').is('is_voided', false);
   
   if (fromDate) query = query.gte('date', fromDate);
-  if (toDate) query = query.lte('date', toDate);
+  if (toDate) query = query.lt('date', toDate);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -223,7 +204,7 @@ export async function getTrendExpenses(fromDate?: string, toDate?: string) {
   let query = supabase.from('expenses').select('amount, date').is('is_voided', false);
   
   if (fromDate) query = query.gte('date', fromDate);
-  if (toDate) query = query.lte('date', toDate);
+  if (toDate) query = query.lt('date', toDate);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -293,7 +274,15 @@ export async function getSixMonthRevenueAndExpenses() {
 export async function getPlanBreakdown(toDate?: string) {
   const supabase = await createClient();
   
-  const targetDateStr = toDate ? toDate : new Date().toISOString().split('T')[0];
+  let targetDateStr = toDate ? toDate : new Date().toISOString().split('T')[0];
+  
+  // If we receive an exclusive toDate (e.g. 2026-11-01), the actual target day for active members is the day before.
+  // We can just convert it back to a date, subtract 1 day, and format it.
+  if (toDate) {
+    const d = new Date(toDate);
+    d.setDate(d.getDate() - 1);
+    targetDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
 
   const { data: members, error } = await supabase
     .from('members')
@@ -332,11 +321,11 @@ export async function getNewVsLostMembers(fromDate?: string, toDate?: string) {
     const joinDate = m.join_date;
     const expiryDate = m.expiry_date;
 
-    if (joinDate >= effectiveFrom && joinDate <= effectiveTo) {
+    if (joinDate >= effectiveFrom && joinDate < effectiveTo) {
       results.push({ date: joinDate, type: 'New' });
     }
 
-    if (expiryDate >= effectiveFrom && expiryDate <= effectiveTo && expiryDate < todayStr) {
+    if (expiryDate >= effectiveFrom && expiryDate < effectiveTo && expiryDate < todayStr) {
       results.push({ date: expiryDate, type: 'Lost' });
     }
   });

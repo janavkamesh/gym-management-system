@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activity-log';
 import { useToast } from './ToastProvider';
 import { formatINR } from '@/lib/utils/formatters';
 import { cleanPhone } from '@/lib/utils/whatsapp';
+import { toLocalISOString } from '@/lib/utils/date';
 import CollectPaymentModal from './CollectPaymentModal';
 import { WhatsAppIcon } from './MemberRow';
 import { ModalTransition } from './ui/ModalTransition';
@@ -67,8 +68,8 @@ export function PaymentHistoryContent({ member, isOpen = true }: { member: any, 
       showToast('Payment updated', 'success');
       setEditingId(null);
       loadPayments();
-    } catch (e) {
-      showToast('Failed to update payment', 'error');
+    } catch (e: any) {
+      showToast(e.message || 'Failed to update payment', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,8 +87,8 @@ export function PaymentHistoryContent({ member, isOpen = true }: { member: any, 
       setVoidingId(null);
       setVoidReason('');
       loadPayments();
-    } catch (e) {
-      showToast('Failed to void payment', 'error');
+    } catch (e: any) {
+      showToast(e.message || 'Failed to void payment', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -143,7 +144,7 @@ export function PaymentHistoryContent({ member, isOpen = true }: { member: any, 
                       </div>
                       <div className="col-span-2">
                         <label className="block text-xs text-slate-500 mb-1">Date</label>
-                        <input type="date" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                        <input type="date" value={editForm.date} max={toLocalISOString(new Date())} onChange={e => setEditForm({...editForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                       </div>
                     </div>
                     <div className="flex gap-2 justify-end mt-2">
@@ -237,7 +238,7 @@ export function PaymentHistoryContent({ member, isOpen = true }: { member: any, 
                               </div>
                               <div className="col-span-2">
                                 <label className="block text-xs text-slate-500 mb-1">Date</label>
-                                <input type="date" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                <input type="date" value={editForm.date} max={toLocalISOString(new Date())} onChange={e => setEditForm({...editForm, date: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                               </div>
                             </div>
                             <div className="flex gap-2 justify-end">

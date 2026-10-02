@@ -34,8 +34,8 @@ export default function CollectPtPaymentModal({ isOpen, assignment, onClose, onS
       showToast('PT Payment collected successfully', 'success');
       if (onSuccess) onSuccess();
       onClose();
-    } catch (error) {
-      showToast('Failed to collect PT payment. Check your connection.', 'error');
+    } catch (error: any) {
+      showToast(error.message || 'Failed to collect PT payment. Check your connection.', 'error');
       setIsSubmitting(false);
     }
   };
